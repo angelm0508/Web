@@ -1,0 +1,103 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var rutaActual = $"{ViewContext.RouteData.Values["controller"]}";
+    bool EsActivo(string controlador) => string.Equals(rutaActual, controlador, StringComparison.OrdinalIgnoreCase);
+    var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="@csrfToken" />
+    <title>@ViewData["Title"] - Sistema de Gestión</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.min.css" />
+    <link rel="stylesheet" href="~/lib/datatables/css/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div class="app-shell">
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-brand">
+                    <i class="fa-solid fa-cubes"></i>
+                    <span>Gestión</span>
+                </div>
+                <nav class="sidebar-nav">
+                    <a class="nav-link @(EsActivo("Home") ? "active" : "")" asp-controller="Home" asp-action="Index">
+                        <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
+                    </a>
+
+                    <div class="nav-section-title">Artículos</div>
+                    <a class="nav-link @(EsActivo("Articulos") ? "active" : "")" asp-controller="Articulos" asp-action="Index">
+                        <i class="fa-solid fa-box"></i><span>Artículos</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("Fabricantes") ? "active" : "")" asp-controller="Fabricantes" asp-action="Index">
+                        <i class="fa-solid fa-industry"></i><span>Fabricantes</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("GruposArticulo") ? "active" : "")" asp-controller="GruposArticulo" asp-action="Index">
+                        <i class="fa-solid fa-layer-group"></i><span>Grupos</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("Medidas") ? "active" : "")" asp-controller="Medidas" asp-action="Index">
+                        <i class="fa-solid fa-ruler-combined"></i><span>Medidas</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("Almacenes") ? "active" : "")" asp-controller="Almacenes" asp-action="Index">
+                        <i class="fa-solid fa-warehouse"></i><span>Almacenes</span>
+                    </a>
+
+                    <div class="nav-section-title">Socios de Negocio</div>
+                    <a class="nav-link @(EsActivo("SociosNegocio") ? "active" : "")" asp-controller="SociosNegocio" asp-action="Index">
+                        <i class="fa-solid fa-handshake"></i><span>Socios de Negocio</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("GruposSn") ? "active" : "")" asp-controller="GruposSn" asp-action="Index">
+                        <i class="fa-solid fa-people-group"></i><span>Grupos</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("ListadosPrecio") ? "active" : "")" asp-controller="ListadosPrecio" asp-action="Index">
+                        <i class="fa-solid fa-tags"></i><span>Listado de Precios</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("Direcciones") ? "active" : "")" asp-controller="Direcciones" asp-action="Index">
+                        <i class="fa-solid fa-location-dot"></i><span>Direcciones</span>
+                    </a>
+                </nav>
+            </aside>
+
+            <div class="app-content">
+                <header class="topbar">
+                    <button class="btn btn-link text-dark" id="btnToggleSidebar" type="button" aria-label="Alternar menú">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="ms-auto d-flex align-items-center gap-3">
+                        <span class="text-muted"><i class="fa-solid fa-circle-user me-1"></i>@User.Identity!.Name</span>
+                        <form asp-controller="Cuenta" asp-action="Logout" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="fa-solid fa-right-from-bracket me-1"></i>Salir
+                            </button>
+                        </form>
+                    </div>
+                </header>
+
+                <main class="content-area">
+                    @RenderBody()
+                </main>
+            </div>
+        </div>
+    }
+    else
+    {
+        <main>
+            @RenderBody()
+        </main>
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/datatables/js/jquery.dataTables.min.js"></script>
+    <script src="~/lib/datatables/js/dataTables.bootstrap5.min.js"></script>
+    <script src="~/lib/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

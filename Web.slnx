@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Web.ApiClient/Web.ApiClient.csproj" />
+  <Project Path="Web.UI/Web.UI.csproj" />
+</Solution>

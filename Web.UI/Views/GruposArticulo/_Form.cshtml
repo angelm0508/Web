@@ -1,0 +1,36 @@
+@model Web.ApiClient.Dtos.GrupoArticulo.GrupoArticuloCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+    int id = ViewBag.Id ?? 0;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar grupo de artículo" : "Nuevo grupo de artículo")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formGrupoArticulo" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="Nombre" class="form-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Bloqueado</label>
+                <select name="Bloqueado" class="form-select">
+                    <option value="N">No</option>
+                    <option value="S">Sí</option>
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarGrupoArticulo" data-edicion="@esEdicion.ToString().ToLower()" data-id="@id">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>

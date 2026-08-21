@@ -1,0 +1,35 @@
+@model Web.ApiClient.Dtos.ListadoPrecio.ListadoPrecioCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar listado de precio" : "Nuevo listado de precio")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formListadoPrecio" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="Nombre" class="form-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Bloqueado" class="form-label"></label>
+                <select asp-for="Bloqueado" class="form-select">
+                    <option value="S">Sí</option>
+                    <option value="N">No</option>
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarListadoPrecio" data-edicion="@esEdicion.ToString().ToLower()" data-id="@ViewBag.Id">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>

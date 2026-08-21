@@ -1,0 +1,70 @@
+@model Web.ApiClient.Dtos.DireccionSocioNegocio.DireccionSocioNegocioCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar dirección" : "Nueva dirección")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formDireccion" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Direccion" class="form-label"></label>
+                <input asp-for="Direccion" class="form-control" readonly="@esEdicion" />
+                <span asp-validation-for="Direccion" class="text-danger small"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="CodigoSn" class="form-label"></label>
+                <select asp-for="CodigoSn" class="form-select" asp-items="ViewBag.Socios">
+                    <option value="">-- Seleccione --</option>
+                </select>
+                <span asp-validation-for="CodigoSn" class="text-danger small"></span>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="Calle" class="form-label"></label>
+                <input asp-for="Calle" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Bloque" class="form-label"></label>
+                <input asp-for="Bloque" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="CodigoPostal" class="form-label"></label>
+                <input asp-for="CodigoPostal" class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Pais" class="form-label"></label>
+                <input asp-for="Pais" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Municipio" class="form-label"></label>
+                <input asp-for="Municipio" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Departamento" class="form-label"></label>
+                <input asp-for="Departamento" class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="NumLinea" class="form-label"></label>
+                <input asp-for="NumLinea" type="number" class="form-control" />
+            </div>
+            <div class="col-md-8">
+                <label asp-for="TipoDireccion" class="form-label"></label>
+                <input asp-for="TipoDireccion" class="form-control" />
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarDireccion" data-edicion="@esEdicion.ToString().ToLower()" data-direccion="@Model.Direccion">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>
