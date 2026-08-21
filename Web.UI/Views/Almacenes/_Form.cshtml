@@ -1,6 +1,8 @@
+@using System.Text.Json
 @model Web.ApiClient.Dtos.Almacen.AlmacenCrearDTO
 @{
     bool esEdicion = ViewBag.EsEdicion ?? false;
+    var opcionesJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 }
 
 <div class="modal-header">
@@ -48,18 +50,33 @@
 
             <div class="col-md-4">
                 <label asp-for="Pais" class="form-label"></label>
-                <input asp-for="Pais" class="form-control" />
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Municipio" class="form-label"></label>
-                <input asp-for="Municipio" class="form-control" />
+                <select asp-for="Pais" class="form-select" asp-items="ViewBag.Paises" id="selectPais">
+                    <option value="">-- Seleccione --</option>
+                </select>
             </div>
             <div class="col-md-4">
                 <label asp-for="Departamento" class="form-label"></label>
-                <input asp-for="Departamento" class="form-control" />
+                <select asp-for="Departamento" class="form-select" id="selectDepartamento">
+                    <option value="">-- Seleccione un país primero --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Municipio" class="form-label"></label>
+                <select asp-for="Municipio" class="form-select" id="selectMunicipio">
+                    <option value="">-- Seleccione un departamento primero --</option>
+                </select>
             </div>
         </div>
     </form>
+
+    <script id="datosUbicacion" type="application/json">
+        {
+            "departamentos": @Html.Raw(JsonSerializer.Serialize(ViewBag.Departamentos, opcionesJson)),
+            "municipios": @Html.Raw(JsonSerializer.Serialize(ViewBag.Municipios, opcionesJson)),
+            "departamentoActual": @Html.Raw(JsonSerializer.Serialize(Model.Departamento, opcionesJson)),
+            "municipioActual": @Html.Raw(JsonSerializer.Serialize(Model.Municipio, opcionesJson))
+        }
+    </script>
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

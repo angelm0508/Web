@@ -39,6 +39,14 @@ builder.Services.AddHttpClient<IListadoPrecioApiClient, ListadoPrecioApiClient>(
 builder.Services.AddHttpClient<IDireccionSocioNegocioApiClient, DireccionSocioNegocioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
+// Solo lectura, usados como fuente de dropdowns (ej. País/Departamento/Municipio en Almacenes).
+builder.Services.AddHttpClient<IPaisApiClient, PaisApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IDepartamentoApiClient, DepartamentoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IMunicipioApiClient, MunicipioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+
 builder.Services.AddAuthentication(AuthConstants.EsquemaCookie)
     .AddCookie(AuthConstants.EsquemaCookie, options =>
     {

@@ -23,6 +23,51 @@ $(function () {
     function abrirModal(html) {
         $('#contenidoModal').html(html);
         new bootstrap.Modal('#modalFormulario').show();
+        inicializarSelectsUbicacion();
+    }
+
+    /** Dropdowns en cascada País -> Departamento -> Municipio, filtrados en el navegador. */
+    function inicializarSelectsUbicacion() {
+        const datosEl = document.getElementById('datosUbicacion');
+        if (!datosEl) return;
+
+        const { departamentos, municipios, departamentoActual, municipioActual } = JSON.parse(datosEl.textContent);
+        const $selectPais = $('#selectPais');
+        const $selectDepartamento = $('#selectDepartamento');
+        const $selectMunicipio = $('#selectMunicipio');
+
+        function poblarDepartamentos(codigoPais, seleccionar) {
+            $selectDepartamento.html('<option value="">-- Seleccione --</option>');
+            departamentos
+                .filter(d => d.pais === codigoPais)
+                .forEach(d => $selectDepartamento.append(`<option value="${d.codigo}">${d.nombre ?? d.codigo}</option>`));
+            if (seleccionar) $selectDepartamento.val(seleccionar);
+        }
+
+        function poblarMunicipios(codigoPais, codigoDepartamento, seleccionar) {
+            $selectMunicipio.html('<option value="">-- Seleccione --</option>');
+            municipios
+                .filter(m => m.pais === codigoPais && m.departamento === codigoDepartamento)
+                .forEach(m => $selectMunicipio.append(`<option value="${m.codigo}">${m.nombre ?? m.codigo}</option>`));
+            if (seleccionar) $selectMunicipio.val(seleccionar);
+        }
+
+        $selectPais.off('change').on('change', function () {
+            poblarDepartamentos(this.value, null);
+            $selectMunicipio.html('<option value="">-- Seleccione un departamento primero --</option>');
+        });
+
+        $selectDepartamento.off('change').on('change', function () {
+            poblarMunicipios($selectPais.val(), this.value, null);
+        });
+
+        // Modo edición: reconstruir la cascada con los valores ya guardados.
+        if ($selectPais.val()) {
+            poblarDepartamentos($selectPais.val(), departamentoActual);
+            if (departamentoActual) {
+                poblarMunicipios($selectPais.val(), departamentoActual, municipioActual);
+            }
+        }
     }
 
     $('#btnNuevo').on('click', async function () {
