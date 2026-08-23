@@ -29,7 +29,7 @@ namespace Web.UI.Controllers
         {
             ViewBag.EsEdicion = false;
             ViewBag.Id = 0;
-            return PartialView("_Form", new FabricanteArticuloCrearDTO { Bloqueado = "N" });
+            return PartialView("_Form", new FabricanteArticuloCrearDTO());
         }
 
         [HttpGet]
@@ -44,8 +44,7 @@ namespace Web.UI.Controllers
 
             var dto = new FabricanteArticuloCrearDTO
             {
-                Nombre = respuesta.Dato.Nombre,
-                Bloqueado = respuesta.Dato.Bloqueado
+                Nombre = respuesta.Dato.Nombre
             };
 
             return PartialView("_Form", dto);
@@ -65,8 +64,7 @@ namespace Web.UI.Controllers
         {
             var actualizar = new FabricanteArticuloActualizarDTO
             {
-                Nombre = dto.Nombre,
-                Bloqueado = dto.Bloqueado
+                Nombre = dto.Nombre
             };
 
             var respuesta = await _fabricantes.ActualizarAsync(id, actualizar);

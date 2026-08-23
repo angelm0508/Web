@@ -12,13 +12,13 @@ namespace Web.UI.Controllers
         private readonly IArticuloApiClient _articulos;
         private readonly IFabricanteArticuloApiClient _fabricantes;
         private readonly IGrupoArticuloApiClient _grupos;
-        private readonly IGrupoMedidaArticuloApiClient _gruposMedida;
+        private readonly IGrupoUnidadMedidaArticuloApiClient _gruposMedida;
 
         public ArticulosController(
             IArticuloApiClient articulos,
             IFabricanteArticuloApiClient fabricantes,
             IGrupoArticuloApiClient grupos,
-            IGrupoMedidaArticuloApiClient gruposMedida)
+            IGrupoUnidadMedidaArticuloApiClient gruposMedida)
         {
             _articulos = articulos;
             _fabricantes = fabricantes;
@@ -58,7 +58,7 @@ namespace Web.UI.Controllers
                 Codigo = codigo,
                 Nombre = respuesta.Dato.Nombre,
                 CodigoGrupo = respuesta.Dato.CodigoGrupo,
-                CodigoGrpMedida = respuesta.Dato.CodigoGrpMedida,
+                CodigoGrpUnidadMedida = respuesta.Dato.CodigoGrpUnidadMedida,
                 FabricanteEntry = respuesta.Dato.FabricanteEntry,
                 Activo = respuesta.Dato.Activo,
                 ArticuloCompra = respuesta.Dato.ArticuloCompra,
@@ -98,7 +98,7 @@ namespace Web.UI.Controllers
                 Codigo = codigo,
                 Nombre = dto.Nombre,
                 CodigoGrupo = dto.CodigoGrupo,
-                CodigoGrpMedida = dto.CodigoGrpMedida,
+                CodigoGrpUnidadMedida = dto.CodigoGrpUnidadMedida,
                 FabricanteEntry = dto.FabricanteEntry,
                 Activo = dto.Activo,
                 ArticuloCompra = dto.ArticuloCompra,

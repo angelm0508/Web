@@ -1,7 +1,9 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @{
     var rutaActual = $"{ViewContext.RouteData.Values["controller"]}";
+    var accionActual = $"{ViewContext.RouteData.Values["action"]}";
     bool EsActivo(string controlador) => string.Equals(rutaActual, controlador, StringComparison.OrdinalIgnoreCase);
+    bool EsActivoAccion(string controlador, string accion) => EsActivo(controlador) && string.Equals(accionActual, accion, StringComparison.OrdinalIgnoreCase);
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 <!DOCTYPE html>
@@ -40,8 +42,11 @@
                     <a class="nav-link @(EsActivo("GruposArticulo") ? "active" : "")" asp-controller="GruposArticulo" asp-action="Index">
                         <i class="fa-solid fa-layer-group"></i><span>Grupos</span>
                     </a>
-                    <a class="nav-link @(EsActivo("Medidas") ? "active" : "")" asp-controller="Medidas" asp-action="Index">
-                        <i class="fa-solid fa-ruler-combined"></i><span>Medidas</span>
+                    <a class="nav-link @(EsActivo("UnidadesMedida") ? "active" : "")" asp-controller="UnidadesMedida" asp-action="Index">
+                        <i class="fa-solid fa-ruler-combined"></i><span>Unidades de medida</span>
+                    </a>
+                    <a class="nav-link @(EsActivo("GruposUnidadMedida") ? "active" : "")" asp-controller="GruposUnidadMedida" asp-action="Index">
+                        <i class="fa-solid fa-layer-group"></i><span>Grupo unidades de medida</span>
                     </a>
                     <a class="nav-link @(EsActivo("Almacenes") ? "active" : "")" asp-controller="Almacenes" asp-action="Index">
                         <i class="fa-solid fa-warehouse"></i><span>Almacenes</span>
@@ -51,14 +56,20 @@
                     <a class="nav-link @(EsActivo("SociosNegocio") ? "active" : "")" asp-controller="SociosNegocio" asp-action="Index">
                         <i class="fa-solid fa-handshake"></i><span>Socios de Negocio</span>
                     </a>
-                    <a class="nav-link @(EsActivo("GruposSn") ? "active" : "")" asp-controller="GruposSn" asp-action="Index">
-                        <i class="fa-solid fa-people-group"></i><span>Grupos</span>
+                    <a class="nav-link nav-link-toggle @(EsActivo("GruposSn") ? "active" : "")" data-bs-toggle="collapse" href="#submenuGruposSn" role="button" aria-expanded="@(EsActivo("GruposSn") ? "true" : "false")" aria-controls="submenuGruposSn">
+                        <i class="fa-solid fa-people-group"></i><span>Grupos SN</span>
+                        <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
                     </a>
+                    <div class="collapse @(EsActivo("GruposSn") ? "show" : "")" id="submenuGruposSn">
+                        <a class="nav-link nav-sublink @(EsActivoAccion("GruposSn", "Clientes") ? "active" : "")" asp-controller="GruposSn" asp-action="Clientes">
+                            <span>Clientes</span>
+                        </a>
+                        <a class="nav-link nav-sublink @(EsActivoAccion("GruposSn", "Proveedores") ? "active" : "")" asp-controller="GruposSn" asp-action="Proveedores">
+                            <span>Proveedores</span>
+                        </a>
+                    </div>
                     <a class="nav-link @(EsActivo("ListadosPrecio") ? "active" : "")" asp-controller="ListadosPrecio" asp-action="Index">
                         <i class="fa-solid fa-tags"></i><span>Listado de Precios</span>
-                    </a>
-                    <a class="nav-link @(EsActivo("Direcciones") ? "active" : "")" asp-controller="Direcciones" asp-action="Index">
-                        <i class="fa-solid fa-location-dot"></i><span>Direcciones</span>
                     </a>
                 </nav>
             </aside>

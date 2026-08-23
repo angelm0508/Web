@@ -3,7 +3,6 @@ $(function () {
         ajax: { url: '/Fabricantes/ObtenerTodos', dataSrc: 'dato' },
         columns: [
             { data: 'nombre' },
-            { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-secondary">Sí</span>' : '<span class="badge text-bg-success">No</span>' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
                 render: id => `

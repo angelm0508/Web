@@ -1,6 +1,8 @@
+@using System.Text.Json
 @model Web.ApiClient.Dtos.SocioNegocio.SocioNegocioCrearDTO
 @{
     bool esEdicion = ViewBag.EsEdicion ?? false;
+    var opcionesJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 }
 
 <div class="modal-header">
@@ -25,8 +27,8 @@
                 <label asp-for="TipoSn" class="form-label"></label>
                 <select asp-for="TipoSn" class="form-select">
                     <option value="">-- Seleccione --</option>
-                    <option value="Cliente">Cliente</option>
-                    <option value="Proveedor">Proveedor</option>
+                    <option value="C">Cliente</option>
+                    <option value="P">Proveedor</option>
                 </select>
             </div>
 
@@ -83,6 +85,91 @@
             </div>
         </div>
     </form>
+
+    <hr />
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">Direcciones</h6>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="btnNuevaDireccion">
+            <i class="fa-solid fa-plus me-1"></i>Agregar dirección
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table id="tblDireccionesSocio" class="table table-sm table-hover align-middle w-100" data-codigo-sn="@Model.Codigo" data-es-edicion="@esEdicion.ToString().ToLower()">
+            <thead>
+                <tr>
+                    <th>Dirección</th>
+                    <th>Calle</th>
+                    <th>Municipio</th>
+                    <th>Departamento</th>
+                    <th>Tipo</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="panelDireccion" class="border rounded p-3 mb-2 d-none">
+        <form id="formDireccionSocio">
+            <input type="hidden" id="dirDireccionOriginal" value="" />
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label">Código de dirección</label>
+                    <input name="Direccion" id="dirCodigo" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Calle</label>
+                    <input name="Calle" id="dirCalle" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Bloque</label>
+                    <input name="Bloque" id="dirBloque" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Código postal</label>
+                    <input name="CodigoPostal" id="dirCodigoPostal" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">País</label>
+                    <select name="Pais" id="selectPaisDireccion" class="form-select" asp-items="ViewBag.Paises">
+                        <option value="">-- Seleccione --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Departamento</label>
+                    <select name="Departamento" id="selectDepartamentoDireccion" class="form-select">
+                        <option value="">-- Seleccione un país primero --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Municipio</label>
+                    <select name="Municipio" id="selectMunicipioDireccion" class="form-select">
+                        <option value="">-- Seleccione un departamento primero --</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tipo de dirección</label>
+                    <input name="TipoDireccion" id="dirTipoDireccion" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Número de línea</label>
+                    <input name="NumLinea" id="dirNumLinea" type="number" class="form-control" />
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="button" class="btn btn-sm btn-secondary" id="btnCancelarDireccion">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnGuardarDireccionLinea">Guardar dirección</button>
+            </div>
+        </form>
+    </div>
+
+    <script id="datosUbicacionDireccion" type="application/json">
+        {
+            "departamentos": @Html.Raw(JsonSerializer.Serialize(ViewBag.Departamentos, opcionesJson)),
+            "municipios": @Html.Raw(JsonSerializer.Serialize(ViewBag.Municipios, opcionesJson))
+        }
+    </script>
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

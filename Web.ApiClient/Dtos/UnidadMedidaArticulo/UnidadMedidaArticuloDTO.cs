@@ -1,6 +1,6 @@
-namespace Web.ApiClient.Dtos.MedidaArticulo
+namespace Web.ApiClient.Dtos.UnidadMedidaArticulo
 {
-    public class MedidaArticuloDTO
+    public class UnidadMedidaArticuloDTO
     {
         public int Entry { get; set; }
         public string Codigo { get; set; } = string.Empty;

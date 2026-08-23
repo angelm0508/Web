@@ -14,8 +14,8 @@ namespace Web.ApiClient.Dtos.Articulo
         [Display(Name = "Grupo")]
         public short? CodigoGrupo { get; set; }
 
-        [Display(Name = "Grupo de medida")]
-        public int? CodigoGrpMedida { get; set; }
+        [Display(Name = "Grupo de unidad de medida")]
+        public int? CodigoGrpUnidadMedida { get; set; }
 
         [Display(Name = "Fabricante")]
         public int? FabricanteEntry { get; set; }

@@ -24,9 +24,11 @@ builder.Services.AddHttpClient<IFabricanteArticuloApiClient, FabricanteArticuloA
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IGrupoArticuloApiClient, GrupoArticuloApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
-builder.Services.AddHttpClient<IGrupoMedidaArticuloApiClient, GrupoMedidaArticuloApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+builder.Services.AddHttpClient<IGrupoUnidadMedidaArticuloApiClient, GrupoUnidadMedidaArticuloApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
-builder.Services.AddHttpClient<IMedidaArticuloApiClient, MedidaArticuloApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+builder.Services.AddHttpClient<IGrupoUnidadMedidaDetArticuloApiClient, GrupoUnidadMedidaDetArticuloApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IUnidadMedidaArticuloApiClient, UnidadMedidaArticuloApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IAlmacenApiClient, AlmacenApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();

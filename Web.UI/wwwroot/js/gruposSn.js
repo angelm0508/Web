@@ -1,6 +1,8 @@
 $(function () {
+    const tipoGrupo = $('#tblGruposSn').data('tipo-grupo');
+
     const tabla = $('#tblGruposSn').DataTable({
-        ajax: { url: '/GruposSn/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: `/GruposSn/ObtenerTodos?tipoGrupo=${tipoGrupo}`, dataSrc: 'dato' },
         columns: [
             { data: 'nombre' },
             { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-danger">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
@@ -23,7 +25,7 @@ $(function () {
     }
 
     $('#btnNuevo').on('click', async function () {
-        const html = await $.get('/GruposSn/FormularioCrear');
+        const html = await $.get(`/GruposSn/FormularioCrear?tipoGrupo=${tipoGrupo}`);
         abrirModal(html);
     });
 
@@ -51,10 +53,13 @@ $(function () {
         const $boton = $(this);
         const esEdicion = $boton.data('edicion') === true || $boton.data('edicion') === 'true';
         const id = $boton.data('id');
+        const tipoGrupoBoton = $boton.data('tipo-grupo');
 
         const datos = App.recolectarFormulario('#formGrupoSn');
 
-        const url = esEdicion ? `/GruposSn/Editar?id=${encodeURIComponent(id)}` : '/GruposSn/Crear';
+        const url = esEdicion
+            ? `/GruposSn/Editar?id=${encodeURIComponent(id)}&tipoGrupo=${encodeURIComponent(tipoGrupoBoton)}`
+            : `/GruposSn/Crear?tipoGrupo=${encodeURIComponent(tipoGrupoBoton)}`;
         const respuesta = await App.enviarJson(url, 'POST', datos);
 
         if (!respuesta.resultado) {

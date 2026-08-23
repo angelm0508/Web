@@ -30,6 +30,17 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> ObtenerPorSocio(string codigoSn)
+        {
+            var respuesta = await _direcciones.ObtenerTodoAsync();
+            if (respuesta.Resultado && respuesta.Dato is not null)
+            {
+                respuesta.Dato = respuesta.Dato.Where(d => d.CodigoSn == codigoSn);
+            }
+            return Json(respuesta);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> FormularioCrear()
         {
             await CargarDropdownsAsync();

@@ -1,9 +1,9 @@
 @{
-    ViewData["Title"] = "Medidas";
+    ViewData["Title"] = "Grupo unidades de medida";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="mb-0">Medidas</h3>
+    <h3 class="mb-0">Grupo unidades de medida</h3>
     <button type="button" class="btn btn-primary" id="btnNuevo">
         <i class="fa-solid fa-plus me-1"></i>Nuevo
     </button>
@@ -12,15 +12,11 @@
 <div class="card card-modulo">
     <div class="card-body">
         <div class="table-responsive">
-            <table id="tblMedidas" class="table table-hover align-middle w-100">
+            <table id="tblGruposUnidadMedida" class="table table-hover align-middle w-100">
                 <thead>
                     <tr>
-                        <th>Código</th>
                         <th>Nombre</th>
-                        <th>Largo</th>
-                        <th>Ancho</th>
-                        <th>Altura</th>
-                        <th>Peso</th>
+                        <th>Unidad base (código)</th>
                         <th>Bloqueado</th>
                         <th class="text-end">Acciones</th>
                     </tr>
@@ -40,5 +36,5 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/medidas.js" asp-append-version="true"></script>
+    <script src="~/js/gruposUnidadMedida.js" asp-append-version="true"></script>
 }

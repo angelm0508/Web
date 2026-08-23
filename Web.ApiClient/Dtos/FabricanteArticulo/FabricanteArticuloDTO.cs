@@ -4,6 +4,5 @@ namespace Web.ApiClient.Dtos.FabricanteArticulo
     {
         public int Entry { get; set; }
         public string Nombre { get; set; } = string.Empty;
-        public string? Bloqueado { get; set; }
     }
 }

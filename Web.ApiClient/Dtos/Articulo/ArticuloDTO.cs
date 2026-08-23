@@ -5,7 +5,7 @@ namespace Web.ApiClient.Dtos.Articulo
         public string Codigo { get; set; } = null!;
         public string? Nombre { get; set; }
         public short? CodigoGrupo { get; set; }
-        public int? CodigoGrpMedida { get; set; }
+        public int? CodigoGrpUnidadMedida { get; set; }
         public int? FabricanteEntry { get; set; }
         public string? Activo { get; set; }
         public string? ArticuloCompra { get; set; }

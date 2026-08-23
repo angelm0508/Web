@@ -79,6 +79,21 @@ body {
   color: #fff;
 }
 
+.sidebar-nav .submenu-caret {
+  width: auto;
+  font-size: .75rem;
+  transition: transform .2s ease;
+}
+
+.sidebar-nav .nav-link-toggle[aria-expanded="true"] .submenu-caret {
+  transform: rotate(180deg);
+}
+
+.sidebar-nav .nav-sublink {
+  padding-left: 2.75rem;
+  font-size: .92rem;
+}
+
 .app-content {
   flex: 1;
   display: flex;

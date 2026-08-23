@@ -1,15 +1,15 @@
-@model Web.ApiClient.Dtos.MedidaArticulo.MedidaArticuloCrearDTO
+@model Web.ApiClient.Dtos.UnidadMedidaArticulo.UnidadMedidaArticuloCrearDTO
 @{
     bool esEdicion = ViewBag.EsEdicion ?? false;
     int id = ViewBag.Id ?? 0;
 }
 
 <div class="modal-header">
-    <h5 class="modal-title">@(esEdicion ? "Editar medida" : "Nueva medida")</h5>
+    <h5 class="modal-title">@(esEdicion ? "Editar unidad de medida" : "Nueva unidad de medida")</h5>
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
-    <form id="formMedida" novalidate>
+    <form id="formUnidadMedida" novalidate>
         <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
 
         <div class="row g-3">
@@ -56,7 +56,7 @@
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-    <button type="button" class="btn btn-primary" id="btnGuardarMedida" data-edicion="@esEdicion.ToString().ToLower()" data-id="@id">
+    <button type="button" class="btn btn-primary" id="btnGuardarUnidadMedida" data-edicion="@esEdicion.ToString().ToLower()" data-id="@id">
         <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
     </button>
 </div>

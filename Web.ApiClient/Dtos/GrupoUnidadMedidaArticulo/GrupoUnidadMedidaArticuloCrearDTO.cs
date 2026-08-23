@@ -1,17 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Web.ApiClient.Dtos.GrupoSn
+namespace Web.ApiClient.Dtos.GrupoUnidadMedidaArticulo
 {
-    public class GrupoSnCrearDTO
+    public class GrupoUnidadMedidaArticuloCrearDTO
     {
         [Required(ErrorMessage = "El nombre es requerido.")]
         [Display(Name = "Nombre")]
         public string? Nombre { get; set; }
 
-        [Required(ErrorMessage = "El tipo de grupo es requerido.")]
-        [StringLength(1)]
-        [Display(Name = "Tipo de grupo")]
-        public string TipoGrupo { get; set; } = string.Empty;
+        [Required(ErrorMessage = "La unidad base es requerida.")]
+        [Display(Name = "Unidad base")]
+        public int BaseMedida { get; set; }
 
         [Display(Name = "Bloqueado")]
         public string? Bloqueado { get; set; } = "N";

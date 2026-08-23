@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Web.ApiClient.Dtos.MedidaArticulo
+namespace Web.ApiClient.Dtos.UnidadMedidaArticulo
 {
-    public class MedidaArticuloActualizarDTO
+    public class UnidadMedidaArticuloCrearDTO
     {
-        // La API exige este campo en el body de actualización aunque el id real se toma de la ruta
-        // (PUT api/MedidaArticulo/{id}) -- hay que enviarlo igual o la validación lo rechaza.
+        [Required(ErrorMessage = "El código es requerido.")]
+        [Display(Name = "Código")]
         public string Codigo { get; set; } = string.Empty;
 
         [Display(Name = "Nombre")]
@@ -27,6 +27,6 @@ namespace Web.ApiClient.Dtos.MedidaArticulo
         public decimal? Peso { get; set; }
 
         [Display(Name = "Bloqueado")]
-        public string? Bloqueado { get; set; }
+        public string? Bloqueado { get; set; } = "N";
     }
 }

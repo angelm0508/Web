@@ -1,6 +1,6 @@
 $(function () {
-    const tabla = $('#tblMedidas').DataTable({
-        ajax: { url: '/Medidas/ObtenerTodos', dataSrc: 'dato' },
+    const tabla = $('#tblUnidadesMedida').DataTable({
+        ajax: { url: '/UnidadesMedida/ObtenerTodos', dataSrc: 'dato' },
         columns: [
             { data: 'codigo' },
             { data: 'nombre' },
@@ -28,38 +28,38 @@ $(function () {
     }
 
     $('#btnNuevo').on('click', async function () {
-        const html = await $.get('/Medidas/FormularioCrear');
+        const html = await $.get('/UnidadesMedida/FormularioCrear');
         abrirModal(html);
     });
 
-    $('#tblMedidas').on('click', '.btn-editar', async function () {
+    $('#tblUnidadesMedida').on('click', '.btn-editar', async function () {
         const id = $(this).data('id');
-        const html = await $.get('/Medidas/FormularioEditar', { id });
+        const html = await $.get('/UnidadesMedida/FormularioEditar', { id });
         abrirModal(html);
     });
 
-    $('#tblMedidas').on('click', '.btn-eliminar', async function () {
+    $('#tblUnidadesMedida').on('click', '.btn-eliminar', async function () {
         const id = $(this).data('id');
-        const confirmado = await App.confirmarEliminar(`Se eliminará la medida seleccionada.`);
+        const confirmado = await App.confirmarEliminar(`Se eliminará la unidad de medida seleccionada.`);
         if (!confirmado) return;
 
-        const respuesta = await App.eliminar(`/Medidas/Eliminar?id=${encodeURIComponent(id)}`);
+        const respuesta = await App.eliminar(`/UnidadesMedida/Eliminar?id=${encodeURIComponent(id)}`);
         if (!respuesta.resultado) {
             App.mostrarError(respuesta.mensaje);
             return;
         }
-        App.mostrarExito('Medida eliminada correctamente.');
+        App.mostrarExito('Unidad de medida eliminada correctamente.');
         recargarTabla();
     });
 
-    $(document).on('click', '#btnGuardarMedida', async function () {
+    $(document).on('click', '#btnGuardarUnidadMedida', async function () {
         const $boton = $(this);
         const esEdicion = $boton.data('edicion') === true || $boton.data('edicion') === 'true';
         const id = $boton.data('id');
 
-        const datos = App.recolectarFormulario('#formMedida');
+        const datos = App.recolectarFormulario('#formUnidadMedida');
 
-        const url = esEdicion ? `/Medidas/Editar?id=${encodeURIComponent(id)}` : '/Medidas/Crear';
+        const url = esEdicion ? `/UnidadesMedida/Editar?id=${encodeURIComponent(id)}` : '/UnidadesMedida/Crear';
         const respuesta = await App.enviarJson(url, 'POST', datos);
 
         if (!respuesta.resultado) {
@@ -68,7 +68,7 @@ $(function () {
         }
 
         bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito(esEdicion ? 'Medida actualizada correctamente.' : 'Medida creada correctamente.');
+        App.mostrarExito(esEdicion ? 'Unidad de medida actualizada correctamente.' : 'Unidad de medida creada correctamente.');
         recargarTabla();
     });
 });
