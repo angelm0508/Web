@@ -4,9 +4,8 @@ namespace Web.ApiClient.Dtos.Articulo
 {
     public class ArticuloCrearDTO
     {
-        [Required(ErrorMessage = "El código es requerido.")]
         [Display(Name = "Código")]
-        public string Codigo { get; set; } = null!;
+        public string? Codigo { get; set; }
 
         [Display(Name = "Nombre")]
         public string? Nombre { get; set; }

@@ -15,8 +15,8 @@ namespace Web.ApiClient.Clientes
         public Task<Respuesta<SocioNegocioDTO>> ObtenerAsync(string codigo) =>
             GetAsync<SocioNegocioDTO>($"{Recurso}/{codigo}");
 
-        public Task<Respuesta<bool>> InsertarAsync(SocioNegocioCrearDTO dto) =>
-            PostAsync<bool>(Recurso, dto);
+        public Task<Respuesta<string>> InsertarAsync(SocioNegocioCrearDTO dto) =>
+            PostAsync<string>(Recurso, dto);
 
         public Task<Respuesta<bool>> ActualizarAsync(string codigo, SocioNegocioActualizarDTO dto) =>
             PutAsync<bool>($"{Recurso}/{codigo}", dto);

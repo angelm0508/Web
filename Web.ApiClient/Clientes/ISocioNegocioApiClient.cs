@@ -7,7 +7,7 @@ namespace Web.ApiClient.Clientes
     {
         Task<Respuesta<IEnumerable<SocioNegocioDTO>>> ObtenerTodoAsync();
         Task<Respuesta<SocioNegocioDTO>> ObtenerAsync(string codigo);
-        Task<Respuesta<bool>> InsertarAsync(SocioNegocioCrearDTO dto);
+        Task<Respuesta<string>> InsertarAsync(SocioNegocioCrearDTO dto);
         Task<Respuesta<bool>> ActualizarAsync(string codigo, SocioNegocioActualizarDTO dto);
         Task<Respuesta<bool>> EliminarAsync(string codigo);
     }
