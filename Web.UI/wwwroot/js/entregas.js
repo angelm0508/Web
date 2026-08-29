@@ -40,7 +40,7 @@ $(function () {
 
     $('#tblEntregas').on('click', '.btn-eliminar', async function () {
         const entry = $(this).data('entry');
-        const confirmado = await App.confirmarEliminar(`Se eliminará el entrega #${entry}.`);
+        const confirmado = await App.confirmarEliminar(`Se eliminará la entrega #${entry}.`);
         if (!confirmado) return;
 
         const respuesta = await App.eliminar(`/Entregas/Eliminar?entry=${entry}`);
@@ -48,7 +48,7 @@ $(function () {
             App.mostrarError(respuesta.mensaje);
             return;
         }
-        App.mostrarExito('Entrega eliminado correctamente.');
+        App.mostrarExito('Entrega eliminada correctamente.');
         recargarTabla();
     });
 
@@ -117,7 +117,7 @@ $(function () {
         }
 
         // El número de documento (No. documento) no se solicita aquí para series no manuales: el
-        // servidor lo calcula y avanza el consecutivo al registrar el entrega (ver
+        // servidor lo calcula y avanza el consecutivo al registrar la entrega (ver
         // EntregaDomain.InsertarAsync en la API), no antes. Para series Manual, el campo #NumDoc
         // está habilitado y su valor viaja normalmente en recolectarFormulario.
         const datos = App.recolectarFormulario('#formEntrega');
@@ -164,9 +164,9 @@ $(function () {
 
             const sufijoNumDoc = respuestaCabecera.numDoc != null ? ` No. documento: ${respuestaCabecera.numDoc}.` : '';
             if (fallidas > 0) {
-                await App.mostrarExito(`Entrega creado correctamente. Líneas guardadas: ${exitosas} de ${exitosas + fallidas}.${sufijoNumDoc}`);
+                await App.mostrarExito(`Entrega creada correctamente. Líneas guardadas: ${exitosas} de ${exitosas + fallidas}.${sufijoNumDoc}`);
             } else {
-                await App.mostrarExito(`Entrega creado correctamente.${sufijoNumDoc}`);
+                await App.mostrarExito(`Entrega creada correctamente.${sufijoNumDoc}`);
             }
             bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
             recargarTabla();
@@ -180,7 +180,7 @@ $(function () {
         }
 
         bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito('Entrega actualizado correctamente.');
+        App.mostrarExito('Entrega actualizada correctamente.');
         recargarTabla();
     });
 
