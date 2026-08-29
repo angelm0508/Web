@@ -101,7 +101,10 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Crear([FromBody] SocioNegocioCrearDTO dto)
         {
             var respuesta = await _socios.InsertarAsync(dto);
-            return Json(respuesta);
+            // "respuesta.Dato" ya es el código real (para series no manuales, el que calculó la
+            // API al momento de registrar -- no el de la vista previa mostrada antes de guardar).
+            // El JS lo necesita para crear las direcciones acumuladas con el CodigoSn correcto.
+            return Json(new { respuesta.Resultado, respuesta.Mensaje, codigo = respuesta.Dato });
         }
 
         [HttpPost]
@@ -199,14 +202,6 @@ namespace Web.UI.Controllers
             // se filtran en el navegador según el TipoSn elegido, igual que País/Departamento/Municipio.
             var respuesta = await _series.ObtenerPorDocumentoAsync(CodigoObjSocioNegocio);
             ViewBag.SeriesSocioNegocio = respuesta.Dato ?? [];
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerarCodigoSerie(int serie)
-        {
-            var respuesta = await _series.GenerarCodigoAsync(serie);
-            return Json(respuesta);
         }
     }
 }

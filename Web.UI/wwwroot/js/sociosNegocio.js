@@ -418,22 +418,10 @@ $(function () {
             return;
         }
 
-        let codigoGenerado = null;
-        if (!esSerieManualSocioNegocio()) {
-            const respuestaSerie = await App.enviarJson(`/SociosNegocio/GenerarCodigoSerie?serie=${serieSeleccionada}`, 'POST', {});
-            if (!respuestaSerie.resultado) {
-                App.mostrarError(respuestaSerie.mensaje);
-                return;
-            }
-            codigoGenerado = respuestaSerie.dato;
-        }
+        // La vista previa del campo Código (deshabilitado cuando la serie no es manual) es solo
+        // cosmética -- el código real lo calcula y asigna la API al momento de guardar.
 
         const datos = App.recolectarFormulario('#formSocioNegocioCrear');
-        // El campo Código queda deshabilitado cuando el código se genera automáticamente, así que
-        // no viaja en el serializeArray del formulario -- hay que agregarlo a mano.
-        if (codigoGenerado !== null) {
-            datos.Codigo = codigoGenerado;
-        }
         datos.Serie = serieSeleccionada;
 
         const respuesta = await App.enviarJson('/SociosNegocio/Crear', 'POST', datos);
@@ -442,7 +430,9 @@ $(function () {
             return;
         }
 
-        const codigoCreado = datos.Codigo;
+        // El código real lo devuelve la API en la respuesta -- para series no manuales puede no
+        // coincidir con la vista previa que se mostraba en el campo deshabilitado.
+        const codigoCreado = respuesta.codigo;
         let exitosas = 0;
         let fallidas = 0;
 
