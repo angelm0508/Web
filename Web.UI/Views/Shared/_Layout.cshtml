@@ -6,7 +6,7 @@
     bool EsActivoAccion(string controlador, string accion) => EsActivo(controlador) && string.Equals(accionActual, accion, StringComparison.OrdinalIgnoreCase);
     bool EsActivoInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes" }.Any(EsActivo);
     bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(EsActivo);
-    bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas" }.Any(EsActivo);
+    bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas" }.Any(EsActivo);
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 <!DOCTYPE html>
@@ -117,6 +117,9 @@
                         </a>
                         <a class="nav-link nav-sublink @(EsActivo("Entregas") ? "active" : "")" asp-controller="Entregas" asp-action="Index">
                             <i class="fa-solid fa-truck"></i><span>Entregas</span>
+                        </a>
+                        <a class="nav-link nav-sublink @(EsActivo("Facturas") ? "active" : "")" asp-controller="Facturas" asp-action="Index">
+                            <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas</span>
                         </a>
                     </div>
                 </nav>
