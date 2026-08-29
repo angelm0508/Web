@@ -18,10 +18,26 @@
                 <span asp-validation-for="Nombre" class="text-danger small"></span>
             </div>
             <div class="col-md-4">
-                <label asp-for="Bloqueado" class="form-label"></label>
-                <select asp-for="Bloqueado" class="form-select">
-                    <option value="S">Sí</option>
-                    <option value="N">No</option>
+                <label asp-for="Base" class="form-label"></label>
+                <select asp-for="Base" class="form-select" asp-items="ViewBag.Listados">
+                    <option value="">-- Ninguna --</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Factor" class="form-label"></label>
+                <input asp-for="Factor" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="MetodoRedondeo" class="form-label"></label>
+                <select asp-for="MetodoRedondeo" class="form-select" asp-items="ViewBag.MetodosRedondeo">
+                    <option value="">-- Seleccione --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ReglaRedondeo" class="form-label"></label>
+                <select asp-for="ReglaRedondeo" class="form-select" asp-items="ViewBag.ReglasRedondeo">
+                    <option value="">-- Seleccione --</option>
                 </select>
             </div>
         </div>

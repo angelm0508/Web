@@ -67,5 +67,7 @@ namespace Web.ApiClient.Dtos.Articulo
 
         [Display(Name = "Comentarios")]
         public string? Comentarios { get; set; }
+
+        public int Serie { get; set; }
     }
 }

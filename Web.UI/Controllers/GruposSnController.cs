@@ -53,7 +53,7 @@ namespace Web.UI.Controllers
         {
             ViewBag.EsEdicion = false;
             ViewBag.TipoGrupo = tipoGrupo;
-            return PartialView("_Form", new GrupoSnCrearDTO { Bloqueado = "N" });
+            return PartialView("_Form", new GrupoSnCrearDTO());
         }
 
         [HttpGet]
@@ -69,8 +69,7 @@ namespace Web.UI.Controllers
 
             var dto = new GrupoSnCrearDTO
             {
-                Nombre = respuesta.Dato.Nombre,
-                Bloqueado = respuesta.Dato.Bloqueado
+                Nombre = respuesta.Dato.Nombre
             };
 
             return PartialView("_Form", dto);
@@ -89,11 +88,16 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, [FromBody] GrupoSnCrearDTO dto, string tipoGrupo)
         {
+            // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
+            var actual = await _grupos.ObtenerAsync(id);
+            if (!actual.Resultado || actual.Dato is null)
+                return NotFound(actual);
+
             var actualizar = new GrupoSnActualizarDTO
             {
                 Nombre = dto.Nombre,
                 TipoGrupo = tipoGrupo,
-                Bloqueado = dto.Bloqueado
+                Bloqueado = actual.Dato.Bloqueado
             };
 
             var respuesta = await _grupos.ActualizarAsync(id, actualizar);

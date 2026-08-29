@@ -1,6 +1,6 @@
 $(function () {
     const tabla = $('#tblUnidadesMedida').DataTable({
-        ajax: { url: '/UnidadesMedida/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: '/UnidadesMedida/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'codigo' },
             { data: 'nombre' },
@@ -11,10 +11,14 @@ $(function () {
             { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-secondary">Sí</span>' : '<span class="badge text-bg-success">No</span>' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
-                render: id => `
-                    <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}"><i class="fa-solid fa-trash"></i></button>
-                `
+                render: (id, type, row) => {
+                    const bloqueado = row.bloqueado === 'S';
+                    const atributos = bloqueado ? 'disabled title="Registro bloqueado"' : '';
+                    return `
+                        <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}" ${atributos}><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}" ${atributos}><i class="fa-solid fa-trash"></i></button>
+                    `;
+                }
             }
         ],
         language: App.datatableEsEs

@@ -1,6 +1,6 @@
 $(function () {
     const tabla = $('#tblArticulos').DataTable({
-        ajax: { url: '/Articulos/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: '/Articulos/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'codigo' },
             { data: 'nombre' },
@@ -25,11 +25,6 @@ $(function () {
         new bootstrap.Modal('#modalFormulario').show();
     }
 
-    $('#btnNuevo').on('click', async function () {
-        const html = await $.get('/Articulos/FormularioCrear');
-        abrirModal(html);
-    });
-
     $('#tblArticulos').on('click', '.btn-editar', async function () {
         const codigo = $(this).data('codigo');
         const html = await $.get('/Articulos/FormularioEditar', { codigo });
@@ -51,22 +46,118 @@ $(function () {
     });
 
     $(document).on('click', '#btnGuardarArticulo', async function () {
-        const $boton = $(this);
-        const esEdicion = $boton.data('edicion') === true || $boton.data('edicion') === 'true';
-        const codigo = $boton.data('codigo');
-
+        const codigo = $(this).data('codigo');
         const datos = App.recolectarFormulario('#formArticulo');
 
-        const url = esEdicion ? `/Articulos/Editar?codigo=${encodeURIComponent(codigo)}` : '/Articulos/Crear';
-        const respuesta = await App.enviarJson(url, 'POST', datos);
-
+        const respuesta = await App.enviarJson(`/Articulos/Editar?codigo=${encodeURIComponent(codigo)}`, 'POST', datos);
         if (!respuesta.resultado) {
             App.mostrarError(respuesta.mensaje);
             return;
         }
 
         bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito(esEdicion ? 'Artículo actualizado correctamente.' : 'Artículo creado correctamente.');
+        App.mostrarExito('Artículo actualizado correctamente.');
         recargarTabla();
+    });
+
+    // --- Serie de numeración para generar el código del artículo (solo en la página "Nuevo") ---
+
+    function inicializarSerieArticulo() {
+        const $sel = $('#selectSerieArticulo');
+        if ($sel.length === 0) return;
+
+        const datosEl = document.getElementById('datosSeriesArticulo');
+        const series = datosEl ? (JSON.parse(datosEl.textContent) || []) : [];
+
+        $sel.html('');
+        let serieManual = null;
+        series.forEach(s => {
+            const serie = s.serie ?? s.Serie;
+            const nombre = s.nombreSerie ?? s.NombreSerie;
+            const manual = s.manual ?? s.Manual;
+            if (manual === 'S' && serieManual === null) serieManual = serie;
+            $sel.append(`<option value="${serie}" data-manual="${manual}">${nombre}</option>`);
+        });
+
+        // Se preselecciona "Manual" por defecto para no obligar a elegir en cada alta.
+        if (serieManual !== null) $sel.val(serieManual);
+
+        actualizarCodigoSegunSerieArticulo();
+    }
+
+    function esSerieManualArticulo() {
+        const $sel = $('#selectSerieArticulo');
+        if ($sel.length === 0 || !$sel.val()) return true;
+        return $sel.find('option:selected').data('manual') === 'S';
+    }
+
+    function actualizarCodigoSegunSerieArticulo() {
+        const $codigo = $('#Codigo');
+        if ($codigo.length === 0) return;
+
+        if (esSerieManualArticulo()) {
+            $codigo.prop('disabled', false).attr('placeholder', '');
+        } else {
+            $codigo.val('').prop('disabled', true).attr('placeholder', 'Se generará al guardar');
+        }
+    }
+
+    $(document).on('change', '#selectSerieArticulo', actualizarCodigoSegunSerieArticulo);
+
+    inicializarSerieArticulo();
+
+    // --- Checklist "Recomendado completar" de la página de creación ---
+
+    function actualizarChecklistArticulo() {
+        const $lista = $('#listaChecklistArticulo');
+        if ($lista.length === 0) return;
+
+        $lista.find('[data-check]').each(function () {
+            const campo = $(this).data('check');
+            const tieneValor = !!$(`#${campo}`).val();
+            $(this).find('i')
+                .toggleClass('fa-regular fa-circle text-muted', !tieneValor)
+                .toggleClass('fa-solid fa-circle-check text-success', tieneValor);
+        });
+    }
+
+    $(document).on('input change', '#Nombre, #CodigoGrupo, #PrecioUnitario, #AlmacenDefecto', actualizarChecklistArticulo);
+    actualizarChecklistArticulo();
+
+    // --- Guardar desde la página completa "Nuevo artículo" ---
+
+    $(document).on('click', '#btnGuardarArticuloPagina', async function () {
+        const serieSeleccionada = $('#selectSerieArticulo').val();
+        if (!serieSeleccionada) {
+            App.mostrarError('Debes seleccionar una serie.');
+            return;
+        }
+
+        let codigoGenerado = null;
+        if (!esSerieManualArticulo()) {
+            const respuestaSerie = await App.enviarJson(`/Articulos/GenerarCodigoSerie?serie=${serieSeleccionada}`, 'POST', {});
+            if (!respuestaSerie.resultado) {
+                App.mostrarError(respuestaSerie.mensaje);
+                return;
+            }
+            codigoGenerado = respuestaSerie.dato;
+        }
+
+        const datos = App.recolectarFormulario('#formArticuloCrear');
+        // El campo Código queda deshabilitado cuando el código se genera automáticamente, así que
+        // no viaja en el serializeArray del formulario -- hay que agregarlo a mano.
+        if (codigoGenerado !== null) {
+            datos.Codigo = codigoGenerado;
+        }
+        datos.Serie = serieSeleccionada;
+
+        const respuesta = await App.enviarJson('/Articulos/Crear', 'POST', datos);
+        if (!respuesta.resultado) {
+            App.mostrarError(respuesta.mensaje);
+            return;
+        }
+
+        await App.mostrarExito('Artículo creado correctamente.');
+        window.location.href = '/Articulos';
     });
 });

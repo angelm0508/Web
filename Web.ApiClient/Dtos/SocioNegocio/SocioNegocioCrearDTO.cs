@@ -44,5 +44,9 @@ namespace Web.ApiClient.Dtos.SocioNegocio
 
         [Display(Name = "Activo")]
         public string? Activo { get; set; } = "S";
+
+        [Required(ErrorMessage = "La serie es requerida.")]
+        [Display(Name = "Serie")]
+        public int Serie { get; set; }
     }
 }

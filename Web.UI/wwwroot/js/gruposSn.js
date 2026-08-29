@@ -2,16 +2,20 @@ $(function () {
     const tipoGrupo = $('#tblGruposSn').data('tipo-grupo');
 
     const tabla = $('#tblGruposSn').DataTable({
-        ajax: { url: `/GruposSn/ObtenerTodos?tipoGrupo=${tipoGrupo}`, dataSrc: 'dato' },
+        ajax: { url: `/GruposSn/ObtenerTodos?tipoGrupo=${tipoGrupo}`, dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'nombre' },
             { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-danger">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
-                render: entry => `
-                    <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${entry}"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${entry}"><i class="fa-solid fa-trash"></i></button>
-                `
+                render: (entry, type, row) => {
+                    const bloqueado = row.bloqueado === 'S';
+                    const atributos = bloqueado ? 'disabled title="Registro bloqueado"' : '';
+                    return `
+                        <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${entry}" ${atributos}><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${entry}" ${atributos}><i class="fa-solid fa-trash"></i></button>
+                    `;
+                }
             }
         ],
         language: App.datatableEsEs

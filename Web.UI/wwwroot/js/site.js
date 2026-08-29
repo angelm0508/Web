@@ -15,6 +15,40 @@ $(function () {
     if (!esMovil() && localStorage.getItem('sidebarCollapsed') === 'true') {
         $sidebar.addClass('collapsed');
     }
+
+    // En modo riel (colapsado), los submenús quedan ocultos -- un clic en cualquier ítem
+    // expande el sidebar completo primero para poder ver/navegar sus opciones.
+    $sidebar.on('click', '.nav-link', function () {
+        if ($sidebar.hasClass('collapsed')) {
+            $sidebar.removeClass('collapsed');
+            localStorage.setItem('sidebarCollapsed', 'false');
+        }
+    });
+});
+
+// Alternar modo claro/oscuro (el atributo data-theme ya se aplica en el <head> antes de
+// pintar la página, para evitar el parpadeo; aquí solo se sincroniza el ícono y el toggle).
+$(function () {
+    const $icono = $('#iconoTema');
+
+    function actualizarIcono() {
+        const esOscuro = document.documentElement.getAttribute('data-theme') === 'dark';
+        $icono.toggleClass('fa-moon', !esOscuro).toggleClass('fa-sun', esOscuro);
+    }
+
+    actualizarIcono();
+
+    $('#btnToggleTema').on('click', function () {
+        const esOscuro = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (esOscuro) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('tema', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('tema', 'dark');
+        }
+        actualizarIcono();
+    });
 });
 
 /**
@@ -44,6 +78,20 @@ const App = {
         return document.querySelector('meta[name="csrf-token"]').content;
     },
 
+    /**
+     * dataSrc seguro para DataTables: la API responde HTTP 200 incluso cuando "resultado" es
+     * false (sesión expirada, error de negocio, etc.), con "dato" en null. Sin este manejo,
+     * DataTables intenta iterar ese null y la tabla se queda trabada en "Cargando..." para
+     * siempre, sin mostrar ningún mensaje. Usar como `ajax: { url, dataSrc: App.dataSrcTabla }`.
+     */
+    dataSrcTabla: function (json) {
+        if (!json || !json.resultado) {
+            App.mostrarError((json && json.mensaje) || 'No se pudo cargar la información.');
+            return [];
+        }
+        return json.dato || [];
+    },
+
     mostrarError: function (mensaje) {
         Swal.fire({ icon: 'error', title: 'Error', text: mensaje || 'Ocurrió un error inesperado.' });
     },
@@ -66,14 +114,21 @@ const App = {
     },
 
     /**
-     * Recolecta los campos de un formulario como objeto plano, listo para enviar como JSON.
-     * Los campos vacíos se envían como null (no como "") para que los tipos numéricos/nullable
-     * del lado del servidor (int?, decimal?, etc.) deserialicen correctamente; también descarta
-     * campos internos inyectados por la validación no intrusiva de jQuery (p. ej. "__Invariant").
+     * Recolecta los campos de un formulario (o de cualquier contenedor con campos con "name")
+     * como objeto plano, listo para enviar como JSON. Si el selector es un <form> real se usa
+     * serializeArray() normalmente; si es un simple contenedor (p. ej. un <div> usado solo para
+     * delimitar un grupo de campos sin poder anidar un <form> real dentro de otro), se recolectan
+     * sus descendientes con "name" directamente -- jQuery.serializeArray() acepta igual una
+     * colección de campos sueltos que un formulario. Los campos vacíos se envían como null (no
+     * como "") para que los tipos numéricos/nullable del lado del servidor (int?, decimal?, etc.)
+     * deserialicen correctamente; también descarta campos internos inyectados por la validación
+     * no intrusiva de jQuery (p. ej. "__Invariant").
      */
     recolectarFormulario: function (selectorForm) {
         const datos = {};
-        $(selectorForm).serializeArray().forEach(campo => {
+        const $contenedor = $(selectorForm);
+        const campos = $contenedor.is('form') ? $contenedor.serializeArray() : $contenedor.find(':input[name]').serializeArray();
+        campos.forEach(campo => {
             if (campo.name.startsWith('__')) return;
             datos[campo.name] = campo.value === '' ? null : campo.value;
         });

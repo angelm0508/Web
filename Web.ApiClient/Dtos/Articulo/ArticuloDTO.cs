@@ -23,5 +23,6 @@ namespace Web.ApiClient.Dtos.Articulo
         public decimal? Minimo { get; set; }
         public decimal? Maximo { get; set; }
         public string? Comentarios { get; set; }
+        public int Serie { get; set; }
     }
 }

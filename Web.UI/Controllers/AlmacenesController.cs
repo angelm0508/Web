@@ -40,7 +40,7 @@ namespace Web.UI.Controllers
         {
             await CargarUbicacionesAsync();
             ViewBag.EsEdicion = false;
-            return PartialView("_Form", new AlmacenCrearDTO { Activo = "S", Bloqueado = "N" });
+            return PartialView("_Form", new AlmacenCrearDTO { Activo = "S" });
         }
 
         [HttpGet]
@@ -62,8 +62,7 @@ namespace Web.UI.Controllers
                 CodigoPostal = respuesta.Dato.CodigoPostal,
                 Pais = respuesta.Dato.Pais,
                 Municipio = respuesta.Dato.Municipio,
-                Departamento = respuesta.Dato.Departamento,
-                Bloqueado = respuesta.Dato.Bloqueado
+                Departamento = respuesta.Dato.Departamento
             };
 
             return PartialView("_Form", dto);
@@ -81,6 +80,11 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(string codigo, [FromBody] AlmacenCrearDTO dto)
         {
+            // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
+            var actual = await _almacenes.ObtenerAsync(codigo);
+            if (!actual.Resultado || actual.Dato is null)
+                return NotFound(actual);
+
             var actualizar = new AlmacenActualizarDTO
             {
                 Nombre = dto.Nombre,
@@ -90,7 +94,7 @@ namespace Web.UI.Controllers
                 Pais = dto.Pais,
                 Municipio = dto.Municipio,
                 Departamento = dto.Departamento,
-                Bloqueado = dto.Bloqueado
+                Bloqueado = actual.Dato.Bloqueado
             };
 
             var respuesta = await _almacenes.ActualizarAsync(codigo, actualizar);

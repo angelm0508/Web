@@ -4,13 +4,15 @@ namespace Web.ApiClient.Dtos.GrupoUnidadMedidaArticulo
 {
     public class GrupoUnidadMedidaArticuloActualizarDTO
     {
-        [Display(Name = "Nombre")]
+        [Display(Name = "Nombre Grupo")]
+        public string? Codigo { get; set; }
+
+        [Display(Name = "Descripción")]
         public string? Nombre { get; set; }
 
-        [Display(Name = "Unidad base")]
+        [Display(Name = "Unidad de medida base")]
         public int BaseMedida { get; set; }
 
-        [Display(Name = "Bloqueado")]
         public string? Bloqueado { get; set; }
     }
 }

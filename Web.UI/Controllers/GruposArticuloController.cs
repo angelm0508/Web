@@ -62,9 +62,15 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, [FromBody] GrupoArticuloCrearDTO dto)
         {
+            // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
+            var actual = await _grupos.ObtenerAsync(id);
+            if (!actual.Resultado || actual.Dato is null)
+                return NotFound(actual);
+
             var actualizar = new GrupoArticuloActualizarDTO
             {
-                Nombre = dto.Nombre
+                Nombre = dto.Nombre,
+                Bloqueado = actual.Dato.Bloqueado
             };
 
             var respuesta = await _grupos.ActualizarAsync(id, actualizar);

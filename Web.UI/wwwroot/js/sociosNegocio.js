@@ -1,6 +1,6 @@
 $(function () {
     const tabla = $('#tblSociosNegocio').DataTable({
-        ajax: { url: '/SociosNegocio/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: '/SociosNegocio/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'codigo' },
             { data: 'nombre' },
@@ -25,12 +25,8 @@ $(function () {
         $('#contenidoModal').html(html);
         new bootstrap.Modal('#modalFormulario').show();
         inicializarDirecciones();
+        inicializarGruposSocioNegocio();
     }
-
-    $('#btnNuevo').on('click', async function () {
-        const html = await $.get('/SociosNegocio/FormularioCrear');
-        abrirModal(html);
-    });
 
     $('#tblSociosNegocio').on('click', '.btn-editar', async function () {
         const codigo = $(this).data('codigo');
@@ -53,46 +49,12 @@ $(function () {
     });
 
     $(document).on('click', '#btnGuardarSocioNegocio', async function () {
-        const $boton = $(this);
-        const esEdicion = $boton.data('edicion') === true || $boton.data('edicion') === 'true';
-        const codigo = $boton.data('codigo');
-
+        const codigo = $(this).data('codigo');
         const datos = App.recolectarFormulario('#formSocioNegocio');
 
-        const url = esEdicion ? `/SociosNegocio/Editar?codigo=${encodeURIComponent(codigo)}` : '/SociosNegocio/Crear';
-        const respuesta = await App.enviarJson(url, 'POST', datos);
-
+        const respuesta = await App.enviarJson(`/SociosNegocio/Editar?codigo=${encodeURIComponent(codigo)}`, 'POST', datos);
         if (!respuesta.resultado) {
             App.mostrarError(respuesta.mensaje);
-            return;
-        }
-
-        if (!esEdicion) {
-            const codigoCreado = datos.Codigo;
-            let exitosas = 0;
-            let fallidas = 0;
-
-            for (const direccionLocal of direccionesLocales) {
-                const respuestaDireccion = await App.enviarJson('/SociosNegocio/CrearDireccion', 'POST', {
-                    ...direccionLocal,
-                    CodigoSn: codigoCreado
-                });
-
-                if (respuestaDireccion.resultado) {
-                    exitosas++;
-                } else {
-                    fallidas++;
-                    App.mostrarError(respuestaDireccion.mensaje);
-                }
-            }
-
-            bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-            if (fallidas > 0) {
-                App.mostrarExito(`Socio de negocio creado correctamente. Direcciones guardadas: ${exitosas} de ${exitosas + fallidas}.`);
-            } else {
-                App.mostrarExito('Socio de negocio creado correctamente.');
-            }
-            recargarTabla();
             return;
         }
 
@@ -100,6 +62,106 @@ $(function () {
         App.mostrarExito('Socio de negocio actualizado correctamente.');
         recargarTabla();
     });
+
+    // --- Serie de numeración para generar el código del socio (solo en la página "Nuevo") ---
+
+    let catalogoSeriesSocioNegocio = null;
+
+    function inicializarSeriesSocioNegocio() {
+        const datosEl = document.getElementById('datosSeriesSocioNegocio');
+        catalogoSeriesSocioNegocio = datosEl ? JSON.parse(datosEl.textContent) : null;
+        poblarSeriesSocioNegocio($('#TipoSn').val());
+    }
+
+    function poblarSeriesSocioNegocio(tipoSn) {
+        const $sel = $('#selectSerieSocioNegocio');
+        if ($sel.length === 0) return;
+
+        if (!catalogoSeriesSocioNegocio || !tipoSn) {
+            $sel.html('<option value="">-- Seleccione el tipo primero --</option>');
+            actualizarCodigoSegunSerie();
+            return;
+        }
+
+        $sel.html('');
+        let serieManual = null;
+        catalogoSeriesSocioNegocio
+            .filter(s => (s.subTipoDoc ?? s.SubTipoDoc) === tipoSn)
+            .forEach(s => {
+                const serie = s.serie ?? s.Serie;
+                const nombre = s.nombreSerie ?? s.NombreSerie;
+                const manual = s.manual ?? s.Manual;
+                if (manual === 'S' && serieManual === null) serieManual = serie;
+                $sel.append(`<option value="${serie}" data-manual="${manual}">${nombre}</option>`);
+            });
+
+        // Se preselecciona "Manual" por defecto para no obligar a elegir en cada alta.
+        if (serieManual !== null) $sel.val(serieManual);
+
+        actualizarCodigoSegunSerie();
+    }
+
+    function esSerieManualSocioNegocio() {
+        const $sel = $('#selectSerieSocioNegocio');
+        if ($sel.length === 0 || !$sel.val()) return true;
+        return $sel.find('option:selected').data('manual') === 'S';
+    }
+
+    function actualizarCodigoSegunSerie() {
+        const $codigo = $('#Codigo');
+        if ($codigo.length === 0) return;
+
+        if (esSerieManualSocioNegocio()) {
+            $codigo.prop('disabled', false).attr('placeholder', '');
+        } else {
+            $codigo.val('').prop('disabled', true).attr('placeholder', 'Se generará al guardar');
+        }
+    }
+
+    $(document).on('change', '#TipoSn', function () {
+        poblarSeriesSocioNegocio(this.value);
+        poblarGruposSocioNegocio(this.value);
+    });
+
+    $(document).on('change', '#selectSerieSocioNegocio', function () {
+        actualizarCodigoSegunSerie();
+    });
+
+    inicializarSeriesSocioNegocio();
+
+    // --- Grupo del socio: depende del tipo (Cliente/Proveedor) seleccionado ---
+
+    let catalogoGruposSocioNegocio = null;
+
+    function inicializarGruposSocioNegocio() {
+        const datosEl = document.getElementById('datosGruposSocioNegocio');
+        catalogoGruposSocioNegocio = datosEl ? JSON.parse(datosEl.textContent) : null;
+        poblarGruposSocioNegocio($('#TipoSn').val());
+    }
+
+    function poblarGruposSocioNegocio(tipoSn) {
+        const $sel = $('#GrupoSn');
+        if ($sel.length === 0) return;
+
+        const valorPrevio = $sel.val() || $sel.data('grupo-inicial') || '';
+        $sel.html('');
+
+        if (!catalogoGruposSocioNegocio || !tipoSn) return;
+
+        catalogoGruposSocioNegocio
+            .filter(g => (g.tipoGrupo ?? g.TipoGrupo) === tipoSn)
+            .forEach(g => {
+                const entry = g.entry ?? g.Entry;
+                const nombre = g.nombre ?? g.Nombre;
+                $sel.append(`<option value="${entry}">${nombre}</option>`);
+            });
+
+        if (valorPrevio && $sel.find(`option[value="${valorPrevio}"]`).length > 0) {
+            $sel.val(String(valorPrevio));
+        }
+    }
+
+    inicializarGruposSocioNegocio();
 
     // --- Direcciones embebidas en el formulario del socio ---
 
@@ -157,6 +219,8 @@ $(function () {
         poblarMunicipiosDireccion($('#selectPaisDireccion').val(), this.value, null);
     });
 
+    inicializarDirecciones();
+
     async function cargarDireccionesRemotas() {
         const codigoSn = $('#tblDireccionesSocio').data('codigo-sn');
         const respuesta = await $.get('/Direcciones/ObtenerPorSocio', { codigoSn });
@@ -173,6 +237,8 @@ $(function () {
         if ($tbody.length === 0) return;
 
         const lista = esEdicionDirecciones() ? direccionesRemotas : direccionesLocales;
+
+        actualizarChecklistSocio();
 
         if (lista.length === 0) {
             $tbody.html('<tr><td colspan="6" class="text-center text-muted">Sin direcciones registradas</td></tr>');
@@ -203,7 +269,7 @@ $(function () {
         $('#selectPaisDireccion').val('');
         $('#selectDepartamentoDireccion').html('<option value="">-- Seleccione un país primero --</option>');
         $('#selectMunicipioDireccion').html('<option value="">-- Seleccione un departamento primero --</option>');
-        $('#dirTipoDireccion').val('');
+        $('#dirTipoDireccion').val('ENV');
         $('#dirNumLinea').val('');
         direccionOriginalEnEdicion = null;
     }
@@ -316,5 +382,89 @@ $(function () {
             $('#panelDireccion').addClass('d-none');
             pintarDirecciones();
         }
+    });
+
+    // --- Checklist "Recomendado completar" de la página de creación ---
+
+    function actualizarChecklistSocio() {
+        const $lista = $('#listaChecklistSocio');
+        if ($lista.length === 0) return;
+
+        $lista.find('[data-check]').each(function () {
+            const campo = $(this).data('check');
+            const tieneValor = !!$(`#${campo}`).val();
+            $(this).find('i')
+                .toggleClass('fa-regular fa-circle text-muted', !tieneValor)
+                .toggleClass('fa-solid fa-circle-check text-success', tieneValor);
+        });
+
+        $lista.find('[data-check-direccion]').each(function () {
+            const tieneDireccion = direccionesLocales.length > 0;
+            $(this).find('i')
+                .toggleClass('fa-regular fa-circle text-muted', !tieneDireccion)
+                .toggleClass('fa-solid fa-circle-check text-success', tieneDireccion);
+        });
+    }
+
+    $(document).on('input change', '#Nombre, #TipoSn, #GrupoSn, #Email', actualizarChecklistSocio);
+    actualizarChecklistSocio();
+
+    // --- Guardar desde la página completa "Nuevo socio de negocio" ---
+
+    $(document).on('click', '#btnGuardarSocioNegocioPagina', async function () {
+        const serieSeleccionada = $('#selectSerieSocioNegocio').val();
+        if (!serieSeleccionada) {
+            App.mostrarError('Debes seleccionar una serie.');
+            return;
+        }
+
+        let codigoGenerado = null;
+        if (!esSerieManualSocioNegocio()) {
+            const respuestaSerie = await App.enviarJson(`/SociosNegocio/GenerarCodigoSerie?serie=${serieSeleccionada}`, 'POST', {});
+            if (!respuestaSerie.resultado) {
+                App.mostrarError(respuestaSerie.mensaje);
+                return;
+            }
+            codigoGenerado = respuestaSerie.dato;
+        }
+
+        const datos = App.recolectarFormulario('#formSocioNegocioCrear');
+        // El campo Código queda deshabilitado cuando el código se genera automáticamente, así que
+        // no viaja en el serializeArray del formulario -- hay que agregarlo a mano.
+        if (codigoGenerado !== null) {
+            datos.Codigo = codigoGenerado;
+        }
+        datos.Serie = serieSeleccionada;
+
+        const respuesta = await App.enviarJson('/SociosNegocio/Crear', 'POST', datos);
+        if (!respuesta.resultado) {
+            App.mostrarError(respuesta.mensaje);
+            return;
+        }
+
+        const codigoCreado = datos.Codigo;
+        let exitosas = 0;
+        let fallidas = 0;
+
+        for (const direccionLocal of direccionesLocales) {
+            const respuestaDireccion = await App.enviarJson('/SociosNegocio/CrearDireccion', 'POST', {
+                ...direccionLocal,
+                CodigoSn: codigoCreado
+            });
+
+            if (respuestaDireccion.resultado) {
+                exitosas++;
+            } else {
+                fallidas++;
+                App.mostrarError(respuestaDireccion.mensaje);
+            }
+        }
+
+        if (fallidas > 0) {
+            await App.mostrarExito(`Socio de negocio creado correctamente. Direcciones guardadas: ${exitosas} de ${exitosas + fallidas}.`);
+        } else {
+            await App.mostrarExito('Socio de negocio creado correctamente.');
+        }
+        window.location.href = '/SociosNegocio';
     });
 });

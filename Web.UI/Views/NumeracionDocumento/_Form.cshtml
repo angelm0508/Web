@@ -1,0 +1,153 @@
+@model Web.ApiClient.Dtos.NumeracionDocumento.NumeracionDocumentoCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar numeración de documento" : "Nueva numeración de documento")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formNumeracionDocumento" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="CodigoObj" class="form-label"></label>
+                <input asp-for="CodigoObj" class="form-control" readonly="@esEdicion" />
+                <span asp-validation-for="CodigoObj" class="text-danger small"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="DocAlias" class="form-label"></label>
+                <input asp-for="DocAlias" class="form-control" readonly/>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="SerieDfct" class="form-label"></label>
+                <select asp-for="SerieDfct" class="form-select" data-serie-dfct-inicial="@Model.SerieDfct">
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label asp-for="SubTipoDoc" class="form-label"></label>
+                <select asp-for="SubTipoDoc" class="form-select" disabled="@esEdicion">
+                    <option value="">-- Seleccione --</option>
+                    <option value="P">P</option>
+                    <option value="C">C</option>
+                    <option value="DN">DN</option>
+                    <option value="ND">ND</option>
+                    <option value="--">--</option>
+                </select>
+                <span asp-validation-for="SubTipoDoc" class="text-danger small"></span>
+            </div>
+        </div>
+    </form>
+
+    <hr />
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">Detalle de series</h6>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="btnNuevaLinea">
+            <i class="fa-solid fa-plus me-1"></i>Agregar línea
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table id="tblDetalleNumeracion" class="table table-sm table-hover align-middle w-100" data-codigo-obj="@Model.CodigoObj" data-es-edicion="@esEdicion.ToString().ToLower()">
+            <thead>
+                <tr>
+                    <th>Serie</th>
+                    <th>Nombre serie</th>
+                    <th>Subtipo</th>
+                    <th>Tipo serie</th>
+                    <th>Núm. inicial</th>
+                    <th>Núm. final</th>
+                    <th>Bloqueado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="panelLineaDetalle" class="border rounded p-3 mb-2 d-none">
+        <form id="formLineaDetalle">
+            <input type="hidden" id="detSerieOriginal" value="" />
+            <div class="row g-2">
+                <div class="col-md-2 d-none" id="grupoDetSerie">
+                    <label class="form-label">Serie</label>
+                    <input id="detSerie" type="number" class="form-control" disabled />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nombre de serie</label>
+                    <input name="NombreSerie" id="detNombreSerie" class="form-control" maxlength="8" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Subtipo de documento</label>
+                    <select id="detSubTipoDoc" class="form-select" disabled>
+                        <option value="">-- Seleccione --</option>
+                        <option value="P">P</option>
+                        <option value="C">C</option>
+                        <option value="DN">DN</option>
+                        <option value="ND">ND</option>
+                        <option value="--">--</option>
+                    </select>
+                    <span class="form-text">Toma el mismo valor del encabezado; no se puede modificar aquí.</span>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de serie</label>
+                    <select name="TipoSerie" id="detTipoSerie" class="form-select">
+                        <option value="">-- Seleccione --</option>
+                        <option value="SN">SN</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Número inicial</label>
+                    <input name="IniNumero" id="detIniNumero" type="number" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Número siguiente</label>
+                    <input name="SigNumero" id="detSigNumero" type="number" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Número final</label>
+                    <input name="FinNumero" id="detFinNumero" type="number" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Cant. dígitos</label>
+                    <input name="CantDigitos" id="detCantDigitos" type="number" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Manual</label>
+                    <select name="Manual" id="detManual" class="form-select">
+                        <option value="N">No</option>
+                        <option value="S">Sí</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Cadena inicial</label>
+                    <input name="IniCadena" id="detIniCadena" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cadena final</label>
+                    <input name="FinCadena" id="detFinCadena" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Comentario</label>
+                    <input name="Comentario" id="detComentario" class="form-control" maxlength="5" />
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="button" class="btn btn-sm btn-secondary" id="btnCancelarLinea">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnGuardarLinea">Guardar línea</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarNumeracionDocumento" data-edicion="@esEdicion.ToString().ToLower()" data-codigo="@Model.CodigoObj">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>

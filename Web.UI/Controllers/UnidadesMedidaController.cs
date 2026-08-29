@@ -29,7 +29,7 @@ namespace Web.UI.Controllers
         {
             ViewBag.EsEdicion = false;
             ViewBag.Id = 0;
-            return PartialView("_Form", new UnidadMedidaArticuloCrearDTO { Bloqueado = "N" });
+            return PartialView("_Form", new UnidadMedidaArticuloCrearDTO());
         }
 
         [HttpGet]
@@ -50,8 +50,7 @@ namespace Web.UI.Controllers
                 Ancho = respuesta.Dato.Ancho,
                 Altura = respuesta.Dato.Altura,
                 Volumen = respuesta.Dato.Volumen,
-                Peso = respuesta.Dato.Peso,
-                Bloqueado = respuesta.Dato.Bloqueado
+                Peso = respuesta.Dato.Peso
             };
 
             return PartialView("_Form", dto);
@@ -69,6 +68,11 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, [FromBody] UnidadMedidaArticuloCrearDTO dto)
         {
+            // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
+            var actual = await _unidadesMedida.ObtenerAsync(id);
+            if (!actual.Resultado || actual.Dato is null)
+                return NotFound(actual);
+
             // La API exige el campo Codigo en el body de PUT api/UnidadMedidaArticulo/{id} aunque el id
             // real se toma de la ruta -- se envía el mismo código que tenía el formulario, no el id numérico.
             var actualizar = new UnidadMedidaArticuloActualizarDTO
@@ -80,7 +84,7 @@ namespace Web.UI.Controllers
                 Altura = dto.Altura,
                 Volumen = dto.Volumen,
                 Peso = dto.Peso,
-                Bloqueado = dto.Bloqueado
+                Bloqueado = actual.Dato.Bloqueado
             };
 
             var respuesta = await _unidadesMedida.ActualizarAsync(id, actualizar);

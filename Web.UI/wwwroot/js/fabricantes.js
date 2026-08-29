@@ -1,6 +1,6 @@
 $(function () {
     const tabla = $('#tblFabricantes').DataTable({
-        ajax: { url: '/Fabricantes/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: '/Fabricantes/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'nombre' },
             {

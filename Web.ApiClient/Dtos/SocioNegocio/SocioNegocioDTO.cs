@@ -15,5 +15,6 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         public int? NumLstPrecio { get; set; }
         public string? Email { get; set; }
         public string? Activo { get; set; }
+        public int Serie { get; set; }
     }
 }

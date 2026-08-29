@@ -4,14 +4,22 @@
     Layout = "_Layout";
 }
 
-<div class="d-flex align-items-center justify-content-center" style="min-height:100vh; background:#1e2530;">
-    <div class="card shadow-lg border-0" style="width: 100%; max-width: 380px;">
-        <div class="card-body p-4">
-            <div class="text-center mb-4">
-                <i class="fa-solid fa-cubes fa-2x text-primary"></i>
-                <h4 class="mt-2 mb-0">Sistema de Gestión</h4>
-                <p class="text-muted small">Inicia sesión para continuar</p>
+<div class="login-shell">
+    <div class="login-card">
+        <div class="login-hero">
+            <div class="login-hero-brand">
+                <span class="login-hero-badge"><i class="fa-solid fa-cubes"></i></span>
+                Sistema de Gestión
             </div>
+            <div>
+                <h2 class="login-hero-title">Tu negocio completo, en una sola pantalla.</h2>
+                <p class="login-hero-text">Inventario, socios de negocio, cotizaciones y numeración de documentos, todo sincronizado en un solo lugar.</p>
+            </div>
+            <div class="login-hero-footer">Sistema de Gestión</div>
+        </div>
+        <div class="login-form-panel">
+            <h1 class="login-form-title">Iniciar sesión</h1>
+            <p class="login-form-subtitle">Inicia sesión para continuar</p>
 
             <form asp-controller="Cuenta" asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.ListadoPrecio;
 
@@ -25,10 +26,11 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        public IActionResult FormularioCrear()
+        public async Task<IActionResult> FormularioCrear()
         {
+            await CargarDropdownsAsync(null);
             ViewBag.EsEdicion = false;
-            return PartialView("_Form", new ListadoPrecioCrearDTO { Bloqueado = "N" });
+            return PartialView("_Form", new ListadoPrecioCrearDTO());
         }
 
         [HttpGet]
@@ -38,13 +40,17 @@ namespace Web.UI.Controllers
             if (!respuesta.Resultado || respuesta.Dato is null)
                 return NotFound();
 
+            await CargarDropdownsAsync(id);
             ViewBag.EsEdicion = true;
             ViewBag.Id = id;
 
             var dto = new ListadoPrecioCrearDTO
             {
                 Nombre = respuesta.Dato.Nombre,
-                Bloqueado = respuesta.Dato.Bloqueado
+                Base = respuesta.Dato.Base,
+                Factor = respuesta.Dato.Factor,
+                MetodoRedondeo = respuesta.Dato.MetodoRedondeo,
+                ReglaRedondeo = respuesta.Dato.ReglaRedondeo
             };
 
             return PartialView("_Form", dto);
@@ -65,7 +71,10 @@ namespace Web.UI.Controllers
             var actualizar = new ListadoPrecioActualizarDTO
             {
                 Nombre = dto.Nombre,
-                Bloqueado = dto.Bloqueado
+                Base = dto.Base,
+                Factor = dto.Factor,
+                MetodoRedondeo = dto.MetodoRedondeo,
+                ReglaRedondeo = dto.ReglaRedondeo
             };
 
             var respuesta = await _listados.ActualizarAsync(id, actualizar);
@@ -78,6 +87,35 @@ namespace Web.UI.Controllers
         {
             var respuesta = await _listados.EliminarAsync(id);
             return Json(respuesta);
+        }
+
+        private async Task CargarDropdownsAsync(int? idActual)
+        {
+            var listados = await _listados.ObtenerTodoAsync();
+            var opciones = listados.Dato ?? [];
+            if (idActual.HasValue)
+            {
+                // Una lista de precio no puede tomarse a sí misma como base.
+                opciones = opciones.Where(x => x.Entry != idActual.Value);
+            }
+            ViewBag.Listados = new SelectList(opciones, "Entry", "Nombre");
+
+            ViewBag.MetodosRedondeo = new SelectList(new[]
+            {
+                new { Valor = 0, Texto = "Ninguno" },
+                new { Valor = 1, Texto = "Redondear a la unidad" },
+                new { Valor = 2, Texto = "Redondear a 0.5" },
+                new { Valor = 3, Texto = "Redondear a 5" },
+                new { Valor = 4, Texto = "Redondear a 10" },
+                new { Valor = 5, Texto = "Redondear a 25" }
+            }, "Valor", "Texto");
+
+            ViewBag.ReglasRedondeo = new SelectList(new[]
+            {
+                new { Valor = "F", Texto = "Hacia abajo" },
+                new { Valor = "C", Texto = "Hacia arriba" },
+                new { Valor = "R", Texto = "Al más cercano" }
+            }, "Valor", "Texto");
         }
     }
 }

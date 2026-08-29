@@ -67,5 +67,9 @@ namespace Web.ApiClient.Dtos.Articulo
 
         [Display(Name = "Comentarios")]
         public string? Comentarios { get; set; }
+
+        [Required(ErrorMessage = "La serie es requerida.")]
+        [Display(Name = "Serie")]
+        public int Serie { get; set; }
     }
 }

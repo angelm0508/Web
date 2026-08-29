@@ -3,77 +3,213 @@
     ViewData["Title"] = "Dashboard";
 }
 
-<h3 class="mb-4">Dashboard</h3>
+<div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+        <h1 class="mb-1" style="font-size:1.6rem">Hola, @Model.NombreUsuario</h1>
+        <p class="text-muted mb-0 small">@DateTime.Now.ToString("dddd d 'de' MMMM", new System.Globalization.CultureInfo("es-GT")) &middot; datos al minuto</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <div class="btn-group" role="group" aria-label="Período">
+            <button type="button" class="btn btn-primary btn-sm">Hoy</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm">7 días</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm">Mes</button>
+        </div>
+        <a asp-controller="Cotizaciones" asp-action="Index" class="btn btn-primary btn-sm">
+            <i class="fa-solid fa-plus me-1"></i>Nueva cotización
+        </a>
+    </div>
+</div>
 
-<div class="row g-3 mb-4">
+<div class="row g-3 mb-3">
     <div class="col-sm-6 col-xl-3">
         <div class="card kpi-card h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="kpi-icon bg-primary-subtle text-primary"><i class="fa-solid fa-box"></i></div>
-                <div>
-                    <div class="text-muted small">Artículos</div>
-                    <div class="fs-4 fw-semibold">@Model.TotalArticulos</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-medium">Artículos</span>
+                    <i class="fa-solid fa-box text-primary"></i>
                 </div>
+                <div class="fs-3 font-mono fw-semibold">@Model.TotalArticulos</div>
+                <div class="small text-muted mt-1">Total registrados</div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
         <div class="card kpi-card h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="kpi-icon bg-success-subtle text-success"><i class="fa-solid fa-warehouse"></i></div>
-                <div>
-                    <div class="text-muted small">Almacenes</div>
-                    <div class="fs-4 fw-semibold">@Model.TotalAlmacenes</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-medium">Socios de negocio</span>
+                    <i class="fa-solid fa-handshake text-primary"></i>
                 </div>
+                <div class="fs-3 font-mono fw-semibold">@Model.TotalSociosNegocio</div>
+                <div class="small text-muted mt-1">Clientes y proveedores</div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
         <div class="card kpi-card h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="kpi-icon bg-warning-subtle text-warning"><i class="fa-solid fa-handshake"></i></div>
-                <div>
-                    <div class="text-muted small">Socios de Negocio</div>
-                    <div class="fs-4 fw-semibold">@Model.TotalSociosNegocio</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-medium">Cotizaciones</span>
+                    <i class="fa-solid fa-file-invoice text-primary"></i>
                 </div>
+                <div class="fs-3 font-mono fw-semibold">@Model.TotalCotizaciones</div>
+                <div class="small text-muted mt-1">Total registradas</div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
         <div class="card kpi-card h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="kpi-icon bg-info-subtle text-info"><i class="fa-solid fa-location-dot"></i></div>
-                <div>
-                    <div class="text-muted small">Direcciones</div>
-                    <div class="fs-4 fw-semibold">@Model.TotalDireccionesSocioNegocio</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small fw-medium">Stock bajo</span>
+                    <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                </div>
+                <div class="fs-3 font-mono fw-semibold">@Model.TotalArticulosStockBajo</div>
+                <div class="small text-warning fw-semibold mt-1">
+                    @(Model.TotalArticulosStockBajo > 0 ? "Requiere revisión" : "Todo en orden")
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-md-6">
+<div class="row g-3 mb-3">
+    <div class="col-lg-7">
         <div class="card h-100">
-            <div class="card-header bg-white fw-semibold"><i class="fa-solid fa-box me-2"></i>Gestión de Artículos</div>
-            <div class="list-group list-group-flush">
-                <a asp-controller="Articulos" asp-action="Index" class="list-group-item list-group-item-action">Artículos</a>
-                <a asp-controller="Fabricantes" asp-action="Index" class="list-group-item list-group-item-action">Fabricantes</a>
-                <a asp-controller="GruposArticulo" asp-action="Index" class="list-group-item list-group-item-action">Grupos</a>
-                <a asp-controller="UnidadesMedida" asp-action="Index" class="list-group-item list-group-item-action">Unidades de medida</a>
-                <a asp-controller="GruposUnidadMedida" asp-action="Index" class="list-group-item list-group-item-action">Grupo unidades de medida</a>
-                <a asp-controller="Almacenes" asp-action="Index" class="list-group-item list-group-item-action">Almacenes</a>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-baseline mb-1">
+                    <h2 class="h6 mb-0">Tendencia de ventas</h2>
+                    <span class="small text-muted">Últimos 30 días</span>
+                </div>
+                <!-- TODO: no existe historial de ventas/facturación todavía; estas barras son de
+                     ejemplo. Conectar cuando exista un módulo de ventas/facturación real. -->
+                <div class="d-flex align-items-end gap-1" style="height:140px;border-bottom:1px solid var(--color-border)">
+                    @{
+                        var barras = new[] { 42,38,51,47,35,58,62,44,40,55,68,72,59,49,44,63,71,66,52,48,57,74,80,69,61,55,73,86,78,92 };
+                    }
+                    @for (var i = 0; i < barras.Length; i++)
+                    {
+                        var esReciente = i >= barras.Length - 3;
+                        <div style="flex:1;height:@(barras[i])%;min-height:4px;border-radius:3px 3px 0 0;background:@(esReciente ? "var(--color-accent)" : "var(--color-accent-soft)")"></div>
+                    }
+                </div>
+                <p class="small text-muted mt-2 mb-0">Datos de ejemplo &mdash; pendiente de conectar con un módulo de ventas.</p>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-lg-5">
         <div class="card h-100">
-            <div class="card-header bg-white fw-semibold"><i class="fa-solid fa-handshake me-2"></i>Socios de Negocio</div>
-            <div class="list-group list-group-flush">
-                <a asp-controller="SociosNegocio" asp-action="Index" class="list-group-item list-group-item-action">Socios de Negocio</a>
-                <a asp-controller="GruposSn" asp-action="Clientes" class="list-group-item list-group-item-action">Grupos SN &ndash; Clientes</a>
-                <a asp-controller="GruposSn" asp-action="Proveedores" class="list-group-item list-group-item-action">Grupos SN &ndash; Proveedores</a>
-                <a asp-controller="ListadosPrecio" asp-action="Index" class="list-group-item list-group-item-action">Listado de Precios</a>
+            <div class="card-body">
+                <h2 class="h6 mb-3">Artículos con mayor precio</h2>
+                @if (Model.TopArticulosPorPrecio.Count == 0)
+                {
+                    <p class="text-muted small mb-0">Sin artículos con precio configurado.</p>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var articulo in Model.TopArticulosPorPrecio)
+                        {
+                            <div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="fw-medium">@articulo.Nombre</span>
+                                    <span class="font-mono text-muted">Q @articulo.Precio.ToString("N2")</span>
+                                </div>
+                                <div style="height:7px;border-radius:999px;background:var(--color-surface-muted)">
+                                    <div style="width:@(articulo.PorcentajeBarra)%;height:7px;border-radius:999px;background:var(--color-accent)"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h6 mb-0">Últimas cotizaciones</h2>
+                <a asp-controller="Cotizaciones" asp-action="Index" class="small">Ver todas</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Documento</th>
+                            <th>Socio</th>
+                            <th>Estado</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.UltimasCotizaciones.Count == 0)
+                        {
+                            <tr><td colspan="4" class="text-center text-muted py-3">Sin cotizaciones registradas</td></tr>
+                        }
+                        else
+                        {
+                            @foreach (var cot in Model.UltimasCotizaciones)
+                            {
+                                <tr>
+                                    <td class="font-mono">@cot.NumDoc</td>
+                                    <td>@(cot.NombreSn ?? "-")</td>
+                                    <td>
+                                        @if (cot.Estado == "C")
+                                        {
+                                            <span class="badge text-bg-secondary">Cancelado</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-success">Activo</span>
+                                        }
+                                    </td>
+                                    <td class="text-end font-mono">@(cot.Total.HasValue ? "Q " + cot.Total.Value.ToString("N2") : "-")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Necesita tu atención</h2>
+                <div class="d-flex flex-column gap-2">
+                    @if (Model.ArticulosStockBajo.Count > 0)
+                    {
+                        @foreach (var articulo in Model.ArticulosStockBajo.Take(3))
+                        {
+                            <div class="d-flex gap-2 p-2 rounded-3" style="background:var(--color-warning-soft-bg)">
+                                <i class="fa-solid fa-triangle-exclamation flex-shrink-0" style="color:var(--color-warning-soft-fg)"></i>
+                                <div>
+                                    <div class="small fw-semibold mb-0">@(articulo.Nombre ?? articulo.Codigo) bajo mínimo</div>
+                                    <div class="small text-muted">Disponible: @(articulo.CantDisponible ?? 0) &middot; Mínimo: @(articulo.Minimo ?? 0)</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    <!-- TODO: los siguientes son ejemplos estáticos -- no existen todavía los módulos
+                         de crédito/cuentas por cobrar, compras ni comisiones para calcularlos de verdad. -->
+                    <div class="d-flex gap-2 p-2 rounded-3" style="background:var(--color-surface-muted)">
+                        <i class="fa-solid fa-file-invoice flex-shrink-0 text-primary"></i>
+                        <div>
+                            <div class="small fw-semibold mb-0">Facturas de proveedor por registrar</div>
+                            <div class="small text-muted">Ejemplo &mdash; módulo de compras pendiente.</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 p-2 rounded-3" style="background:var(--color-surface-muted)">
+                        <i class="fa-solid fa-wallet flex-shrink-0 text-primary"></i>
+                        <div>
+                            <div class="small fw-semibold mb-0">Créditos vencidos</div>
+                            <div class="small text-muted">Ejemplo &mdash; módulo de cuentas por cobrar pendiente.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -17,6 +17,10 @@ namespace Web.UI.Controllers
         private readonly IPaisApiClient _paises;
         private readonly IDepartamentoApiClient _departamentos;
         private readonly IMunicipioApiClient _municipios;
+        private readonly INumeracionDocumentoDetApiClient _series;
+
+        // CodigoObj de NumeracionDocumento que identifica a "Socios de negocio" como tipo de objeto.
+        private const string CodigoObjSocioNegocio = "1";
 
         public SociosNegocioController(
             ISocioNegocioApiClient socios,
@@ -25,7 +29,8 @@ namespace Web.UI.Controllers
             IDireccionSocioNegocioApiClient direcciones,
             IPaisApiClient paises,
             IDepartamentoApiClient departamentos,
-            IMunicipioApiClient municipios)
+            IMunicipioApiClient municipios,
+            INumeracionDocumentoDetApiClient series)
         {
             _socios = socios;
             _grupos = grupos;
@@ -34,6 +39,7 @@ namespace Web.UI.Controllers
             _paises = paises;
             _departamentos = departamentos;
             _municipios = municipios;
+            _series = series;
         }
 
         public IActionResult Index() => View();
@@ -46,12 +52,12 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> FormularioCrear()
+        public async Task<IActionResult> Crear()
         {
             await CargarDropdownsAsync();
             await CargarUbicacionesAsync();
-            ViewBag.EsEdicion = false;
-            return PartialView("_Form", new SocioNegocioCrearDTO { Activo = "S" });
+            await CargarSeriesAsync();
+            return View(new SocioNegocioCrearDTO { Activo = "S" });
         }
 
         [HttpGet]
@@ -64,6 +70,10 @@ namespace Web.UI.Controllers
             await CargarDropdownsAsync();
             await CargarUbicacionesAsync();
             ViewBag.EsEdicion = true;
+
+            var serieInfo = await _series.ObtenerAsync(respuesta.Dato.Serie);
+            ViewBag.NombreSerieActual = serieInfo.Resultado ? serieInfo.Dato?.NombreSerie : null;
+            ViewBag.NombreTipoActual = respuesta.Dato.TipoSn == "C" ? "Cliente" : (respuesta.Dato.TipoSn == "P" ? "Proveedor" : null);
 
             var dto = new SocioNegocioCrearDTO
             {
@@ -79,7 +89,8 @@ namespace Web.UI.Controllers
                 Descuento = respuesta.Dato.Descuento,
                 NumLstPrecio = respuesta.Dato.NumLstPrecio,
                 Email = respuesta.Dato.Email,
-                Activo = respuesta.Dato.Activo
+                Activo = respuesta.Dato.Activo,
+                Serie = respuesta.Dato.Serie
             };
 
             return PartialView("_Form", dto);
@@ -97,8 +108,15 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(string codigo, [FromBody] SocioNegocioCrearDTO dto)
         {
+            // La serie no se edita desde este formulario (solo se muestra a modo informativo) --
+            // se conserva el valor actual del socio en vez de confiar en lo que llegue.
+            var actual = await _socios.ObtenerAsync(codigo);
+            if (!actual.Resultado || actual.Dato is null)
+                return NotFound(actual);
+
             var actualizar = new SocioNegocioActualizarDTO
             {
+                Serie = actual.Dato.Serie,
                 Nombre = dto.Nombre,
                 TipoSn = dto.TipoSn,
                 GrupoSn = dto.GrupoSn,
@@ -154,7 +172,10 @@ namespace Web.UI.Controllers
             var grupos = await _grupos.ObtenerTodoAsync();
             var listadosPrecio = await _listadosPrecio.ObtenerTodoAsync();
 
-            ViewBag.Grupos = new SelectList(grupos.Dato ?? [], "Entry", "Nombre");
+            // El grupo depende del tipo de socio (Cliente/Proveedor) elegido, así que se pasa el
+            // catálogo completo (igual que las series) para filtrarlo en el navegador según el
+            // TipoSn seleccionado, en vez de un <select> estático con todos los grupos mezclados.
+            ViewBag.GruposSocioNegocio = grupos.Dato ?? [];
             ViewBag.ListadosPrecio = new SelectList(listadosPrecio.Dato ?? [], "Entry", "Nombre");
         }
 
@@ -170,6 +191,22 @@ namespace Web.UI.Controllers
             ViewBag.Paises = new SelectList(paises.Dato ?? [], "Codigo", "Nombre");
             ViewBag.Departamentos = departamentos.Dato ?? [];
             ViewBag.Municipios = municipios.Dato ?? [];
+        }
+
+        private async Task CargarSeriesAsync()
+        {
+            // Se traen todas las series del objeto "Socios de negocio" (ambos subtipos, C y P) y
+            // se filtran en el navegador según el TipoSn elegido, igual que País/Departamento/Municipio.
+            var respuesta = await _series.ObtenerPorDocumentoAsync(CodigoObjSocioNegocio);
+            ViewBag.SeriesSocioNegocio = respuesta.Dato ?? [];
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerarCodigoSerie(int serie)
+        {
+            var respuesta = await _series.GenerarCodigoAsync(serie);
+            return Json(respuesta);
         }
     }
 }

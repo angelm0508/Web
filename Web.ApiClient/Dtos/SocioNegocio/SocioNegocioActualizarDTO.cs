@@ -40,5 +40,7 @@ namespace Web.ApiClient.Dtos.SocioNegocio
 
         [Display(Name = "Activo")]
         public string? Activo { get; set; }
+
+        public int Serie { get; set; }
     }
 }

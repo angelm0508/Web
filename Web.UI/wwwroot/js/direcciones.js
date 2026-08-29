@@ -1,6 +1,6 @@
 $(function () {
     const tabla = $('#tblDirecciones').DataTable({
-        ajax: { url: '/Direcciones/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: '/Direcciones/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'direccion' },
             { data: 'codigoSn' },

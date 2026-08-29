@@ -1,11 +1,16 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Text.Json.Serialization;
 using Web.ApiClient.Autenticacion;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Configuracion;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+// Los formularios envían todos sus campos como texto (incluidos los numéricos, vía
+// App.recolectarFormulario); sin esto, System.Text.Json rechaza un "10.50" entre comillas
+// para una propiedad decimal/int del lado del servidor.
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options => options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowReadingFromString);
 
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection(ApiSettings.SeccionConfiguracion));
 var apiBaseUrl = builder.Configuration.GetSection(ApiSettings.SeccionConfiguracion)["BaseUrl"]
@@ -40,6 +45,14 @@ builder.Services.AddHttpClient<IListadoPrecioApiClient, ListadoPrecioApiClient>(
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IDireccionSocioNegocioApiClient, DireccionSocioNegocioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<INumeracionDocumentoApiClient, NumeracionDocumentoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<INumeracionDocumentoDetApiClient, NumeracionDocumentoDetApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<ICotizacionApiClient, CotizacionApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<ICotizacionDetalleApiClient, CotizacionDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
 // Solo lectura, usados como fuente de dropdowns (ej. País/Departamento/Municipio en Almacenes).
 builder.Services.AddHttpClient<IPaisApiClient, PaisApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
@@ -47,6 +60,10 @@ builder.Services.AddHttpClient<IPaisApiClient, PaisApiClient>(c => c.BaseAddress
 builder.Services.AddHttpClient<IDepartamentoApiClient, DepartamentoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IMunicipioApiClient, MunicipioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IMonedaApiClient, MonedaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IImpuestoApiClient, ImpuestoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
 builder.Services.AddAuthentication(AuthConstants.EsquemaCookie)

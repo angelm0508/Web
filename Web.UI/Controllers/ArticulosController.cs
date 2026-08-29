@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Linq;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.Articulo;
 
@@ -13,17 +14,24 @@ namespace Web.UI.Controllers
         private readonly IFabricanteArticuloApiClient _fabricantes;
         private readonly IGrupoArticuloApiClient _grupos;
         private readonly IGrupoUnidadMedidaArticuloApiClient _gruposMedida;
+        private readonly INumeracionDocumentoDetApiClient _series;
+
+        // CodigoObj de NumeracionDocumento que identifica a "Artículos" como tipo de objeto.
+        private const string CodigoObjArticulo = "2";
+        private const string SubTipoDocArticulo = "--";
 
         public ArticulosController(
             IArticuloApiClient articulos,
             IFabricanteArticuloApiClient fabricantes,
             IGrupoArticuloApiClient grupos,
-            IGrupoUnidadMedidaArticuloApiClient gruposMedida)
+            IGrupoUnidadMedidaArticuloApiClient gruposMedida,
+            INumeracionDocumentoDetApiClient series)
         {
             _articulos = articulos;
             _fabricantes = fabricantes;
             _grupos = grupos;
             _gruposMedida = gruposMedida;
+            _series = series;
         }
 
         public IActionResult Index() => View();
@@ -36,11 +44,12 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> FormularioCrear()
+        public async Task<IActionResult> Crear()
         {
             await CargarDropdownsAsync();
-            ViewBag.EsEdicion = false;
-            return PartialView("_Form", new ArticuloCrearDTO { Activo = "S", ArticuloCompra = "S", ArticuloVenta = "S", ArticuloInventario = "S", NoApliDesc = "N", GestNoSerie = "N", GestLote = "N", GestPorAlmacen = "N" });
+            var series = await _series.ObtenerPorDocumentoAsync(CodigoObjArticulo);
+            ViewBag.SeriesArticulo = (series.Dato ?? []).Where(s => s.SubTipoDoc == SubTipoDocArticulo);
+            return View(new ArticuloCrearDTO { Activo = "S", ArticuloCompra = "S", ArticuloVenta = "S", ArticuloInventario = "S", NoApliDesc = "N", GestNoSerie = "N", GestLote = "N", GestPorAlmacen = "N" });
         }
 
         [HttpGet]
@@ -52,6 +61,15 @@ namespace Web.UI.Controllers
 
             await CargarDropdownsAsync();
             ViewBag.EsEdicion = true;
+
+            var serieInfo = await _series.ObtenerAsync(respuesta.Dato.Serie);
+            ViewBag.NombreSerieActual = serieInfo.Resultado ? serieInfo.Dato?.NombreSerie : null;
+
+            var grupos = await _grupos.ObtenerTodoAsync();
+            ViewBag.NombreGrupoActual = grupos.Dato?.FirstOrDefault(g => g.Codigo == respuesta.Dato.CodigoGrupo)?.Nombre;
+
+            // Aviso real (no decorativo): se calcula igual que la alerta de "stock bajo" del Dashboard.
+            ViewBag.EsBajoMinimo = respuesta.Dato.Minimo is > 0 && (respuesta.Dato.CantDisponible ?? 0) < respuesta.Dato.Minimo.Value;
 
             var dto = new ArticuloCrearDTO
             {
@@ -75,7 +93,8 @@ namespace Web.UI.Controllers
                 GestPorAlmacen = respuesta.Dato.GestPorAlmacen,
                 Minimo = respuesta.Dato.Minimo,
                 Maximo = respuesta.Dato.Maximo,
-                Comentarios = respuesta.Dato.Comentarios
+                Comentarios = respuesta.Dato.Comentarios,
+                Serie = respuesta.Dato.Serie
             };
 
             return PartialView("_Form", dto);
@@ -93,9 +112,16 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(string codigo, [FromBody] ArticuloCrearDTO dto)
         {
+            // La serie no se edita desde este formulario (solo se muestra a modo informativo) --
+            // se conserva el valor actual del artículo en vez de confiar en lo que llegue.
+            var actual = await _articulos.ObtenerAsync(codigo);
+            if (!actual.Resultado || actual.Dato is null)
+                return NotFound(actual);
+
             var actualizar = new ArticuloActualizarDTO
             {
                 Codigo = codigo,
+                Serie = actual.Dato.Serie,
                 Nombre = dto.Nombre,
                 CodigoGrupo = dto.CodigoGrupo,
                 CodigoGrpUnidadMedida = dto.CodigoGrpUnidadMedida,
@@ -127,6 +153,14 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Eliminar(string codigo)
         {
             var respuesta = await _articulos.EliminarAsync(codigo);
+            return Json(respuesta);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerarCodigoSerie(int serie)
+        {
+            var respuesta = await _series.GenerarCodigoAsync(serie);
             return Json(respuesta);
         }
 

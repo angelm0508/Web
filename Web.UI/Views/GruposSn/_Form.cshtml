@@ -12,17 +12,10 @@
         <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
 
         <div class="row g-3">
-            <div class="col-md-8">
+            <div class="col-12">
                 <label asp-for="Nombre" class="form-label"></label>
                 <input asp-for="Nombre" class="form-control" />
                 <span asp-validation-for="Nombre" class="text-danger small"></span>
-            </div>
-            <div class="col-md-4">
-                <label asp-for="Bloqueado" class="form-label"></label>
-                <select asp-for="Bloqueado" class="form-select">
-                    <option value="S">Sí</option>
-                    <option value="N">No</option>
-                </select>
             </div>
         </div>
     </form>

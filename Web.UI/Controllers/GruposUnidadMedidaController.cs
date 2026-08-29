@@ -55,6 +55,7 @@ namespace Web.UI.Controllers
 
             var dto = new GrupoUnidadMedidaArticuloCrearDTO
             {
+                Codigo = respuesta.Dato.Codigo,
                 Nombre = respuesta.Dato.Nombre,
                 BaseMedida = respuesta.Dato.BaseMedida,
                 Bloqueado = respuesta.Dato.Bloqueado
@@ -67,6 +68,7 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear([FromBody] GrupoUnidadMedidaArticuloCrearDTO dto)
         {
+            dto.Bloqueado ??= "N";
             var respuesta = await _grupos.InsertarAsync(dto);
             return Json(respuesta);
         }
@@ -75,11 +77,16 @@ namespace Web.UI.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, [FromBody] GrupoUnidadMedidaArticuloCrearDTO dto)
         {
+            var actual = await _grupos.ObtenerAsync(id);
+            if (!actual.Resultado || actual.Dato is null)
+                return NotFound(actual);
+
             var actualizar = new GrupoUnidadMedidaArticuloActualizarDTO
             {
+                Codigo = dto.Codigo,
                 Nombre = dto.Nombre,
                 BaseMedida = dto.BaseMedida,
-                Bloqueado = dto.Bloqueado
+                Bloqueado = actual.Dato.Bloqueado
             };
 
             var respuesta = await _grupos.ActualizarAsync(id, actualizar);

@@ -1,9 +1,22 @@
 $(function () {
     const tabla = $('#tblListadosPrecio').DataTable({
-        ajax: { url: '/ListadosPrecio/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: '/ListadosPrecio/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'nombre' },
-            { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-danger">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
+            { data: 'base', render: d => d ?? '' },
+            { data: 'factor', render: d => d != null ? Number(d).toFixed(2) : '' },
+            {
+                data: 'metodoRedondeo', render: d => {
+                    const nombres = { 0: 'Ninguno', 1: 'A la unidad', 2: 'A 0.5', 3: 'A 5', 4: 'A 10', 5: 'A 25' };
+                    return d != null ? (nombres[d] ?? d) : '';
+                }
+            },
+            {
+                data: 'reglaRedondeo', render: d => {
+                    const nombres = { F: 'Hacia abajo', C: 'Hacia arriba', R: 'Al más cercano' };
+                    return d ? (nombres[d] ?? d) : '';
+                }
+            },
             {
                 data: 'entry', orderable: false, className: 'text-end',
                 render: entry => `

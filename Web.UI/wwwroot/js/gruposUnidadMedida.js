@@ -1,16 +1,20 @@
 $(function () {
     const tabla = $('#tblGruposUnidadMedida').DataTable({
-        ajax: { url: '/GruposUnidadMedida/ObtenerTodos', dataSrc: 'dato' },
+        ajax: { url: '/GruposUnidadMedida/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
+            { data: 'codigo' },
             { data: 'nombre' },
-            { data: 'baseMedida' },
-            { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-secondary">Sí</span>' : '<span class="badge text-bg-success">No</span>' },
+            { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-danger">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
-                render: id => `
-                    <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}"><i class="fa-solid fa-trash"></i></button>
-                `
+                render: (id, type, row) => {
+                    const bloqueado = row.bloqueado === 'S';
+                    const atributos = bloqueado ? 'disabled title="Registro bloqueado"' : '';
+                    return `
+                        <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}" ${atributos}><i class="fa-solid fa-pen"></i></button>
+                        <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}" ${atributos}><i class="fa-solid fa-trash"></i></button>
+                    `;
+                }
             }
         ],
         language: App.datatableEsEs
@@ -21,7 +25,7 @@ $(function () {
     function abrirModal(html) {
         $('#contenidoModal').html(html);
         new bootstrap.Modal('#modalFormulario').show();
-        cargarDetalle();
+        inicializarDetalle();
     }
 
     $('#btnNuevo').on('click', async function () {
@@ -56,66 +60,141 @@ $(function () {
 
         const datos = App.recolectarFormulario('#formGrupoUnidadMedida');
 
-        const url = esEdicion ? `/GruposUnidadMedida/Editar?id=${encodeURIComponent(id)}` : '/GruposUnidadMedida/Crear';
-        const respuesta = await App.enviarJson(url, 'POST', datos);
+        if (!esEdicion) {
+            const respuestaGrupo = await App.enviarJson('/GruposUnidadMedida/Crear', 'POST', datos);
+            if (!respuestaGrupo.resultado) {
+                App.mostrarError(respuestaGrupo.mensaje);
+                return;
+            }
 
+            const nuevoEntry = respuestaGrupo.dato;
+            let exitosas = 0;
+            let fallidas = 0;
+
+            for (const linea of lineasLocales) {
+                const respuestaLinea = await App.enviarJson('/GruposUnidadMedida/CrearLinea', 'POST', {
+                    MedidaEntry: linea.MedidaEntry,
+                    CantAlternativa: linea.CantAlternativa,
+                    CantBase: linea.CantBase,
+                    GrpMedidaEntry: nuevoEntry
+                });
+
+                if (respuestaLinea.resultado) {
+                    exitosas++;
+                } else {
+                    fallidas++;
+                    App.mostrarError(respuestaLinea.mensaje);
+                }
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+            if (fallidas > 0) {
+                App.mostrarExito(`Grupo creado correctamente. Líneas guardadas: ${exitosas} de ${exitosas + fallidas}.`);
+            } else {
+                App.mostrarExito('Grupo creado correctamente.');
+            }
+            recargarTabla();
+            return;
+        }
+
+        const respuesta = await App.enviarJson(`/GruposUnidadMedida/Editar?id=${encodeURIComponent(id)}`, 'POST', datos);
         if (!respuesta.resultado) {
             App.mostrarError(respuesta.mensaje);
             return;
         }
 
         bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito(esEdicion ? 'Grupo actualizado correctamente.' : 'Grupo creado correctamente.');
+        App.mostrarExito('Grupo actualizado correctamente.');
         recargarTabla();
     });
 
-    // --- Detalle (grid anidado, solo aplica en modo edición) ---
+    // --- Detalle (grid anidado): en creación se administra localmente, en edición en vivo contra la API ---
 
-    let lineasDetalle = [];
+    let lineasLocales = [];
+    let lineasRemotas = [];
+    let proximoIdLocal = 1;
+    let numLineaOriginalEnEdicion = null;
 
-    async function cargarDetalle() {
+    function esEdicionDetalle() {
+        const v = $('#tblDetalleGrupoUnidadMedida').data('es-edicion');
+        return v === true || v === 'true';
+    }
+
+    function inicializarDetalle() {
+        lineasLocales = [];
+        lineasRemotas = [];
+        proximoIdLocal = 1;
+        numLineaOriginalEnEdicion = null;
+
         const $tabla = $('#tblDetalleGrupoUnidadMedida');
         if ($tabla.length === 0) return;
 
-        const grpMedidaEntry = $tabla.data('grupo');
+        if (esEdicionDetalle()) {
+            cargarDetalleRemoto();
+        } else {
+            pintarDetalle();
+        }
+    }
+
+    async function cargarDetalleRemoto() {
+        const grpMedidaEntry = $('#tblDetalleGrupoUnidadMedida').data('grupo');
         const respuesta = await $.get('/GruposUnidadMedida/ObtenerDetalle', { grpMedidaEntry });
-        lineasDetalle = (respuesta.resultado && respuesta.dato) ? respuesta.dato : [];
+        lineasRemotas = (respuesta.resultado && respuesta.dato) ? respuesta.dato : [];
         pintarDetalle();
+    }
+
+    function nombreUnidad(entry) {
+        const texto = $(`#detMedidaEntry option[value="${entry}"]`).text();
+        return texto || entry;
     }
 
     function pintarDetalle() {
         const $tbody = $('#tblDetalleGrupoUnidadMedida tbody');
         if ($tbody.length === 0) return;
 
-        if (lineasDetalle.length === 0) {
-            $tbody.html('<tr><td colspan="7" class="text-center text-muted">Sin líneas de detalle</td></tr>');
+        const lista = esEdicionDetalle() ? lineasRemotas : lineasLocales;
+        const opcionesUnidades = $('#detMedidaEntry').html();
+        const baseMedidaActual = $('#selectBaseMedida').val();
+
+        if (lista.length === 0) {
+            $tbody.html('<tr><td colspan="5" class="text-center text-muted">Sin líneas de detalle</td></tr>');
             return;
         }
 
-        $tbody.html(lineasDetalle.map(linea => `
-            <tr>
-                <td>${linea.medidaEntry}</td>
-                <td>${linea.cantAlternativa ?? ''}</td>
-                <td>${linea.cantBase ?? ''}</td>
-                <td>${linea.pesoFactor ?? ''}</td>
-                <td>${linea.udfFactor ?? ''}</td>
-                <td>${linea.activo === 'S' ? 'Sí' : 'No'}</td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-primary btn-editar-linea" data-num-linea="${linea.numLinea}"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-num-linea="${linea.numLinea}"><i class="fa-solid fa-trash"></i></button>
-                </td>
-            </tr>
-        `).join(''));
+        $tbody.html(lista.map(linea => {
+            const medidaEntry = linea.medidaEntry ?? linea.MedidaEntry;
+            const cantAlternativa = linea.cantAlternativa ?? linea.CantAlternativa;
+            const cantBase = linea.cantBase ?? linea.CantBase;
+            const clave = esEdicionDetalle() ? linea.numLinea : linea._id;
+            return `
+                <tr>
+                    <td>${nombreUnidad(medidaEntry)}</td>
+                    <td>${cantAlternativa ?? ''}</td>
+                    <td>${cantBase ?? ''}</td>
+                    <td>
+                        <select class="form-select form-select-sm select-base-medida-linea" disabled>
+                            ${opcionesUnidades}
+                        </select>
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}"><i class="fa-solid fa-pen"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        }).join(''));
+
+        $('.select-base-medida-linea').val(baseMedidaActual);
     }
+
+    $(document).on('change', '#selectBaseMedida', pintarDetalle);
 
     function limpiarPanelLinea() {
         $('#detNumLineaOriginal').val('');
         $('#detMedidaEntry').val('');
         $('#detCantAlternativa').val('');
         $('#detCantBase').val('');
-        $('#detPesoFactor').val('');
-        $('#detUdfFactor').val('');
-        $('#detActivo').val('S');
+        numLineaOriginalEnEdicion = null;
     }
 
     $(document).on('click', '#btnNuevaLinea', function () {
@@ -128,54 +207,79 @@ $(function () {
     });
 
     $(document).on('click', '.btn-editar-linea', function () {
-        const numLinea = $(this).data('num-linea');
-        const linea = lineasDetalle.find(l => l.numLinea === numLinea);
+        const clave = $(this).data('clave');
+        const lista = esEdicionDetalle() ? lineasRemotas : lineasLocales;
+        const linea = esEdicionDetalle()
+            ? lista.find(l => l.numLinea === clave)
+            : lista.find(l => l._id === clave);
         if (!linea) return;
 
-        $('#detNumLineaOriginal').val(linea.numLinea);
-        $('#detMedidaEntry').val(linea.medidaEntry);
-        $('#detCantAlternativa').val(linea.cantAlternativa ?? '');
-        $('#detCantBase').val(linea.cantBase ?? '');
-        $('#detPesoFactor').val(linea.pesoFactor ?? '');
-        $('#detUdfFactor').val(linea.udfFactor ?? '');
-        $('#detActivo').val(linea.activo ?? 'S');
+        limpiarPanelLinea();
+        numLineaOriginalEnEdicion = clave;
+
+        $('#detNumLineaOriginal').val(clave);
+        $('#detMedidaEntry').val(linea.medidaEntry ?? linea.MedidaEntry);
+        $('#detCantAlternativa').val(linea.cantAlternativa ?? linea.CantAlternativa ?? '');
+        $('#detCantBase').val(linea.cantBase ?? linea.CantBase ?? '');
+
         $('#panelLineaDetalle').removeClass('d-none');
     });
 
     $(document).on('click', '.btn-eliminar-linea', async function () {
-        const numLinea = $(this).data('num-linea');
-        const grpMedidaEntry = $('#tblDetalleGrupoUnidadMedida').data('grupo');
+        const clave = $(this).data('clave');
 
         const confirmado = await App.confirmarEliminar('Se eliminará la línea de detalle seleccionada.');
         if (!confirmado) return;
 
-        const respuesta = await App.eliminar(`/GruposUnidadMedida/EliminarLinea?grpMedidaEntry=${grpMedidaEntry}&numLinea=${numLinea}`);
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
-            return;
+        if (esEdicionDetalle()) {
+            const grpMedidaEntry = $('#tblDetalleGrupoUnidadMedida').data('grupo');
+            const respuesta = await App.eliminar(`/GruposUnidadMedida/EliminarLinea?grpMedidaEntry=${grpMedidaEntry}&numLinea=${clave}`);
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+            App.mostrarExito('Línea eliminada correctamente.');
+            cargarDetalleRemoto();
+        } else {
+            lineasLocales = lineasLocales.filter(l => l._id !== clave);
+            pintarDetalle();
         }
-        App.mostrarExito('Línea eliminada correctamente.');
-        cargarDetalle();
     });
 
     $(document).on('click', '#btnGuardarLinea', async function () {
-        const grpMedidaEntry = $('#tblDetalleGrupoUnidadMedida').data('grupo');
-        const numLineaOriginal = $('#detNumLineaOriginal').val();
-        const datos = App.recolectarFormulario('#formLineaDetalle');
+        const datosForm = App.recolectarFormulario('#formLineaDetalle');
 
-        const esEdicionLinea = numLineaOriginal !== '';
-        const url = esEdicionLinea
-            ? `/GruposUnidadMedida/EditarLinea?grpMedidaEntry=${grpMedidaEntry}&numLinea=${numLineaOriginal}`
-            : '/GruposUnidadMedida/CrearLinea';
-
-        const respuesta = await App.enviarJson(url, 'POST', datos);
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
+        if (!datosForm.MedidaEntry) {
+            App.mostrarError('La unidad de medida es requerida.');
             return;
         }
 
-        App.mostrarExito(esEdicionLinea ? 'Línea actualizada correctamente.' : 'Línea agregada correctamente.');
-        $('#panelLineaDetalle').addClass('d-none');
-        cargarDetalle();
+        if (esEdicionDetalle()) {
+            const grpMedidaEntry = $('#tblDetalleGrupoUnidadMedida').data('grupo');
+            const esEdicionLinea = numLineaOriginalEnEdicion !== null;
+            const url = esEdicionLinea
+                ? `/GruposUnidadMedida/EditarLinea?grpMedidaEntry=${grpMedidaEntry}&numLinea=${numLineaOriginalEnEdicion}`
+                : '/GruposUnidadMedida/CrearLinea';
+            const datos = esEdicionLinea ? datosForm : { ...datosForm, GrpMedidaEntry: grpMedidaEntry };
+
+            const respuesta = await App.enviarJson(url, 'POST', datos);
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+
+            App.mostrarExito(esEdicionLinea ? 'Línea actualizada correctamente.' : 'Línea agregada correctamente.');
+            $('#panelLineaDetalle').addClass('d-none');
+            cargarDetalleRemoto();
+        } else {
+            if (numLineaOriginalEnEdicion !== null) {
+                lineasLocales = lineasLocales.map(l => l._id === numLineaOriginalEnEdicion ? { ...datosForm, _id: l._id } : l);
+            } else {
+                lineasLocales.push({ ...datosForm, _id: proximoIdLocal++ });
+            }
+
+            $('#panelLineaDetalle').addClass('d-none');
+            pintarDetalle();
+        }
     });
 });

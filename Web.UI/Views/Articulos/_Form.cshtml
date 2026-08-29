@@ -1,82 +1,99 @@
 @model Web.ApiClient.Dtos.Articulo.ArticuloCrearDTO
 @{
-    bool esEdicion = ViewBag.EsEdicion ?? false;
+    bool esBajoMinimo = ViewBag.EsBajoMinimo ?? false;
 }
 
-<div class="modal-header">
-    <h5 class="modal-title">@(esEdicion ? "Editar artículo" : "Nuevo artículo")</h5>
+<div class="modal-header align-items-start">
+    <div class="d-flex align-items-start gap-3">
+        <span class="d-flex align-items-center justify-content-center rounded-3 flex-shrink-0" style="width:44px;height:44px;background:var(--color-surface-muted);border:1px solid var(--color-border)">
+            <i class="fa-solid fa-box text-muted"></i>
+        </span>
+        <div>
+            <h5 class="modal-title mb-1">@Model.Nombre</h5>
+            <div class="small text-muted font-mono">@Model.Codigo &middot; @(ViewBag.NombreGrupoActual ?? "Sin grupo") &middot; @ViewBag.NombreSerieActual</div>
+        </div>
+    </div>
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
+    @if (esBajoMinimo)
+    {
+        <div class="d-flex align-items-center gap-2 p-2 rounded-3 mb-3 small" style="background:var(--color-warning-soft-bg);color:var(--color-warning-soft-fg)">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Este artículo está bajo el stock mínimo (@Model.CantDisponible de @Model.Minimo).</span>
+        </div>
+    }
     <form id="formArticulo" novalidate>
         <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
 
         <div class="row g-3">
-            <div class="col-md-4">
-                <label asp-for="Codigo" class="form-label"></label>
-                <input asp-for="Codigo" class="form-control" readonly="@esEdicion" />
-                <span asp-validation-for="Codigo" class="text-danger small"></span>
+            <div class="col-md-6">
+                <label class="form-label">Serie</label>
+                <input class="form-control" value="@ViewBag.NombreSerieActual" disabled />
             </div>
-            <div class="col-md-8">
+            <div class="col-md-6">
+                <label asp-for="Codigo" class="form-label"></label>
+                <input asp-for="Codigo" class="form-control" readonly />
+            </div>
+            <div class="col-12">
                 <label asp-for="Nombre" class="form-label"></label>
                 <input asp-for="Nombre" class="form-control" />
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="FabricanteEntry" class="form-label"></label>
                 <select asp-for="FabricanteEntry" class="form-select" asp-items="ViewBag.Fabricantes">
                     <option value="">-- Seleccione --</option>
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="CodigoGrupo" class="form-label"></label>
                 <select asp-for="CodigoGrupo" class="form-select" asp-items="ViewBag.Grupos">
                     <option value="">-- Seleccione --</option>
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="CodigoGrpUnidadMedida" class="form-label"></label>
                 <select asp-for="CodigoGrpUnidadMedida" class="form-select" asp-items="ViewBag.GruposMedida">
                     <option value="">-- Seleccione --</option>
                 </select>
             </div>
-
-            <div class="col-md-3">
-                <label asp-for="PrecioUnitario" class="form-label"></label>
-                <input asp-for="PrecioUnitario" type="number" step="0.01" class="form-control" />
-            </div>
-            <div class="col-md-3">
-                <label asp-for="CantDisponible" class="form-label"></label>
-                <input asp-for="CantDisponible" type="number" step="0.01" class="form-control" />
-            </div>
-            <div class="col-md-3">
-                <label asp-for="Minimo" class="form-label"></label>
-                <input asp-for="Minimo" type="number" step="0.01" class="form-control" />
-            </div>
-            <div class="col-md-3">
-                <label asp-for="Maximo" class="form-label"></label>
-                <input asp-for="Maximo" type="number" step="0.01" class="form-control" />
-            </div>
-
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label asp-for="AlmacenDefecto" class="form-label"></label>
                 <input asp-for="AlmacenDefecto" class="form-control" />
             </div>
-            <div class="col-md-2">
+
+            <div class="col-md-4">
+                <label asp-for="PrecioUnitario" class="form-label"></label>
+                <input asp-for="PrecioUnitario" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Minimo" class="form-label"></label>
+                <input asp-for="Minimo" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Maximo" class="form-label"></label>
+                <input asp-for="Maximo" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="CantDisponible" class="form-label"></label>
+                <input asp-for="CantDisponible" type="number" step="0.01" class="form-control" readonly />
+            </div>
+            <div class="col-md-4">
                 <label asp-for="Activo" class="form-label"></label>
                 <select asp-for="Activo" class="form-select">
                     <option value="S">Sí</option>
                     <option value="N">No</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label asp-for="ArticuloCompra" class="form-label"></label>
                 <select asp-for="ArticuloCompra" class="form-select">
                     <option value="S">Sí</option>
                     <option value="N">No</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label asp-for="ArticuloVenta" class="form-label"></label>
                 <select asp-for="ArticuloVenta" class="form-select">
                     <option value="S">Sí</option>
@@ -92,8 +109,9 @@
     </form>
 </div>
 <div class="modal-footer">
+    <span class="small text-muted me-auto">Esc para cerrar</span>
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-    <button type="button" class="btn btn-primary" id="btnGuardarArticulo" data-edicion="@esEdicion.ToString().ToLower()" data-codigo="@Model.Codigo">
-        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    <button type="button" class="btn btn-primary" id="btnGuardarArticulo" data-codigo="@Model.Codigo">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios
     </button>
 </div>
