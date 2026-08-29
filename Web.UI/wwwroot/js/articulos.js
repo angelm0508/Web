@@ -133,22 +133,10 @@ $(function () {
             return;
         }
 
-        let codigoGenerado = null;
-        if (!esSerieManualArticulo()) {
-            const respuestaSerie = await App.enviarJson(`/Articulos/GenerarCodigoSerie?serie=${serieSeleccionada}`, 'POST', {});
-            if (!respuestaSerie.resultado) {
-                App.mostrarError(respuestaSerie.mensaje);
-                return;
-            }
-            codigoGenerado = respuestaSerie.dato;
-        }
-
+        // La vista previa del campo Código (deshabilitado cuando la serie no es manual) es solo
+        // cosmética -- el código real lo calcula y asigna la API al momento de guardar, así que ya
+        // no se envía nada calculado aquí para series no manuales.
         const datos = App.recolectarFormulario('#formArticuloCrear');
-        // El campo Código queda deshabilitado cuando el código se genera automáticamente, así que
-        // no viaja en el serializeArray del formulario -- hay que agregarlo a mano.
-        if (codigoGenerado !== null) {
-            datos.Codigo = codigoGenerado;
-        }
         datos.Serie = serieSeleccionada;
 
         const respuesta = await App.enviarJson('/Articulos/Crear', 'POST', datos);
@@ -157,7 +145,7 @@ $(function () {
             return;
         }
 
-        await App.mostrarExito('Artículo creado correctamente.');
+        await App.mostrarExito(`Artículo "${respuesta.codigo}" creado correctamente.`);
         window.location.href = '/Articulos';
     });
 });

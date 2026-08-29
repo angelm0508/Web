@@ -105,7 +105,9 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Crear([FromBody] ArticuloCrearDTO dto)
         {
             var respuesta = await _articulos.InsertarAsync(dto);
-            return Json(respuesta);
+            // "respuesta.Dato" ya es el código real (para series no manuales, el que calculó la
+            // API al momento de registrar -- no el de la vista previa mostrada antes de guardar).
+            return Json(new { respuesta.Resultado, respuesta.Mensaje, codigo = respuesta.Dato });
         }
 
         [HttpPost]
@@ -153,14 +155,6 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Eliminar(string codigo)
         {
             var respuesta = await _articulos.EliminarAsync(codigo);
-            return Json(respuesta);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerarCodigoSerie(int serie)
-        {
-            var respuesta = await _series.GenerarCodigoAsync(serie);
             return Json(respuesta);
         }
 
