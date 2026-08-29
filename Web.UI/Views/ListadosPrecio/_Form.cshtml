@@ -20,7 +20,10 @@
             <div class="col-md-4">
                 <label asp-for="Base" class="form-label"></label>
                 <select asp-for="Base" class="form-select" asp-items="ViewBag.Listados">
-                    <option value="">-- Ninguna --</option>
+                    @if (!(bool)(ViewBag.HayListasBase ?? false))
+                    {
+                        <option value="">-- Ninguna --</option>
+                    }
                 </select>
             </div>
 

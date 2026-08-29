@@ -98,7 +98,12 @@ namespace Web.UI.Controllers
                 // Una lista de precio no puede tomarse a sí misma como base.
                 opciones = opciones.Where(x => x.Entry != idActual.Value);
             }
-            ViewBag.Listados = new SelectList(opciones, "Entry", "Nombre");
+            var opcionesBase = opciones.ToList();
+            ViewBag.Listados = new SelectList(opcionesBase, "Entry", "Nombre");
+            // El placeholder "-- Ninguna --" solo tiene sentido si de verdad no hay ninguna otra
+            // lista disponible para elegir como base (p. ej. la primera lista que se crea) -- si
+            // ya existen otras, el campo pasa a ser obligatorio y no debe mostrarse.
+            ViewBag.HayListasBase = opcionesBase.Count > 0;
 
             ViewBag.MetodosRedondeo = new SelectList(new[]
             {

@@ -3,7 +3,6 @@ $(function () {
         ajax: { url: '/GruposArticulo/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'nombre' },
-            { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-secondary">Sí</span>' : '<span class="badge text-bg-success">No</span>' },
             {
                 data: 'codigo', orderable: false, className: 'text-end',
                 render: (codigo, type, row) => {

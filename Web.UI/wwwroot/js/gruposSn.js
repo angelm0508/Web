@@ -5,7 +5,6 @@ $(function () {
         ajax: { url: `/GruposSn/ObtenerTodos?tipoGrupo=${tipoGrupo}`, dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'nombre' },
-            { data: 'bloqueado', render: d => d === 'S' ? '<span class="badge text-bg-danger">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
                 render: (entry, type, row) => {
