@@ -53,6 +53,10 @@ builder.Services.AddHttpClient<ICotizacionApiClient, CotizacionApiClient>(c => c
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<ICotizacionDetalleApiClient, CotizacionDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IPedidoApiClient, PedidoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IPedidoDetalleApiClient, PedidoDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
 // Solo lectura, usados como fuente de dropdowns (ej. País/Departamento/Municipio en Almacenes).
 builder.Services.AddHttpClient<IPaisApiClient, PaisApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
