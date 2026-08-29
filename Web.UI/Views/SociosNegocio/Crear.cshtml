@@ -14,7 +14,7 @@
 <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
     <div>
         <h1 class="h4 mb-1">Nuevo socio de negocio</h1>
-        <p class="text-muted small mb-0">El código y la serie son obligatorios <span class="text-danger">*</span> para poder registrarlo.</p>
+        <p class="text-muted small mb-0">La serie es obligatoria <span class="text-danger">*</span> para poder registrarlo; el código solo si eliges la serie "Manual" (en las demás, se genera al guardar).</p>
     </div>
     <div class="d-flex gap-2">
         <a asp-controller="SociosNegocio" asp-action="Index" class="btn btn-outline-secondary btn-sm">Cancelar</a>
@@ -59,7 +59,7 @@
                                     <span class="form-text">Si eliges una serie distinta de "Manual", el código se genera solo al guardar.</span>
                                 </div>
                                 <div class="col-md-4">
-                                    <label asp-for="Codigo" class="form-label"></label> <span class="text-danger">*</span>
+                                    <label asp-for="Codigo" class="form-label"></label>
                                     <input asp-for="Codigo" class="form-control" />
                                     <span asp-validation-for="Codigo" class="text-danger small"></span>
                                 </div>
