@@ -18,9 +18,7 @@
             {
                 <div class="col-md-3">
                     <label class="form-label">Serie</label>
-                    <select id="selectSerieCotizacion" class="form-select">
-                        <option value="">-- Seleccione --</option>
-                    </select>
+                    <select id="selectSerieCotizacion" class="form-select" data-serie-defecto="@ViewBag.SerieDefecto"></select>
                     <span class="form-text">Si eliges una serie distinta de "Manual", el número se genera solo al guardar.</span>
                 </div>
             }
@@ -39,7 +37,7 @@
             <div class="col-md-3">
                 <label asp-for="EstadoDoc" class="form-label">Estado</label>
                 <select asp-for="EstadoDoc" class="form-select">
-                    <option value="A">Activo</option>
+                    <option value="A">Abierto</option>
                     <option value="C">Cancelado</option>
                 </select>
             </div>

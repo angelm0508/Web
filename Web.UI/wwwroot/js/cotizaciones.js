@@ -5,7 +5,7 @@ $(function () {
             { data: 'numDoc' },
             { data: 'nombreSn', render: (d, t, row) => d || row.codigoSn || '' },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
-            { data: 'estadoDoc', render: d => d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Activo</span>' },
+            { data: 'estadoDoc', render: d => d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Abierto</span>' },
             { data: 'totalDoc', render: d => d != null ? Number(d).toFixed(2) : '' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
@@ -61,17 +61,26 @@ $(function () {
         const datosEl = document.getElementById('datosSeriesCotizacion');
         const series = datosEl ? (JSON.parse(datosEl.textContent) || []) : [];
 
-        $sel.html('<option value="">-- Seleccione --</option>');
-        let serieManual = null;
+        $sel.html('');
         series.forEach(s => {
             const serie = s.serie ?? s.Serie;
             const nombre = s.nombreSerie ?? s.NombreSerie;
             const manual = s.manual ?? s.Manual;
-            if (manual === 'S' && serieManual === null) serieManual = serie;
-            $sel.append(`<option value="${serie}" data-manual="${manual}">${nombre}</option>`);
+            const sigNumero = s.sigNumero ?? s.SigNumero;
+            $sel.append(`<option value="${serie}" data-manual="${manual}" data-sig-numero="${sigNumero ?? ''}">${nombre}</option>`);
         });
 
-        if (serieManual !== null) $sel.val(serieManual);
+        // Preselecciona la serie configurada como "por defecto" para este objeto en la pantalla
+        // "Numeración de documentos"; si no está entre las opciones (por ejemplo, quedó bloqueada
+        // o eliminada), cae en la primera disponible -- ya no queda un placeholder vacío.
+        const serieDefecto = $sel.data('serie-defecto');
+        const tieneSerieDefecto = serieDefecto !== undefined && serieDefecto !== '' &&
+            $sel.find(`option[value="${serieDefecto}"]`).length > 0;
+        if (tieneSerieDefecto) {
+            $sel.val(String(serieDefecto));
+        } else if ($sel.find('option').length > 0) {
+            $sel.prop('selectedIndex', 0);
+        }
 
         actualizarNumDocSegunSerie();
     }
@@ -87,9 +96,10 @@ $(function () {
         if ($numDoc.length === 0) return;
 
         if (esSerieManualCotizacion()) {
-            $numDoc.prop('disabled', false).attr('placeholder', '');
+            $numDoc.val('').prop('disabled', false).attr('placeholder', '');
         } else {
-            $numDoc.val('').prop('disabled', true).attr('placeholder', 'Se generará al guardar');
+            const sigNumero = $('#selectSerieCotizacion').find('option:selected').data('sig-numero');
+            $numDoc.val(sigNumero ?? '').prop('disabled', true).attr('placeholder', 'Se generará al guardar');
         }
     }
 

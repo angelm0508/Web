@@ -19,6 +19,7 @@ namespace Web.UI.Controllers
         private readonly IAlmacenApiClient _almacenes;
         private readonly IImpuestoApiClient _impuestos;
         private readonly INumeracionDocumentoDetApiClient _series;
+        private readonly INumeracionDocumentoApiClient _numeracion;
 
         // CodigoObj de NumeracionDocumento que identifica a "Cotizaciones" como tipo de objeto.
         private const string CodigoObjCotizacion = "3";
@@ -32,7 +33,8 @@ namespace Web.UI.Controllers
             IArticuloApiClient articulos,
             IAlmacenApiClient almacenes,
             IImpuestoApiClient impuestos,
-            INumeracionDocumentoDetApiClient series)
+            INumeracionDocumentoDetApiClient series,
+            INumeracionDocumentoApiClient numeracion)
         {
             _cotizaciones = cotizaciones;
             _detalles = detalles;
@@ -42,6 +44,7 @@ namespace Web.UI.Controllers
             _almacenes = almacenes;
             _impuestos = impuestos;
             _series = series;
+            _numeracion = numeracion;
         }
 
         public IActionResult Index() => View();
@@ -59,6 +62,13 @@ namespace Web.UI.Controllers
             await CargarDropdownsAsync();
             var series = await _series.ObtenerPorDocumentoAsync(CodigoObjCotizacion);
             ViewBag.SeriesCotizacion = (series.Dato ?? []).Where(s => s.SubTipoDoc == SubTipoDocCotizacion);
+
+            // Serie preseleccionada: la que está configurada como "por defecto" para este objeto en
+            // la pantalla "Numeración de documentos" (NumeracionDocumento.SerieDfct).
+            var numeraciones = await _numeracion.ObtenerTodoAsync();
+            var numeracionActual = (numeraciones.Dato ?? []).FirstOrDefault(n => n.CodigoObj == CodigoObjCotizacion && n.SubTipoDoc == SubTipoDocCotizacion);
+            ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
+
             ViewBag.EsEdicion = false;
             return PartialView("_Form", new CotizacionCrearDTO { EstadoDoc = "A", TipoObjeto = "3" });
         }
