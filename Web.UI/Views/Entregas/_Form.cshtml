@@ -1,0 +1,211 @@
+@using System.Text.Json
+@model Web.ApiClient.Dtos.Entrega.EntregaCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+    var opcionesJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar entrega" : "Nuevo entrega")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formEntrega" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
+
+        <div class="row g-3">
+            @if (!esEdicion)
+            {
+                <div class="col-md-3">
+                    <label class="form-label">Serie</label>
+                    <select id="selectSerieEntrega" class="form-select">
+                        <option value="">-- Seleccione --</option>
+                    </select>
+                    <span class="form-text">Si eliges una serie distinta de "Manual", el número se genera solo al guardar.</span>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-3">
+                    <label class="form-label">Serie</label>
+                    <input class="form-control" value="@ViewBag.NombreSerieActual" disabled />
+                </div>
+            }
+            <div class="col-md-3">
+                <label asp-for="NumDoc" class="form-label">No. documento</label>
+                <input asp-for="NumDoc" type="number" class="form-control" readonly="@esEdicion" />
+                <span asp-validation-for="NumDoc" class="text-danger small"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="EstadoDoc" class="form-label">Estado</label>
+                <select asp-for="EstadoDoc" class="form-select">
+                    <option value="A">Activo</option>
+                    <option value="C">Cancelado</option>
+                </select>
+            </div>
+            <div class="col-md-3" hidden>
+                <label asp-for="TipoObjeto" class="form-label">Tipo</label>
+                <input asp-for="TipoObjeto" class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="CodigoSn" class="form-label">Socio de negocio</label>
+                <select asp-for="CodigoSn" id="selectCodigoSn" class="form-select" asp-items="ViewBag.Socios">
+                    <option value="">-- Seleccione --</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="NombreSn" class="form-label">Nombre</label>
+                <input asp-for="NombreSn" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="MonedaDoc" class="form-label">Moneda</label>
+                <select asp-for="MonedaDoc" class="form-select" asp-items="ViewBag.Monedas">
+                    <option value="">-- Seleccione --</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Direccion" class="form-label"></label>
+                <input asp-for="Direccion" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha documento</label>
+                <input type="date" name="FechaDoc" id="FechaDoc" class="form-control" value="@Model.FechaDoc?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha emisión</label>
+                <input type="date" name="FechaEmision" id="FechaEmision" class="form-control" value="@Model.FechaEmision?.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="PrctjeDesc" class="form-label">% Descuento</label>
+                <input asp-for="PrctjeDesc" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="PrctjeImpuesto" class="form-label">% Impuesto</label>
+                <input asp-for="PrctjeImpuesto" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Total bruto</label>
+                <input id="TotalBruto" class="form-control" value="@Model.TotalBruto" disabled />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Total documento</label>
+                <input id="TotalDoc" class="form-control" value="@Model.TotalDoc" disabled />
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Comentario" class="form-label"></label>
+                <textarea asp-for="Comentario" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+    </form>
+
+    <hr />
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">Detalle</h6>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="btnNuevaLinea">
+            <i class="fa-solid fa-plus me-1"></i>Agregar línea
+        </button>
+    </div>
+
+    @if (!esEdicion)
+    {
+        <p class="text-muted small">Las líneas agregadas aquí se guardarán junto con el entrega.</p>
+    }
+
+    <div class="table-responsive">
+        <table id="tblDetalleEntrega" class="table table-sm table-hover align-middle w-100" data-entry="@ViewBag.EntryActual" data-es-edicion="@esEdicion.ToString().ToLower()">
+            <thead>
+                <tr>
+                    <th>Artículo</th>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>% Desc.</th>
+                    <th>Impuesto</th>
+                    <th>Total línea</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="panelLineaDetalle" class="border rounded p-3 mb-2 d-none">
+        <form id="formLineaDetalle">
+            <input type="hidden" id="detNoLineaOriginal" value="" />
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label">Artículo</label>
+                    <select id="detCodArticulo" class="form-select">
+                        <option value="">-- Seleccione --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Almacén</label>
+                    <select name="CodAlmacen" id="detCodAlmacen" class="form-select" asp-items="ViewBag.Almacenes">
+                        <option value="">-- Seleccione --</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Impuesto</label>
+                    <select id="detCodigoImpuesto" class="form-select">
+                        <option value="">-- Ninguno --</option>
+                    </select>
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label">Descripción</label>
+                    <input name="Descripcion" id="detDescripcion" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Cantidad</label>
+                    <input name="Cantidad" id="detCantidad" type="number" step="0.01" class="form-control" value="1" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Precio</label>
+                    <input name="Precio" id="detPrecio" type="number" step="0.01" class="form-control" />
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">% Desc.</label>
+                    <input name="PrctjeDesc" id="detPrctjeDesc" type="number" step="0.01" class="form-control" value="0" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Impuesto (Q)</label>
+                    <input name="Impuesto" id="detImpuestoMonto" type="number" step="0.01" class="form-control" readonly />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Total línea</label>
+                    <input name="TotalLinea" id="detTotalLinea" type="number" step="0.01" class="form-control" readonly />
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="button" class="btn btn-sm btn-secondary" id="btnCancelarLinea">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnGuardarLinea">Guardar línea</button>
+            </div>
+        </form>
+    </div>
+
+    <script id="datosArticulosEntrega" type="application/json">
+        @Html.Raw(JsonSerializer.Serialize(ViewBag.Articulos, opcionesJson))
+    </script>
+    <script id="datosImpuestosEntrega" type="application/json">
+        @Html.Raw(JsonSerializer.Serialize(ViewBag.Impuestos, opcionesJson))
+    </script>
+
+    @if (!esEdicion)
+    {
+        <script id="datosSeriesEntrega" type="application/json">
+            @Html.Raw(JsonSerializer.Serialize(ViewBag.SeriesEntrega, opcionesJson))
+        </script>
+    }
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarEntrega" data-edicion="@esEdicion.ToString().ToLower()" data-entry="@ViewBag.EntryActual">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>
