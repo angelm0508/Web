@@ -22,6 +22,7 @@ $(function () {
 
     function abrirModal(html) {
         $('#contenidoModal').html(html);
+        $('#modalFormulario').off('.autocompletar'); // limpia los listeners de la apertura anterior antes de que los 4 widgets registren los suyos
         new bootstrap.Modal('#modalFormulario').show();
         inicializarSerieCotizacion();
         inicializarBuscadorSocio();
@@ -248,8 +249,7 @@ $(function () {
                 $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
                 $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
                 const almacenDefecto = a.almacenDefecto ?? a.AlmacenDefecto ?? '';
-                $('#detCodAlmacenTexto').val(almacenDefecto);
-                $('#detCodAlmacen').val(almacenDefecto);
+                buscadorAlmacen.establecer(almacenDefecto ? { codigo: almacenDefecto, nombre: almacenDefecto } : null);
                 recalcularLinea();
             }
         });

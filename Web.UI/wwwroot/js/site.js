@@ -203,10 +203,11 @@ const App = {
         let indiceActivo = -1;
         let temporizador = null;
         let cerrandoModal = false;
+        let ultimaBusqueda = 0;
 
         const $modal = $texto.closest('.modal');
-        $modal.on('hide.bs.modal', () => { cerrandoModal = true; });
-        $modal.on('hidden.bs.modal', () => { cerrandoModal = false; });
+        $modal.on('mousedown.autocompletar', '[data-bs-dismiss="modal"]', () => { cerrandoModal = true; });
+        $modal.on('hidden.bs.modal.autocompletar', () => { cerrandoModal = false; });
 
         function marcarResuelto(valor) {
             resuelto = valor;
@@ -219,6 +220,10 @@ const App = {
             indiceActivo = -1;
         }
 
+        function escaparHtml(texto) {
+            return String(texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
         function pintarLista() {
             if (resultados.length === 0) {
                 ocultarLista();
@@ -226,7 +231,7 @@ const App = {
             }
             $lista.html(resultados.map((item, i) => `
                 <li class="list-group-item list-group-item-action${i === indiceActivo ? ' active' : ''}" data-indice="${i}" style="cursor: pointer;">
-                    ${obtenerEtiqueta(item)}
+                    ${escaparHtml(obtenerEtiqueta(item))}
                 </li>
             `).join('')).removeClass('d-none');
         }
@@ -248,7 +253,9 @@ const App = {
         }
 
         async function buscar(texto) {
+            const idBusqueda = ++ultimaBusqueda;
             const respuesta = await $.get(endpoint, { texto });
+            if (idBusqueda !== ultimaBusqueda) return; // ya hay una búsqueda más reciente en curso
             resultados = (respuesta.resultado && respuesta.dato) ? respuesta.dato.slice(0, maxResultados) : [];
             indiceActivo = -1;
             pintarLista();
