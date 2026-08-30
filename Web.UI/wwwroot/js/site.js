@@ -162,5 +162,160 @@ const App = {
         } catch (e) {
             return { resultado: false, mensaje: 'No se pudo conectar con el servidor.' };
         }
+    },
+
+    /**
+     * Convierte un <input type="text"> en un buscador con autocompletado contra un endpoint de
+     * la API. No depende de ninguna librería externa. Los elementos (texto visible, oculto con
+     * el código real, lista de sugerencias, mensaje de error) ya deben existir en el markup --
+     * este helper solo los conecta, no crea nada nuevo en el DOM.
+     *
+     * @param {object} opciones
+     * @param {jQuery} opciones.texto - <input type="text"> visible donde se escribe.
+     * @param {jQuery} opciones.oculto - <input type="hidden"> donde queda el código real elegido.
+     * @param {jQuery} opciones.lista - <ul> donde se pintan las sugerencias.
+     * @param {jQuery} opciones.error - elemento con el mensaje de error (se muestra/oculta).
+     * @param {string} opciones.endpoint - URL a la que se pide `?texto=...`, responde Respuesta<T[]>.
+     * @param {(item: object) => string} opciones.obtenerCodigo
+     * @param {(item: object) => string} opciones.obtenerEtiqueta
+     * @param {(item: object|null) => void} [opciones.onSeleccion] - recibe el objeto completo
+     *        elegido, o null si el campo quedó vacío.
+     * @param {number} [opciones.minCaracteres=2]
+     * @param {number} [opciones.debounceMs=300]
+     * @param {number} [opciones.maxResultados=10]
+     * @returns {{ establecer: (item: object|null) => void }} para precargar el campo (ej. al editar).
+     */
+    autocompletar: function (opciones) {
+        const $texto = opciones.texto;
+        const $oculto = opciones.oculto;
+        const $lista = opciones.lista;
+        const $error = opciones.error;
+        const endpoint = opciones.endpoint;
+        const obtenerCodigo = opciones.obtenerCodigo;
+        const obtenerEtiqueta = opciones.obtenerEtiqueta;
+        const onSeleccion = opciones.onSeleccion || function () {};
+        const minCaracteres = opciones.minCaracteres ?? 2;
+        const debounceMs = opciones.debounceMs ?? 300;
+        const maxResultados = opciones.maxResultados ?? 10;
+
+        let resultados = [];
+        let resuelto = true;
+        let indiceActivo = -1;
+        let temporizador = null;
+        let cerrandoModal = false;
+
+        const $modal = $texto.closest('.modal');
+        $modal.on('hide.bs.modal', () => { cerrandoModal = true; });
+        $modal.on('hidden.bs.modal', () => { cerrandoModal = false; });
+
+        function marcarResuelto(valor) {
+            resuelto = valor;
+            $texto.toggleClass('is-invalid', !valor);
+            $error.toggleClass('d-none', valor);
+        }
+
+        function ocultarLista() {
+            $lista.addClass('d-none').empty();
+            indiceActivo = -1;
+        }
+
+        function pintarLista() {
+            if (resultados.length === 0) {
+                ocultarLista();
+                return;
+            }
+            $lista.html(resultados.map((item, i) => `
+                <li class="list-group-item list-group-item-action${i === indiceActivo ? ' active' : ''}" data-indice="${i}" style="cursor: pointer;">
+                    ${obtenerEtiqueta(item)}
+                </li>
+            `).join('')).removeClass('d-none');
+        }
+
+        function elegir(item) {
+            $texto.val(obtenerEtiqueta(item));
+            $oculto.val(obtenerCodigo(item)).trigger('change');
+            marcarResuelto(true);
+            ocultarLista();
+            onSeleccion(item);
+        }
+
+        function limpiar() {
+            $texto.val('');
+            $oculto.val('').trigger('change');
+            marcarResuelto(true);
+            ocultarLista();
+            onSeleccion(null);
+        }
+
+        async function buscar(texto) {
+            const respuesta = await $.get(endpoint, { texto });
+            resultados = (respuesta.resultado && respuesta.dato) ? respuesta.dato.slice(0, maxResultados) : [];
+            indiceActivo = -1;
+            pintarLista();
+        }
+
+        $texto.on('input', function () {
+            const valor = $texto.val();
+            marcarResuelto(valor === '');
+            $oculto.val('').trigger('change');
+            clearTimeout(temporizador);
+            if (valor.length < minCaracteres) {
+                ocultarLista();
+                return;
+            }
+            temporizador = setTimeout(() => buscar(valor), debounceMs);
+        });
+
+        if (minCaracteres === 0) {
+            $texto.on('focus', function () {
+                if ($texto.val() === '') buscar('');
+            });
+        }
+
+        $texto.on('keydown', function (e) {
+            if ($lista.hasClass('d-none') || resultados.length === 0) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                indiceActivo = Math.min(indiceActivo + 1, resultados.length - 1);
+                pintarLista();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                indiceActivo = Math.max(indiceActivo - 1, 0);
+                pintarLista();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (indiceActivo >= 0) elegir(resultados[indiceActivo]);
+            } else if (e.key === 'Escape') {
+                ocultarLista();
+            }
+        });
+
+        // mousedown (no click) para elegir: evita que el blur del input se dispare antes de poder
+        // leer en qué sugerencia se hizo clic (el orden normal de eventos es mousedown -> blur -> click).
+        $lista.on('mousedown', 'li', function (e) {
+            e.preventDefault();
+            const indice = Number($(this).data('indice'));
+            elegir(resultados[indice]);
+        });
+
+        $texto.on('blur', function () {
+            if ($texto.val() === '') {
+                limpiar();
+                return;
+            }
+            if (!resuelto && !cerrandoModal) {
+                setTimeout(() => $texto.trigger('focus'), 0);
+            }
+        });
+
+        return {
+            establecer: function (item) {
+                if (item) {
+                    elegir(item);
+                } else {
+                    limpiar();
+                }
+            }
+        };
     }
 };

@@ -176,6 +176,56 @@ namespace Web.UI.Controllers
             return Json(respuesta);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> BuscarSocios(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _socios.ObtenerTodoAsync()
+                : await _socios.ObtenerContenganNombreAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> BuscarArticulos(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _articulos.ObtenerTodoAsync()
+                : await _articulos.ObtenerContenganNombreAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> BuscarAlmacenes(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _almacenes.ObtenerTodoAsync()
+                : await _almacenes.ObtenerContenganNombreAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> BuscarImpuestos(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _impuestos.ObtenerTodoAsync()
+                : await _impuestos.ObtenerContenganNombreAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerAlmacenPorCodigo(string codigo)
+        {
+            var respuesta = await _almacenes.ObtenerAsync(codigo);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerImpuestoPorCodigo(string codigo)
+        {
+            var respuesta = await _impuestos.ObtenerAsync(codigo);
+            return Json(respuesta);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CrearLinea([FromBody] CotizacionDetalleCrearDTO dto)
@@ -202,17 +252,12 @@ namespace Web.UI.Controllers
 
         private async Task CargarDropdownsAsync()
         {
-            var socios = await _socios.ObtenerTodoAsync();
+            // Socio de Negocio, Artículo, Almacén e Impuesto ya no se cargan aquí como lista
+            // completa -- el buscador con autocompletado los consulta bajo demanda
+            // (BuscarSocios/BuscarArticulos/BuscarAlmacenes/BuscarImpuestos). Moneda sigue siendo
+            // un <select> normal.
             var monedas = await _monedas.ObtenerTodoAsync();
-            var articulos = await _articulos.ObtenerTodoAsync();
-            var almacenes = await _almacenes.ObtenerTodoAsync();
-            var impuestos = await _impuestos.ObtenerTodoAsync();
-
-            ViewBag.Socios = new SelectList(socios.Dato ?? [], "Codigo", "Nombre");
             ViewBag.Monedas = new SelectList(monedas.Dato ?? [], "Codigo", "Nombre");
-            ViewBag.Articulos = articulos.Dato ?? [];
-            ViewBag.Almacenes = new SelectList(almacenes.Dato ?? [], "Codigo", "Nombre");
-            ViewBag.Impuestos = impuestos.Dato ?? [];
         }
     }
 }

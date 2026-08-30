@@ -49,11 +49,13 @@
                 </select>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-4 position-relative">
                 <label asp-for="CodigoSn" class="form-label">Socio de negocio</label>
-                <select asp-for="CodigoSn" id="selectCodigoSn" class="form-select" asp-items="ViewBag.Socios">
-                    <option value="">-- Seleccione --</option>
-                </select>
+                <input type="text" id="CodigoSnTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off"
+                       value="@(esEdicion && !string.IsNullOrEmpty(Model.CodigoSn) ? $"{Model.CodigoSn} - {Model.NombreSn}" : "")" />
+                <input type="hidden" asp-for="CodigoSn" />
+                <div class="invalid-feedback" id="CodigoSnError">Selecciona una opción de la lista o borra el texto.</div>
+                <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="CodigoSnResultados"></ul>
             </div>
             <div class="col-md-4">
                 <label asp-for="NombreSn" class="form-label">Nombre</label>
@@ -138,23 +140,26 @@
         <form id="formLineaDetalle">
             <input type="hidden" id="detNoLineaOriginal" value="" />
             <div class="row g-2">
-                <div class="col-md-4">
+                <div class="col-md-4 position-relative">
                     <label class="form-label">Artículo</label>
-                    <select id="detCodArticulo" class="form-select">
-                        <option value="">-- Seleccione --</option>
-                    </select>
+                    <input type="text" id="detCodArticuloTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off" />
+                    <input type="hidden" id="detCodArticulo" />
+                    <div class="invalid-feedback" id="detCodArticuloError">Selecciona una opción de la lista o borra el texto.</div>
+                    <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodArticuloResultados"></ul>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 position-relative">
                     <label class="form-label">Almacén</label>
-                    <select name="CodAlmacen" id="detCodAlmacen" class="form-select" asp-items="ViewBag.Almacenes">
-                        <option value="">-- Seleccione --</option>
-                    </select>
+                    <input type="text" id="detCodAlmacenTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off" />
+                    <input type="hidden" name="CodAlmacen" id="detCodAlmacen" />
+                    <div class="invalid-feedback" id="detCodAlmacenError">Selecciona una opción de la lista o borra el texto.</div>
+                    <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodAlmacenResultados"></ul>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 position-relative">
                     <label class="form-label">Impuesto</label>
-                    <select id="detCodigoImpuesto" class="form-select">
-                        <option value="">-- Ninguno --</option>
-                    </select>
+                    <input type="text" id="detCodigoImpuestoTexto" class="form-control" placeholder="Buscar por nombre..." autocomplete="off" />
+                    <input type="hidden" id="detCodigoImpuesto" />
+                    <div class="invalid-feedback" id="detCodigoImpuestoError">Selecciona una opción de la lista o borra el texto.</div>
+                    <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodigoImpuestoResultados"></ul>
                 </div>
 
                 <div class="col-md-8">
@@ -189,13 +194,6 @@
             </div>
         </form>
     </div>
-
-    <script id="datosArticulosCotizacion" type="application/json">
-        @Html.Raw(JsonSerializer.Serialize(ViewBag.Articulos, opcionesJson))
-    </script>
-    <script id="datosImpuestosCotizacion" type="application/json">
-        @Html.Raw(JsonSerializer.Serialize(ViewBag.Impuestos, opcionesJson))
-    </script>
 
     @if (!esEdicion)
     {
