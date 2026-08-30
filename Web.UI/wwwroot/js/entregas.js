@@ -22,9 +22,25 @@ $(function () {
 
     function abrirModal(html) {
         $('#contenidoModal').html(html);
+        $('#modalFormulario').off('.autocompletar'); // limpia los listeners de la apertura anterior antes de que los 4 buscadores registren los suyos
         new bootstrap.Modal('#modalFormulario').show();
         inicializarSerieEntrega();
+        inicializarBuscadorSocio();
         inicializarDetalle();
+    }
+
+    function inicializarBuscadorSocio() {
+        if ($('#CodigoSnTexto').length === 0) return;
+        App.autocompletar({
+            texto: $('#CodigoSnTexto'),
+            oculto: $('#CodigoSn'),
+            lista: $('#CodigoSnResultados'),
+            error: $('#CodigoSnError'),
+            endpoint: '/Entregas/BuscarSocios',
+            obtenerCodigo: s => s.codigo ?? s.Codigo,
+            obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
+            onSeleccion: s => $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '')
+        });
     }
 
     $('#btnNuevo').on('click', async function () {
@@ -104,14 +120,6 @@ $(function () {
     }
 
     $(document).on('change', '#selectSerieEntrega', actualizarNumDocSegunSerie);
-
-    // Auto-completa el nombre del socio de negocio al elegirlo (queda editable después).
-    $(document).on('change', '#selectCodigoSn', function () {
-        const texto = $(this).find('option:selected').text();
-        if (texto && texto !== '-- Seleccione --') {
-            $('#NombreSn').val(texto);
-        }
-    });
 
     $(document).on('click', '#btnGuardarEntrega', async function () {
         const $boton = $(this);
@@ -200,8 +208,8 @@ $(function () {
     let lineasRemotas = [];
     let proximoIdLocal = 1;
     let noLineaOriginalEnEdicion = null;
-    let articulosDisponibles = [];
-    let impuestosDisponibles = [];
+    let tasaImpuestoSeleccionado = 0;
+    let buscadorArticulo, buscadorAlmacen, buscadorImpuesto;
 
     function esEdicionDetalle() {
         const v = $('#tblDetalleEntrega').data('es-edicion');
@@ -217,27 +225,45 @@ $(function () {
         const $tabla = $('#tblDetalleEntrega');
         if ($tabla.length === 0) return;
 
-        const datosArt = document.getElementById('datosArticulosEntrega');
-        articulosDisponibles = datosArt ? (JSON.parse(datosArt.textContent) || []) : [];
-
-        const datosImp = document.getElementById('datosImpuestosEntrega');
-        impuestosDisponibles = datosImp ? (JSON.parse(datosImp.textContent) || []) : [];
-
-        const $selArt = $('#detCodArticulo');
-        $selArt.html('<option value="">-- Seleccione --</option>');
-        articulosDisponibles.forEach(a => {
-            const codigo = a.codigo ?? a.Codigo;
-            const nombre = a.nombre ?? a.Nombre;
-            $selArt.append(`<option value="${codigo}">${codigo} - ${nombre ?? ''}</option>`);
+        buscadorArticulo = App.autocompletar({
+            texto: $('#detCodArticuloTexto'), oculto: $('#detCodArticulo'),
+            lista: $('#detCodArticuloResultados'), error: $('#detCodArticuloError'),
+            endpoint: '/Entregas/BuscarArticulos',
+            obtenerCodigo: a => a.codigo ?? a.Codigo,
+            obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
+            onSeleccion: a => {
+                if (!a) return;
+                $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
+                $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
+                // No se escribe el <input> del buscador de Almacén directamente -- hay que pasar
+                // por buscadorAlmacen.establecer() para que su estado interno ("resuelto") quede
+                // consistente (si no, un texto inválido escrito antes en ese campo podría dejarlo
+                // bloqueado para siempre aunque visualmente parezca tener un valor).
+                const almacenDefecto = a.almacenDefecto ?? a.AlmacenDefecto ?? '';
+                buscadorAlmacen.establecer(almacenDefecto ? { codigo: almacenDefecto, nombre: almacenDefecto } : null);
+                recalcularLinea();
+            }
         });
 
-        const $selImp = $('#detCodigoImpuesto');
-        $selImp.html('<option value="">-- Ninguno --</option>');
-        impuestosDisponibles.forEach(i => {
-            const codigo = i.codigo ?? i.Codigo;
-            const nombre = i.nombre ?? i.Nombre;
-            const tasa = i.tasa ?? i.Tasa ?? 0;
-            $selImp.append(`<option value="${codigo}" data-tasa="${tasa}">${nombre} (${tasa}%)</option>`);
+        buscadorAlmacen = App.autocompletar({
+            texto: $('#detCodAlmacenTexto'), oculto: $('#detCodAlmacen'),
+            lista: $('#detCodAlmacenResultados'), error: $('#detCodAlmacenError'),
+            endpoint: '/Entregas/BuscarAlmacenes',
+            obtenerCodigo: al => al.codigo ?? al.Codigo,
+            obtenerEtiqueta: al => `${al.codigo ?? al.Codigo} - ${al.nombre ?? al.Nombre}`
+        });
+
+        buscadorImpuesto = App.autocompletar({
+            texto: $('#detCodigoImpuestoTexto'), oculto: $('#detCodigoImpuesto'),
+            lista: $('#detCodigoImpuestoResultados'), error: $('#detCodigoImpuestoError'),
+            endpoint: '/Entregas/BuscarImpuestos',
+            obtenerCodigo: i => i.codigo ?? i.Codigo,
+            obtenerEtiqueta: i => `${i.nombre ?? i.Nombre} (${i.tasa ?? i.Tasa ?? 0}%)`,
+            minCaracteres: 0,
+            onSeleccion: i => {
+                tasaImpuestoSeleccionado = i ? Number(i.tasa ?? i.Tasa ?? 0) : 0;
+                recalcularLinea();
+            }
         });
 
         if (esEdicionDetalle()) {
@@ -321,9 +347,9 @@ $(function () {
 
     function limpiarPanelLinea() {
         $('#detNoLineaOriginal').val('');
-        $('#detCodArticulo').val('');
-        $('#detCodAlmacen').val('');
-        $('#detCodigoImpuesto').val('');
+        buscadorArticulo.establecer(null);
+        buscadorAlmacen.establecer(null);
+        buscadorImpuesto.establecer(null);
         $('#detDescripcion').val('');
         $('#detCantidad').val('1');
         $('#detPrecio').val('');
@@ -338,7 +364,7 @@ $(function () {
         const cantidad = Number($('#detCantidad').val()) || 0;
         const precio = Number($('#detPrecio').val()) || 0;
         const prctjeDesc = Number($('#detPrctjeDesc').val()) || 0;
-        const tasa = Number($('#detCodigoImpuesto').find('option:selected').data('tasa')) || 0;
+        const tasa = tasaImpuestoSeleccionado || 0;
 
         const bruto = cantidad * precio;
         const desc = bruto * (prctjeDesc / 100);
@@ -350,18 +376,7 @@ $(function () {
         $('#detTotalLinea').val(total.toFixed(2));
     }
 
-    $(document).on('input change', '#detCantidad, #detPrecio, #detPrctjeDesc, #detCodigoImpuesto', recalcularLinea);
-
-    $(document).on('change', '#detCodArticulo', function () {
-        const codigo = $(this).val();
-        const articulo = articulosDisponibles.find(a => (a.codigo ?? a.Codigo) === codigo);
-        if (articulo) {
-            $('#detDescripcion').val(articulo.nombre ?? articulo.Nombre ?? '');
-            $('#detPrecio').val(articulo.precioUnitario ?? articulo.PrecioUnitario ?? 0);
-            $('#detCodAlmacen').val(articulo.almacenDefecto ?? articulo.AlmacenDefecto ?? '');
-        }
-        recalcularLinea();
-    });
+    $(document).on('input change', '#detCantidad, #detPrecio, #detPrctjeDesc', recalcularLinea);
 
     $(document).on('click', '#btnNuevaLinea', function () {
         limpiarPanelLinea();
@@ -372,7 +387,7 @@ $(function () {
         $('#panelLineaDetalle').addClass('d-none');
     });
 
-    $(document).on('click', '.btn-editar-linea', function () {
+    $(document).on('click', '.btn-editar-linea', async function () {
         const clave = $(this).data('clave');
         const lista = esEdicionDetalle() ? lineasRemotas : lineasLocales;
         const linea = esEdicionDetalle()
@@ -383,10 +398,28 @@ $(function () {
         limpiarPanelLinea();
         noLineaOriginalEnEdicion = clave;
 
+        const codArticulo = linea.codArticulo ?? linea.CodArticulo ?? '';
+        const codAlmacen = linea.codAlmacen ?? linea.CodAlmacen ?? '';
+        const codigoImpuesto = linea.codigoImpuesto ?? linea.CodigoImpuesto ?? '';
+
         $('#detNoLineaOriginal').val(clave);
-        $('#detCodArticulo').val(linea.codArticulo ?? linea.CodArticulo ?? '');
-        $('#detCodAlmacen').val(linea.codAlmacen ?? linea.CodAlmacen ?? '');
-        $('#detCodigoImpuesto').val(linea.codigoImpuesto ?? linea.CodigoImpuesto ?? '');
+
+        buscadorArticulo.establecer(codArticulo ? { codigo: codArticulo, nombre: linea.descripcion ?? linea.Descripcion ?? '' } : null);
+
+        if (codAlmacen) {
+            const respuestaAlmacen = await $.get('/Entregas/ObtenerAlmacenPorCodigo', { codigo: codAlmacen });
+            buscadorAlmacen.establecer(respuestaAlmacen.resultado && respuestaAlmacen.dato ? respuestaAlmacen.dato : { codigo: codAlmacen, nombre: codAlmacen });
+        } else {
+            buscadorAlmacen.establecer(null);
+        }
+
+        if (codigoImpuesto) {
+            const respuestaImpuesto = await $.get('/Entregas/ObtenerImpuestoPorCodigo', { codigo: codigoImpuesto });
+            buscadorImpuesto.establecer(respuestaImpuesto.resultado && respuestaImpuesto.dato ? respuestaImpuesto.dato : { codigo: codigoImpuesto, nombre: codigoImpuesto, tasa: 0 });
+        } else {
+            buscadorImpuesto.establecer(null);
+        }
+
         $('#detDescripcion').val(linea.descripcion ?? linea.Descripcion ?? '');
         $('#detCantidad').val(linea.cantidad ?? linea.Cantidad ?? 1);
         $('#detPrecio').val(linea.precio ?? linea.Precio ?? '');
