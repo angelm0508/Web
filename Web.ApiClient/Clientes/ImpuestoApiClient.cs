@@ -11,5 +11,11 @@ namespace Web.ApiClient.Clientes
 
         public Task<Respuesta<IEnumerable<ImpuestoDTO>>> ObtenerTodoAsync() =>
             GetAsync<IEnumerable<ImpuestoDTO>>(Recurso);
+
+        public Task<Respuesta<ImpuestoDTO>> ObtenerAsync(string codigo) =>
+            GetAsync<ImpuestoDTO>($"{Recurso}/{codigo}");
+
+        public Task<Respuesta<IEnumerable<ImpuestoDTO>>> ObtenerContenganNombreAsync(string nombre) =>
+            GetAsync<IEnumerable<ImpuestoDTO>>($"{Recurso}/ContengaNombre/{Uri.EscapeDataString(nombre)}");
     }
 }

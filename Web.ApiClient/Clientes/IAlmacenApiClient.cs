@@ -10,5 +10,6 @@ namespace Web.ApiClient.Clientes
         Task<Respuesta<bool>> InsertarAsync(AlmacenCrearDTO dto);
         Task<Respuesta<bool>> ActualizarAsync(string codigo, AlmacenActualizarDTO dto);
         Task<Respuesta<bool>> EliminarAsync(string codigo);
+        Task<Respuesta<IEnumerable<AlmacenDTO>>> ObtenerContenganNombreAsync(string nombre);
     }
 }

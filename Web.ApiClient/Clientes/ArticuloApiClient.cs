@@ -23,5 +23,8 @@ namespace Web.ApiClient.Clientes
 
         public Task<Respuesta<bool>> EliminarAsync(string codigo) =>
             DeleteAsync<bool>($"{Recurso}/{codigo}");
+
+        public Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganNombreAsync(string nombre) =>
+            GetAsync<IEnumerable<ArticuloDTO>>($"{Recurso}/ContengaNombre/{Uri.EscapeDataString(nombre)}");
     }
 }
