@@ -9,8 +9,8 @@ namespace Web.ApiClient.Clientes
 
         public SocioNegocioApiClient(HttpClient http) : base(http) { }
 
-        public Task<Respuesta<IEnumerable<SocioNegocioDTO>>> ObtenerTodoAsync() =>
-            GetAsync<IEnumerable<SocioNegocioDTO>>(Recurso);
+        public Task<Respuesta<IEnumerable<SocioNegocioDTO>>> ObtenerTodoAsync(string? tipo = null) =>
+            GetAsync<IEnumerable<SocioNegocioDTO>>(tipo is null ? Recurso : $"{Recurso}?tipo={Uri.EscapeDataString(tipo)}");
 
         public Task<Respuesta<SocioNegocioDTO>> ObtenerAsync(string codigo) =>
             GetAsync<SocioNegocioDTO>($"{Recurso}/{codigo}");
@@ -24,7 +24,11 @@ namespace Web.ApiClient.Clientes
         public Task<Respuesta<bool>> EliminarAsync(string codigo) =>
             DeleteAsync<bool>($"{Recurso}/{codigo}");
 
-        public Task<Respuesta<IEnumerable<SocioNegocioDTO>>> ObtenerContenganNombreAsync(string nombre) =>
-            GetAsync<IEnumerable<SocioNegocioDTO>>($"{Recurso}/ContengaNombre/{Uri.EscapeDataString(nombre)}");
+        public Task<Respuesta<IEnumerable<SocioNegocioDTO>>> ObtenerContenganNombreAsync(string nombre, string? tipo = null)
+        {
+            var url = $"{Recurso}/ContengaNombre/{Uri.EscapeDataString(nombre)}";
+            if (tipo is not null) url += $"?tipo={Uri.EscapeDataString(tipo)}";
+            return GetAsync<IEnumerable<SocioNegocioDTO>>(url);
+        }
     }
 }

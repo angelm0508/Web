@@ -175,8 +175,8 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> BuscarSocios(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
-                ? await _socios.ObtenerTodoAsync()
-                : await _socios.ObtenerContenganNombreAsync(texto);
+                ? await _socios.ObtenerTodoAsync("C")
+                : await _socios.ObtenerContenganNombreAsync(texto, "C");
             return Json(respuesta);
         }
 
