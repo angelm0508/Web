@@ -57,6 +57,10 @@ builder.Services.AddHttpClient<IPedidoApiClient, PedidoApiClient>(c => c.BaseAdd
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IPedidoDetalleApiClient, PedidoDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IPedidoCompraApiClient, PedidoCompraApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IPedidoCompraDetalleApiClient, PedidoCompraDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IEntregaApiClient, EntregaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IEntregaDetalleApiClient, EntregaDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))

@@ -7,6 +7,7 @@
     bool EsActivoInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes" }.Any(EsActivo);
     bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(EsActivo);
     bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas" }.Any(EsActivo);
+    bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra" }.Any(EsActivo);
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 <!DOCTYPE html>
@@ -120,6 +121,22 @@
                         </a>
                         <a class="nav-link nav-sublink @(EsActivo("Facturas") ? "active" : "")" asp-controller="Facturas" asp-action="Index">
                             <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas</span>
+                        </a>
+                    </div>
+
+                    <a class="nav-link nav-link-toggle @(EsActivoCompras ? "active" : "")" data-bs-toggle="collapse" href="#submenuCompras" role="button" aria-expanded="@(EsActivoCompras ? "true" : "false")" aria-controls="submenuCompras">
+                        <i class="fa-solid fa-cart-flatbed"></i><span>Compras</span>
+                        <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                    </a>
+                    <div class="collapse @(EsActivoCompras ? "show" : "")" id="submenuCompras">
+                        <a class="nav-link nav-sublink @(EsActivo("PedidosCompra") ? "active" : "")" asp-controller="PedidosCompra" asp-action="Index">
+                            <i class="fa-solid fa-cart-arrow-down"></i><span>Pedidos de compra</span>
+                        </a>
+                        <a class="nav-link nav-sublink @(EsActivo("EntregasCompra") ? "active" : "")" asp-controller="EntregasCompra" asp-action="Index">
+                            <i class="fa-solid fa-truck-ramp-box"></i><span>Entregas de compra</span>
+                        </a>
+                        <a class="nav-link nav-sublink @(EsActivo("FacturasCompra") ? "active" : "")" asp-controller="FacturasCompra" asp-action="Index">
+                            <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas de compra</span>
                         </a>
                     </div>
                 </nav>
