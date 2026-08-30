@@ -231,7 +231,7 @@ $(function () {
             endpoint: '/Facturas/BuscarArticulos',
             obtenerCodigo: a => a.codigo ?? a.Codigo,
             obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
-            onSeleccion: a => {
+            onSeleccion: async a => {
                 if (!a) return;
                 $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
                 $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
@@ -240,7 +240,12 @@ $(function () {
                 // consistente (si no, un texto inválido escrito antes en ese campo podría dejarlo
                 // bloqueado para siempre aunque visualmente parezca tener un valor).
                 const almacenDefecto = a.almacenDefecto ?? a.AlmacenDefecto ?? '';
-                buscadorAlmacen.establecer(almacenDefecto ? { codigo: almacenDefecto, nombre: almacenDefecto } : null);
+                if (almacenDefecto) {
+                    const respuestaAlmacen = await $.get('/Facturas/ObtenerAlmacenPorCodigo', { codigo: almacenDefecto });
+                    buscadorAlmacen.establecer(respuestaAlmacen.resultado && respuestaAlmacen.dato ? respuestaAlmacen.dato : { codigo: almacenDefecto, nombre: almacenDefecto });
+                } else {
+                    buscadorAlmacen.establecer(null);
+                }
                 recalcularLinea();
             }
         });

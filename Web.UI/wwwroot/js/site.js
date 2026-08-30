@@ -207,12 +207,20 @@ const App = {
 
         const $modal = $texto.closest('.modal');
         $modal.on('mousedown.autocompletar', '[data-bs-dismiss="modal"]', () => { cerrandoModal = true; });
+        $modal.on('hide.bs.modal.autocompletar', () => { cerrandoModal = true; });
         $modal.on('hidden.bs.modal.autocompletar', () => { cerrandoModal = false; });
 
         function marcarResuelto(valor) {
             resuelto = valor;
-            $texto.toggleClass('is-invalid', !valor);
-            $error.toggleClass('d-none', valor);
+            if (valor) {
+                $texto.removeClass('is-invalid');
+                $error.addClass('d-none');
+            }
+        }
+
+        function mostrarError() {
+            $texto.addClass('is-invalid');
+            $error.removeClass('d-none');
         }
 
         function ocultarLista() {
@@ -254,9 +262,14 @@ const App = {
 
         async function buscar(texto) {
             const idBusqueda = ++ultimaBusqueda;
-            const respuesta = await $.get(endpoint, { texto });
-            if (idBusqueda !== ultimaBusqueda) return; // ya hay una búsqueda más reciente en curso
-            resultados = (respuesta.resultado && respuesta.dato) ? respuesta.dato.slice(0, maxResultados) : [];
+            try {
+                const respuesta = await $.get(endpoint, { texto });
+                if (idBusqueda !== ultimaBusqueda) return; // ya hay una búsqueda más reciente en curso
+                resultados = (respuesta.resultado && respuesta.dato) ? respuesta.dato.slice(0, maxResultados) : [];
+            } catch (e) {
+                if (idBusqueda !== ultimaBusqueda) return;
+                resultados = [];
+            }
             indiceActivo = -1;
             pintarLista();
         }
@@ -310,8 +323,11 @@ const App = {
                 limpiar();
                 return;
             }
-            if (!resuelto && !cerrandoModal) {
-                setTimeout(() => $texto.trigger('focus'), 0);
+            if (!resuelto) {
+                mostrarError();
+                if (!cerrandoModal) {
+                    setTimeout(() => $texto.trigger('focus'), 0);
+                }
             }
         });
 

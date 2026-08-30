@@ -121,14 +121,6 @@ $(function () {
 
     $(document).on('change', '#selectSerieCotizacion', actualizarNumDocSegunSerie);
 
-    // Auto-completa el nombre del socio de negocio al elegirlo (queda editable después).
-    $(document).on('change', '#selectCodigoSn', function () {
-        const texto = $(this).find('option:selected').text();
-        if (texto && texto !== '-- Seleccione --') {
-            $('#NombreSn').val(texto);
-        }
-    });
-
     $(document).on('click', '#btnGuardarCotizacion', async function () {
         const $boton = $(this);
         const esEdicion = $boton.data('edicion') === true || $boton.data('edicion') === 'true';
@@ -244,12 +236,17 @@ $(function () {
             endpoint: '/Cotizaciones/BuscarArticulos',
             obtenerCodigo: a => a.codigo ?? a.Codigo,
             obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
-            onSeleccion: a => {
+            onSeleccion: async a => {
                 if (!a) return;
                 $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
                 $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
                 const almacenDefecto = a.almacenDefecto ?? a.AlmacenDefecto ?? '';
-                buscadorAlmacen.establecer(almacenDefecto ? { codigo: almacenDefecto, nombre: almacenDefecto } : null);
+                if (almacenDefecto) {
+                    const respuestaAlmacen = await $.get('/Cotizaciones/ObtenerAlmacenPorCodigo', { codigo: almacenDefecto });
+                    buscadorAlmacen.establecer(respuestaAlmacen.resultado && respuestaAlmacen.dato ? respuestaAlmacen.dato : { codigo: almacenDefecto, nombre: almacenDefecto });
+                } else {
+                    buscadorAlmacen.establecer(null);
+                }
                 recalcularLinea();
             }
         });
