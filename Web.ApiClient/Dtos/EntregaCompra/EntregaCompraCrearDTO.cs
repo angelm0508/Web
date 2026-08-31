@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Web.ApiClient.Dtos.EntregaCompraDetalle;
 
 namespace Web.ApiClient.Dtos.EntregaCompra
 {
@@ -33,5 +34,6 @@ namespace Web.ApiClient.Dtos.EntregaCompra
         public decimal? TotalBruto { get; set; }
         public decimal? TotalDoc { get; set; }
         public string? Comentario { get; set; }
+        public List<EntregaCompraDetalleCrearDTO> Lineas { get; set; } = new();
     }
 }
