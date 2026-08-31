@@ -5,7 +5,14 @@ $(function () {
             { data: 'numDoc' },
             { data: 'nombreSn', render: (d, t, row) => d || row.codigoSn || '' },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
-            { data: 'estadoDoc', render: d => d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Abierto</span>' },
+            {
+                data: 'estadoDoc',
+                // La cancelación pone Cancelado='S' + EstadoInv='C' pero deja EstadoDoc='A'
+                // (semántica de DocStatus de SAP), así que el estado se decide primero por Cancelado.
+                render: (d, t, row) => (row && row.cancelado === 'S')
+                    ? '<span class="badge text-bg-danger">Cancelado</span>'
+                    : (d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Abierto</span>')
+            },
             { data: 'totalDoc', render: d => d != null ? Number(d).toFixed(2) : '' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
@@ -165,6 +172,23 @@ $(function () {
         datos.TotalDoc = totales.totalDoc;
 
         if (!esEdicion) {
+            // El alta es atómica y asienta inventario: validar antes de postear para no disparar
+            // un rollback profundo dentro de AsentarAsync con un error opaco.
+            if (lineasLocales.length === 0) {
+                App.mostrarError('Agrega al menos una línea al documento.');
+                return;
+            }
+
+            const hayLineaSinAlmacen = lineasLocales.some(l => {
+                const cantidad = Number(l.Cantidad ?? l.cantidad ?? 0);
+                const almacen = l.CodAlmacen ?? l.codAlmacen;
+                return cantidad > 0 && !almacen;
+            });
+            if (hayLineaSinAlmacen) {
+                App.mostrarError('Todas las líneas con cantidad deben tener un almacén.');
+                return;
+            }
+
             datos.Lineas = lineasLocales.map(({ _id, ...linea }) => linea);
 
             const respuesta = await App.enviarJson('/EntregasCompra/Crear', 'POST', datos);
