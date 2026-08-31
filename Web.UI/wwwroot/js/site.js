@@ -197,6 +197,10 @@ const App = {
         const minCaracteres = opciones.minCaracteres ?? 2;
         const debounceMs = opciones.debounceMs ?? 300;
         const maxResultados = opciones.maxResultados ?? 10;
+        // requerido=true (por defecto): en el blur con texto no resuelto se marca is-invalid y se
+        // devuelve el foco al input (correcto para campos obligatorios de un modal). requerido=false:
+        // filtro opcional (p. ej. Existencias) -- se deja pasar el blur sin error ni trampa de foco.
+        const requerido = opciones.requerido ?? true;
 
         let resultados = [];
         let resuelto = true;
@@ -323,7 +327,7 @@ const App = {
                 limpiar();
                 return;
             }
-            if (!resuelto) {
+            if (!resuelto && requerido) {
                 mostrarError();
                 if (!cerrandoModal) {
                     setTimeout(() => $texto.trigger('focus'), 0);

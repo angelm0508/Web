@@ -29,7 +29,8 @@ $(function () {
         texto: $('#filtroArticuloTexto'),
         oculto: $('#filtroArticulo'),
         lista: $('#filtroArticuloResultados'),
-        error: $('<span>'),                       // esta pantalla no valida el campo; error dummy
+        error: $('#filtroArticuloError'),         // filtro opcional: requerido:false -> nunca se muestra
+        requerido: false,                         // sin trampa de foco: texto sin resolver no bloquea el blur
         endpoint: '/Existencias/BuscarArticulos',
         obtenerCodigo: item => item.codigo,
         obtenerEtiqueta: item => `${item.codigo} - ${item.nombre}`,
