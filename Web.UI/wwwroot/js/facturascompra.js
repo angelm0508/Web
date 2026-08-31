@@ -80,14 +80,19 @@ $(function () {
         const confirmado = await App.confirmarEliminar('Se cancelará este documento y se revertirá el inventario que ingresó. Esta acción no se puede deshacer.');
         if (!confirmado) return;
 
-        const respuesta = await App.enviarJson(`/FacturasCompra/Editar?entry=${entry}`, 'POST', { Cancelado: 'S' });
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
-            return;
+        const $btn = $(this).prop('disabled', true);
+        try {
+            const respuesta = await App.enviarJson(`/FacturasCompra/Editar?entry=${entry}`, 'POST', { Cancelado: 'S' });
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+            bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+            App.mostrarExito('Documento cancelado. El inventario fue revertido.');
+            recargarTabla();
+        } finally {
+            $btn.prop('disabled', false);
         }
-        bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito('Documento cancelado. El inventario fue revertido.');
-        recargarTabla();
     });
 
     // --- Serie de numeración para generar el número de documento (solo aplica al crear) ---
