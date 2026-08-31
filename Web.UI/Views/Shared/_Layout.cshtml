@@ -4,7 +4,7 @@
     var accionActual = $"{ViewContext.RouteData.Values["action"]}";
     bool EsActivo(string controlador) => string.Equals(rutaActual, controlador, StringComparison.OrdinalIgnoreCase);
     bool EsActivoAccion(string controlador, string accion) => EsActivo(controlador) && string.Equals(accionActual, accion, StringComparison.OrdinalIgnoreCase);
-    bool EsActivoInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes" }.Any(EsActivo);
+    bool EsActivoInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias" }.Any(EsActivo);
     bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(EsActivo);
     bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas" }.Any(EsActivo);
     bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra" }.Any(EsActivo);
@@ -72,6 +72,9 @@
                         </a>
                         <a class="nav-link nav-sublink @(EsActivo("Almacenes") ? "active" : "")" asp-controller="Almacenes" asp-action="Index">
                             <i class="fa-solid fa-warehouse"></i><span>Almacenes</span>
+                        </a>
+                        <a class="nav-link nav-sublink @(EsActivo("Existencias") ? "active" : "")" asp-controller="Existencias" asp-action="Index">
+                            <i class="fa-solid fa-boxes-stacked"></i><span>Existencias</span>
                         </a>
                     </div>
 

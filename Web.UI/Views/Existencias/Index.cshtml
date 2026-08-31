@@ -1,0 +1,74 @@
+@{
+    ViewData["Title"] = "Existencias";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Existencias</h3>
+</div>
+
+<div class="card card-modulo mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5 position-relative">
+                <label class="form-label">Filtrar por artículo</label>
+                <input type="text" id="filtroArticuloTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off" />
+                <input type="hidden" id="filtroArticulo" />
+                <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index:1055; max-height:220px; overflow-y:auto;" id="filtroArticuloResultados"></ul>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-outline-secondary" id="btnLimpiarFiltro">Limpiar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-modulo">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="tblExistencias" class="table table-hover align-middle w-100">
+                <thead>
+                    <tr>
+                        <th>Artículo</th>
+                        <th>Almacén</th>
+                        <th class="text-end">Disponible</th>
+                        <th class="text-end">Comprometido</th>
+                        <th class="text-end">Pedido</th>
+                        <th>Actualizado</th>
+                        <th class="text-end">Kardex</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalKardex" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Kardex — <span id="kardexArticulo"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="tblKardex" class="table table-sm table-hover align-middle w-100">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th><th>Tipo doc</th><th>Doc</th><th>Almacén</th>
+                                <th class="text-end">Entra</th><th class="text-end">Sale</th>
+                                <th class="text-end">Precio</th><th class="text-end">Costo</th><th class="text-end">Valor mov.</th>
+                                <th class="text-end">Saldo cant.</th><th class="text-end">Saldo costo</th><th class="text-end">Saldo valor</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/existencias.js" asp-append-version="true"></script>
+}
