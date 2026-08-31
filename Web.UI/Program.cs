@@ -89,6 +89,10 @@ builder.Services.AddHttpClient<IMonedaApiClient, MonedaApiClient>(c => c.BaseAdd
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IImpuestoApiClient, ImpuestoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IExistenciaApiClient, ExistenciaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IMovimientoInventarioApiClient, MovimientoInventarioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
 builder.Services.AddAuthentication(AuthConstants.EsquemaCookie)
     .AddCookie(AuthConstants.EsquemaCookie, options =>
