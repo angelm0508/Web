@@ -69,6 +69,10 @@ builder.Services.AddHttpClient<IEntregaCompraApiClient, EntregaCompraApiClient>(
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IEntregaCompraDetalleApiClient, EntregaCompraDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IEntradaMercanciaApiClient, EntradaMercanciaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IEntradaMercanciaDetalleApiClient, EntradaMercanciaDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IFacturaApiClient, FacturaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IFacturaDetalleApiClient, FacturaDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
