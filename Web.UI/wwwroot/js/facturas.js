@@ -77,7 +77,7 @@ $(function () {
 
     $(document).on('click', '#btnCancelarDocFactura', async function () {
         const entry = $(this).data('entry');
-        const confirmado = await App.confirmarEliminar('Se cancelará este documento y se revertirá el inventario que ingresó. Esta acción no se puede deshacer.');
+        const confirmado = await App.confirmarEliminar('Se cancelará este documento y el inventario que salió volverá a ingresar. Esta acción no se puede deshacer.');
         if (!confirmado) return;
 
         const $btn = $(this).prop('disabled', true);
