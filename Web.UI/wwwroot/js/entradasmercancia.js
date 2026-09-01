@@ -176,6 +176,21 @@ $(function () {
                 return;
             }
 
+            // Inventario inicial: si el costo unitario queda en 0, el servidor usa el costo
+            // vigente del artículo -- que para un artículo nuevo también es 0, y ese 0 queda
+            // como base del promedio móvil. Se pide confirmación explícita antes de postear.
+            // (App.confirmarEliminar es el único helper de confirmación del proyecto; su
+            // título/botón dicen "Eliminar" pero es el patrón usado para todo sí/no.)
+            const hayLineaSinCosto = lineasLocales.some(l => {
+                const cantidad = Number(l.Cantidad ?? l.cantidad ?? 0);
+                const costo = Number(l.CostoUnitario ?? l.costoUnitario ?? 0);
+                return cantidad > 0 && costo <= 0;
+            });
+            if (hayLineaSinCosto) {
+                const seguir = await App.confirmarEliminar('Hay líneas con costo unitario en 0. El servidor usará el costo vigente del artículo, que puede ser 0 para un artículo nuevo (inventario inicial). ¿Continuar de todas formas?');
+                if (!seguir) return;
+            }
+
             datos.Lineas = lineasLocales.map(({ _id, ...linea }) => linea);
 
             const respuesta = await App.enviarJson('/EntradasMercancia/Crear', 'POST', datos);
@@ -233,9 +248,9 @@ $(function () {
             onSeleccion: async a => {
                 if (!a) return;
                 $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
-                // Costo unitario sugerido = costo promedio del artículo. El buscador de artículos
-                // no siempre expone un campo de costo; cuando no lo trae, queda en 0 y el usuario
-                // lo captura a mano (el campo es editable).
+                // Costo unitario sugerido = costo promedio del artículo (ArticuloDTO ya lo
+                // expone). Para un artículo nuevo el costo es 0: el campo es editable y el guard
+                // de "líneas con costo 0" al guardar avisa antes de asentar el inventario inicial.
                 $('#detCostoUnitario').val(a.costoPromedio ?? a.CostoPromedio ?? 0);
                 // No se escribe el <input> del buscador de Almacén directamente -- hay que pasar
                 // por buscadorAlmacen.establecer() para que su estado interno ("resuelto") quede
