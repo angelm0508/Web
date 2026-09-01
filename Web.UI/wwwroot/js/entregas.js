@@ -5,7 +5,14 @@ $(function () {
             { data: 'numDoc' },
             { data: 'nombreSn', render: (d, t, row) => d || row.codigoSn || '' },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
-            { data: 'estadoDoc', render: d => d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Abierto</span>' },
+            {
+                data: 'estadoDoc',
+                // La cancelación pone Cancelado='S' + EstadoInv='C' pero deja EstadoDoc='A'
+                // (semántica de DocStatus de SAP), así que el estado se decide primero por Cancelado.
+                render: (d, t, row) => (row && row.cancelado === 'S')
+                    ? '<span class="badge text-bg-danger">Cancelado</span>'
+                    : (d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Abierto</span>')
+            },
             { data: 'totalDoc', render: d => d != null ? Number(d).toFixed(2) : '' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
@@ -66,6 +73,26 @@ $(function () {
         }
         App.mostrarExito('Entrega eliminada correctamente.');
         recargarTabla();
+    });
+
+    $(document).on('click', '#btnCancelarDocEntrega', async function () {
+        const entry = $(this).data('entry');
+        const confirmado = await App.confirmarEliminar('Se cancelará este documento y se revertirá el inventario que ingresó. Esta acción no se puede deshacer.');
+        if (!confirmado) return;
+
+        const $btn = $(this).prop('disabled', true);
+        try {
+            const respuesta = await App.enviarJson(`/Entregas/Editar?entry=${entry}`, 'POST', { Cancelado: 'S' });
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+            bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+            App.mostrarExito('Documento cancelado. El inventario fue revertido.');
+            recargarTabla();
+        } finally {
+            $btn.prop('disabled', false);
+        }
     });
 
     // --- Serie de numeración para generar el número de documento (solo aplica al crear) ---
@@ -150,42 +177,33 @@ $(function () {
         datos.TotalDoc = totales.totalDoc;
 
         if (!esEdicion) {
-            const respuestaCabecera = await App.enviarJson('/Entregas/Crear', 'POST', datos);
-            if (!respuestaCabecera.resultado) {
-                App.mostrarError(respuestaCabecera.mensaje);
+            // El alta es atómica y asienta inventario: validar antes de postear para no disparar
+            // un rollback profundo dentro de AsentarAsync con un error opaco.
+            if (lineasLocales.length === 0) {
+                App.mostrarError('Agrega al menos una línea al documento.');
                 return;
             }
 
-            const entryCreado = respuestaCabecera.dato;
-
-            if (respuestaCabecera.numDoc != null) {
-                $('#NumDoc').val(respuestaCabecera.numDoc).prop('disabled', false);
+            const hayLineaSinAlmacen = lineasLocales.some(l => {
+                const cantidad = Number(l.Cantidad ?? l.cantidad ?? 0);
+                const almacen = l.CodAlmacen ?? l.codAlmacen;
+                return cantidad > 0 && !almacen;
+            });
+            if (hayLineaSinAlmacen) {
+                App.mostrarError('Todas las líneas con cantidad deben tener un almacén.');
+                return;
             }
 
-            let exitosas = 0;
-            let fallidas = 0;
+            datos.Lineas = lineasLocales.map(({ _id, ...linea }) => linea);
 
-            for (const linea of lineasLocales) {
-                const { _id, ...lineaSinId } = linea;
-                const respuestaLinea = await App.enviarJson('/Entregas/CrearLinea', 'POST', {
-                    ...lineaSinId,
-                    Entry: entryCreado
-                });
-
-                if (respuestaLinea.resultado) {
-                    exitosas++;
-                } else {
-                    fallidas++;
-                    App.mostrarError(respuestaLinea.mensaje);
-                }
+            const respuesta = await App.enviarJson('/Entregas/Crear', 'POST', datos);
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
             }
 
-            const sufijoNumDoc = respuestaCabecera.numDoc != null ? ` No. documento: ${respuestaCabecera.numDoc}.` : '';
-            if (fallidas > 0) {
-                await App.mostrarExito(`Entrega creada correctamente. Líneas guardadas: ${exitosas} de ${exitosas + fallidas}.${sufijoNumDoc}`);
-            } else {
-                await App.mostrarExito(`Entrega creada correctamente.${sufijoNumDoc}`);
-            }
+            const sufijoNumDoc = respuesta.numDoc != null ? ` No. documento: ${respuesta.numDoc}.` : '';
+            await App.mostrarExito(`Entrega creada correctamente.${sufijoNumDoc}`);
             bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
             recargarTabla();
             return;
@@ -332,6 +350,12 @@ $(function () {
             const impuesto = linea.impuesto ?? linea.Impuesto;
             const totalLinea = linea.totalLinea ?? linea.TotalLinea;
             const clave = esEdicionDetalle() ? noLinea : linea._id;
+            // En edición el documento ya está asentado: las líneas son de solo lectura
+            // (la API ignora cualquier cambio salvo Comentario/Cancelado), así que no se
+            // pintan los botones de editar/eliminar por fila.
+            const acciones = esEdicionDetalle() ? '' : `
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}"><i class="fa-solid fa-pen"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}"><i class="fa-solid fa-trash"></i></button>`;
             return `
                 <tr>
                     <td>${codArticulo ?? ''}</td>
@@ -341,10 +365,7 @@ $(function () {
                     <td>${prctjeDesc ?? 0}</td>
                     <td>${impuesto != null ? Number(impuesto).toFixed(2) : '0.00'}</td>
                     <td>${totalLinea != null ? Number(totalLinea).toFixed(2) : ''}</td>
-                    <td class="text-end">
-                        <button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}"><i class="fa-solid fa-pen"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}"><i class="fa-solid fa-trash"></i></button>
-                    </td>
+                    <td class="text-end">${acciones}</td>
                 </tr>
             `;
         }).join(''));

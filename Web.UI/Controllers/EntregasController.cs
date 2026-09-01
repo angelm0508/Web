@@ -91,6 +91,7 @@ namespace Web.UI.Controllers
             {
                 NumDoc = respuesta.Dato.NumDoc,
                 Serie = respuesta.Dato.Serie,
+                Cancelado = respuesta.Dato.Cancelado,
                 EstadoDoc = respuesta.Dato.EstadoDoc,
                 TipoObjeto = respuesta.Dato.TipoObjeto,
                 FechaDoc = respuesta.Dato.FechaDoc,
@@ -135,6 +136,7 @@ namespace Web.UI.Controllers
             {
                 NumDoc = actual.Dato.NumDoc,
                 Serie = actual.Dato.Serie,
+                Cancelado = dto.Cancelado,
                 EstadoDoc = dto.EstadoDoc,
                 TipoObjeto = dto.TipoObjeto,
                 FechaDoc = dto.FechaDoc,
