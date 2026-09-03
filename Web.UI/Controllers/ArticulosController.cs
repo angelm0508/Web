@@ -15,6 +15,7 @@ namespace Web.UI.Controllers
         private readonly IGrupoArticuloApiClient _grupos;
         private readonly IGrupoUnidadMedidaArticuloApiClient _gruposMedida;
         private readonly INumeracionDocumentoDetApiClient _series;
+        private readonly IAlmacenApiClient _almacenes;
 
         // CodigoObj de NumeracionDocumento que identifica a "Artículos" como tipo de objeto.
         private const string CodigoObjArticulo = "2";
@@ -25,13 +26,15 @@ namespace Web.UI.Controllers
             IFabricanteArticuloApiClient fabricantes,
             IGrupoArticuloApiClient grupos,
             IGrupoUnidadMedidaArticuloApiClient gruposMedida,
-            INumeracionDocumentoDetApiClient series)
+            INumeracionDocumentoDetApiClient series,
+            IAlmacenApiClient almacenes)
         {
             _articulos = articulos;
             _fabricantes = fabricantes;
             _grupos = grupos;
             _gruposMedida = gruposMedida;
             _series = series;
+            _almacenes = almacenes;
         }
 
         public IActionResult Index() => View();
@@ -155,6 +158,22 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Eliminar(string codigo)
         {
             var respuesta = await _articulos.EliminarAsync(codigo);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> BuscarAlmacenes(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _almacenes.ObtenerTodoAsync()
+                : await _almacenes.ObtenerContenganNombreAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ObtenerAlmacenPorCodigo(string codigo)
+        {
+            var respuesta = await _almacenes.ObtenerAsync(codigo);
             return Json(respuesta);
         }
 

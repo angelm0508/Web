@@ -58,9 +58,12 @@
                     <option value="">-- Seleccione --</option>
                 </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6 position-relative">
                 <label asp-for="AlmacenDefecto" class="form-label"></label>
-                <input asp-for="AlmacenDefecto" class="form-control" />
+                <input type="text" id="almacenDefectoTexto" class="form-control" placeholder="Buscar almacén..." autocomplete="off" />
+                <input asp-for="AlmacenDefecto" type="hidden" id="AlmacenDefecto" />
+                <div class="invalid-feedback" id="almacenDefectoError">Selecciona una opción de la lista o borra el texto.</div>
+                <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="almacenDefectoResultados"></ul>
             </div>
 
             <div class="col-md-4">

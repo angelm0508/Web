@@ -20,9 +20,13 @@ $(function () {
 
     function recargarTabla() { tabla.ajax.reload(null, false); }
 
+    let buscadorAlmacenDefecto = null;
+
     function abrirModal(html) {
         $('#contenidoModal').html(html);
+        $('#modalFormulario').off('.autocompletar'); // limpia los listeners de la apertura anterior antes de que el buscador registre los suyos
         new bootstrap.Modal('#modalFormulario').show();
+        inicializarBuscadorAlmacenDefecto();
     }
 
     $('#tblArticulos').on('click', '.btn-editar', async function () {
@@ -104,7 +108,31 @@ $(function () {
 
     $(document).on('change', '#selectSerieArticulo', actualizarCodigoSegunSerieArticulo);
 
+    // --- Buscador con autocompletado para "Almacén por defecto" (modal de edición y página "Nuevo") ---
+
+    function inicializarBuscadorAlmacenDefecto() {
+        if ($('#almacenDefectoTexto').length === 0) return;
+        buscadorAlmacenDefecto = App.autocompletar({
+            texto: $('#almacenDefectoTexto'),
+            oculto: $('#AlmacenDefecto'),
+            lista: $('#almacenDefectoResultados'),
+            error: $('#almacenDefectoError'),
+            endpoint: '/Articulos/BuscarAlmacenes',
+            obtenerCodigo: a => a.codigo ?? a.Codigo,
+            obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
+            requerido: false
+        });
+        // En edición, el hidden ya trae el código: resolverlo para mostrar "código - nombre".
+        const codActual = $('#AlmacenDefecto').val();
+        if (codActual) {
+            $.get('/Articulos/ObtenerAlmacenPorCodigo', { codigo: codActual }).then(r => {
+                buscadorAlmacenDefecto.establecer(r.resultado && r.dato ? r.dato : { codigo: codActual, nombre: codActual });
+            });
+        }
+    }
+
     inicializarSerieArticulo();
+    inicializarBuscadorAlmacenDefecto();
 
     // --- Checklist "Recomendado completar" de la página de creación ---
 
