@@ -52,7 +52,7 @@ $(function () {
         const filas = ((respuesta && respuesta.dato) || []).map(m => `
             <tr>
                 <td>${fec(m.fecha)}</td>
-                <td>${esc(m.tipoDoc)}</td>
+                <td>${esc(m.tipoDocNombre ?? m.tipoDoc)}</td>
                 <td>${m.docEntry}/${m.docLinea}</td>
                 <td>${esc(m.codAlmacen)}</td>
                 <td class="text-end">${num(m.cantidadEntra)}</td>

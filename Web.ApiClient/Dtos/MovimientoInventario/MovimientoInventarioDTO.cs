@@ -19,5 +19,6 @@ namespace Web.ApiClient.Dtos.MovimientoInventario
         public decimal SaldoCostoPromedio { get; set; }
         public decimal SaldoValor { get; set; }
         public int? MovReversaDe { get; set; }
+        public string? TipoDocNombre { get; set; }
     }
 }
