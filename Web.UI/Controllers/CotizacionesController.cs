@@ -195,6 +195,15 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> BuscarArticulosPorCodigo(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _articulos.ObtenerTodoAsync()
+                : await _articulos.ObtenerContenganCodigoAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> BuscarAlmacenes(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)

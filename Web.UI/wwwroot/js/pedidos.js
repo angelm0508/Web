@@ -209,7 +209,8 @@ $(function () {
     let proximoIdLocal = 1;
     let noLineaOriginalEnEdicion = null;
     let tasaImpuestoSeleccionado = 0;
-    let buscadorArticulo, buscadorAlmacen, buscadorImpuesto;
+    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto;
+    let sincronizandoArticulo = false;
 
     function esEdicionDetalle() {
         const v = $('#tblDetallePedido').data('es-edicion');
@@ -225,29 +226,21 @@ $(function () {
         const $tabla = $('#tblDetallePedido');
         if ($tabla.length === 0) return;
 
-        buscadorArticulo = App.autocompletar({
-            texto: $('#detCodArticuloTexto'), oculto: $('#detCodArticulo'),
-            lista: $('#detCodArticuloResultados'), error: $('#detCodArticuloError'),
-            endpoint: '/Pedidos/BuscarArticulos',
+        buscadorArticuloCod = App.autocompletar({
+            texto: $('#detArtCodTexto'), oculto: $('#detCodArticulo'),
+            lista: $('#detArtCodResultados'), error: $('#detArtCodError'),
+            endpoint: '/Pedidos/BuscarArticulosPorCodigo',
             obtenerCodigo: a => a.codigo ?? a.Codigo,
             obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
-            onSeleccion: async a => {
-                if (!a) return;
-                $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
-                $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
-                // No se escribe el <input> del buscador de Almacén directamente -- hay que pasar
-                // por buscadorAlmacen.establecer() para que su estado interno ("resuelto") quede
-                // consistente (si no, un texto inválido escrito antes en ese campo podría dejarlo
-                // bloqueado para siempre aunque visualmente parezca tener un valor).
-                const almacenDefecto = a.almacenDefecto ?? a.AlmacenDefecto ?? '';
-                if (almacenDefecto) {
-                    const respuestaAlmacen = await $.get('/Pedidos/ObtenerAlmacenPorCodigo', { codigo: almacenDefecto });
-                    buscadorAlmacen.establecer(respuestaAlmacen.resultado && respuestaAlmacen.dato ? respuestaAlmacen.dato : { codigo: almacenDefecto, nombre: almacenDefecto });
-                } else {
-                    buscadorAlmacen.establecer(null);
-                }
-                recalcularLinea();
-            }
+            onSeleccion: a => aplicarArticuloSeleccionado(a, 'cod')
+        });
+        buscadorArticuloDesc = App.autocompletar({
+            texto: $('#detArtDescTexto'), oculto: $('#detCodArticulo'),
+            lista: $('#detArtDescResultados'), error: $('#detArtDescError'),
+            endpoint: '/Pedidos/BuscarArticulos',
+            obtenerCodigo: a => a.codigo ?? a.Codigo,
+            obtenerEtiqueta: a => `${a.nombre ?? a.Nombre} (${a.codigo ?? a.Codigo})`,
+            onSeleccion: a => aplicarArticuloSeleccionado(a, 'desc')
         });
 
         buscadorAlmacen = App.autocompletar({
@@ -315,6 +308,7 @@ $(function () {
 
         const totales = calcularTotalesDesdeLineas(lista);
         $('#TotalBruto').val(totales.totalBruto);
+        $('#TotalImp').val(totales.totalImp);
         $('#TotalDoc').val(totales.totalDoc);
 
         if (lista.length === 0) {
@@ -350,9 +344,46 @@ $(function () {
         }).join(''));
     }
 
+    // Sincroniza las dos cajas de artículo sin re-disparar onSeleccion (establecer() lo haría).
+    function setArticuloEnAmbasCajas(item) {
+        sincronizandoArticulo = true;
+        try {
+            buscadorArticuloCod.establecer(item || null);
+            buscadorArticuloDesc.establecer(item || null);
+            $('#detCodArticulo').val(item ? (item.codigo ?? item.Codigo) : '');
+        } finally {
+            sincronizandoArticulo = false;
+        }
+    }
+
+    // Handler de selección del usuario en cualquiera de las dos cajas.
+    function aplicarArticuloSeleccionado(a, origen) {
+        if (sincronizandoArticulo) return; // corta la recursión de establecer()
+        sincronizandoArticulo = true;
+        try {
+            $('#detCodArticulo').val(a ? (a.codigo ?? a.Codigo) : '');
+            if (origen !== 'cod')  buscadorArticuloCod.establecer(a || null);
+            if (origen !== 'desc') buscadorArticuloDesc.establecer(a || null);
+        } finally {
+            sincronizandoArticulo = false;
+        }
+        if (!a) { buscadorAlmacen.establecer(null); return; }
+        $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
+        $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
+        aplicarAlmacenDefectoDeArticulo(a);
+        recalcularLinea();
+    }
+
+    async function aplicarAlmacenDefectoDeArticulo(a) {
+        const cod = a.almacenDefecto ?? a.AlmacenDefecto ?? '';
+        if (!cod) { buscadorAlmacen.establecer(null); return; }
+        const r = await $.get('/Pedidos/ObtenerAlmacenPorCodigo', { codigo: cod });
+        buscadorAlmacen.establecer(r.resultado && r.dato ? r.dato : { codigo: cod, nombre: cod });
+    }
+
     function limpiarPanelLinea() {
         $('#detNoLineaOriginal').val('');
-        buscadorArticulo.establecer(null);
+        setArticuloEnAmbasCajas(null);
         buscadorAlmacen.establecer(null);
         buscadorImpuesto.establecer(null);
         $('#detDescripcion').val('');
@@ -409,7 +440,7 @@ $(function () {
 
         $('#detNoLineaOriginal').val(clave);
 
-        buscadorArticulo.establecer(codArticulo ? { codigo: codArticulo, nombre: linea.descripcion ?? linea.Descripcion ?? '' } : null);
+        setArticuloEnAmbasCajas(codArticulo ? { codigo: codArticulo, nombre: linea.descripcion ?? linea.Descripcion ?? '' } : null);
 
         if (codAlmacen) {
             const respuestaAlmacen = await $.get('/Pedidos/ObtenerAlmacenPorCodigo', { codigo: codAlmacen });
