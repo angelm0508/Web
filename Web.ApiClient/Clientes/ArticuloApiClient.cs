@@ -26,5 +26,8 @@ namespace Web.ApiClient.Clientes
 
         public Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganNombreAsync(string nombre) =>
             GetAsync<IEnumerable<ArticuloDTO>>($"{Recurso}/ContengaNombre/{Uri.EscapeDataString(nombre)}");
+
+        public Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganCodigoAsync(string codigo) =>
+            GetAsync<IEnumerable<ArticuloDTO>>($"{Recurso}/ContengaCodigo/{Uri.EscapeDataString(codigo)}");
     }
 }

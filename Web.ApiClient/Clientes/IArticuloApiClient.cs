@@ -11,5 +11,6 @@ namespace Web.ApiClient.Clientes
         Task<Respuesta<bool>> ActualizarAsync(string codigo, ArticuloActualizarDTO dto);
         Task<Respuesta<bool>> EliminarAsync(string codigo);
         Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganNombreAsync(string nombre);
+        Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganCodigoAsync(string codigo);
     }
 }
