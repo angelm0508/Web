@@ -143,7 +143,7 @@ namespace Web.UI.Controllers
                 NombreSn = dto.NombreSn,
                 Direccion = dto.Direccion,
                 MonedaDoc = dto.MonedaDoc,
-                PrctjeImpuesto = dto.PrctjeImpuesto,
+                PrctjeImpuesto = actual.Dato.PrctjeImpuesto, // el campo ya no se edita en el encabezado (spec §B); se preserva el valor persistido
                 TotalImp = dto.TotalImp,
                 PrctjeDesc = dto.PrctjeDesc,
                 TotalDesc = dto.TotalDesc,
