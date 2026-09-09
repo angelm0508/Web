@@ -1,5 +1,6 @@
 using Web.ApiClient.Dtos;
 using Web.ApiClient.Dtos.Articulo;
+using Web.ApiClient.Dtos.Precio;
 
 namespace Web.ApiClient.Clientes
 {
@@ -29,5 +30,12 @@ namespace Web.ApiClient.Clientes
 
         public Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganCodigoAsync(string codigo) =>
             GetAsync<IEnumerable<ArticuloDTO>>($"{Recurso}/ContengaCodigo/{Uri.EscapeDataString(codigo)}");
+
+        public Task<Respuesta<PrecioResueltoDTO>> ObtenerPrecioAsync(string codigo, int? listaPrecio)
+        {
+            var ruta = $"{Recurso}/{Uri.EscapeDataString(codigo)}/Precio";
+            if (listaPrecio.HasValue) ruta += $"?listaPrecio={listaPrecio.Value}";
+            return GetAsync<PrecioResueltoDTO>(ruta);
+        }
     }
 }

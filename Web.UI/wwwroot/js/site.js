@@ -165,6 +165,32 @@ const App = {
     },
 
     /**
+     * Resuelve el precio de un artículo según una lista de precio.
+     * Devuelve Number(precioLista) o null (sin lista, artículo inexistente, o error de la API);
+     * el llamador cae entonces al PrecioUnitario del artículo.
+     */
+    resolverPrecioLista: async function (codigo, listaPrecio) {
+        if (!codigo || listaPrecio == null || listaPrecio === '') return null;
+        try {
+            const r = await $.get('/Precios/Articulo', { codigo, listaPrecio });
+            if (r && r.resultado && r.dato && r.dato.precioLista != null) {
+                return Number(r.dato.precioLista);
+            }
+        } catch (e) { /* cae a null */ }
+        return null;
+    },
+
+    /** Devuelve el NumLstPrecio de un socio (o null). Para precargar la lista en edición. */
+    obtenerListaDeSocio: async function (codigoSn) {
+        if (!codigoSn) return null;
+        try {
+            const r = await $.get('/Precios/ListaDeSocio', { codigo: codigoSn });
+            const n = r && r.resultado && r.dato ? (r.dato.numLstPrecio ?? null) : null;
+            return n != null ? Number(n) : null;
+        } catch (e) { return null; }
+    },
+
+    /**
      * Convierte un <input type="text"> en un buscador con autocompletado contra un endpoint de
      * la API. No depende de ninguna librería externa. Los elementos (texto visible, oculto con
      * el código real, lista de sugerencias, mensaje de error) ya deben existir en el markup --

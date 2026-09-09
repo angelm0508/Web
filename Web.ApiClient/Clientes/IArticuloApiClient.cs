@@ -1,5 +1,6 @@
 using Web.ApiClient.Dtos;
 using Web.ApiClient.Dtos.Articulo;
+using Web.ApiClient.Dtos.Precio;
 
 namespace Web.ApiClient.Clientes
 {
@@ -12,5 +13,6 @@ namespace Web.ApiClient.Clientes
         Task<Respuesta<bool>> EliminarAsync(string codigo);
         Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganNombreAsync(string nombre);
         Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganCodigoAsync(string codigo);
+        Task<Respuesta<PrecioResueltoDTO>> ObtenerPrecioAsync(string codigo, int? listaPrecio);
     }
 }
