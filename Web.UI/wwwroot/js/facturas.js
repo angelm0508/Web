@@ -46,7 +46,13 @@ $(function () {
             endpoint: '/Facturas/BuscarSocios',
             obtenerCodigo: s => s.codigo ?? s.Codigo,
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
-            onSeleccion: s => $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '')
+            onSeleccion: async s => {
+                $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
+                if (nueva === listaPrecioSocio) return;
+                listaPrecioSocio = nueva;
+                await ofrecerRecalcularLineas();
+            }
         });
     }
 
@@ -229,6 +235,7 @@ $(function () {
     let tasaImpuestoSeleccionado = 0;
     let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto;
     let sincronizandoArticulo = false;
+    let listaPrecioSocio = null;
 
     function esEdicionDetalle() {
         const v = $('#tblDetalleFactura').data('es-edicion');
@@ -240,6 +247,12 @@ $(function () {
         lineasRemotas = [];
         proximoIdLocal = 1;
         noLineaOriginalEnEdicion = null;
+
+        listaPrecioSocio = null;
+        const codSnActual = $('#CodigoSn').val();
+        if (codSnActual) {
+            App.obtenerListaDeSocio(codSnActual).then(n => { listaPrecioSocio = n; });
+        }
 
         const $tabla = $('#tblDetalleFactura');
         if ($tabla.length === 0) return;
@@ -318,6 +331,40 @@ $(function () {
         };
     }
 
+    // Al cambiar el socio en creación, ofrece recalcular los precios de las líneas ya cargadas.
+    async function ofrecerRecalcularLineas() {
+        if (esEdicionDetalle()) return;                 // en edición el encabezado es de solo lectura
+        if (!lineasLocales.length || listaPrecioSocio == null) return;
+
+        const ok = await Swal.fire({
+            icon: 'question',
+            title: '¿Actualizar precios?',
+            text: 'Se recalcularán los precios de las líneas según la lista de precio del socio seleccionado.',
+            showCancelButton: true,
+            confirmButtonText: 'Actualizar',
+            cancelButtonText: 'Mantener'
+        }).then(r => r.isConfirmed);
+        if (!ok) return;
+
+        for (const l of lineasLocales) {
+            const cod = l.codArticulo ?? l.CodArticulo ?? l.codigo ?? l.Codigo;
+            const nuevo = await App.resolverPrecioLista(cod, listaPrecioSocio);
+            if (nuevo == null) continue;
+            // impuesto y total de línea escalan linealmente con el precio (mismo %desc, misma tasa)
+            const viejo = Number(l.precio ?? l.Precio ?? 0);
+            const cant = Number(l.cantidad ?? l.Cantidad ?? 0);
+            const pd = Number(l.prctjeDesc ?? l.PrctjeDesc ?? 0);
+            const f = viejo ? (nuevo / viejo) : 1;
+            const impNuevo = Number(((Number(l.impuesto ?? l.Impuesto ?? 0)) * f).toFixed(2));
+            const bruto = cant * nuevo;
+            const totalNuevo = Number((bruto - bruto * (pd / 100) + impNuevo).toFixed(2));
+            l.precio = nuevo;          l.Precio = nuevo;
+            l.impuesto = impNuevo;     l.Impuesto = impNuevo;
+            l.totalLinea = totalNuevo; l.TotalLinea = totalNuevo;
+        }
+        pintarDetalle();
+    }
+
     function pintarDetalle() {
         const $tbody = $('#tblDetalleFactura tbody');
         if ($tbody.length === 0) return;
@@ -390,8 +437,17 @@ $(function () {
         }
         if (!a) { buscadorAlmacen.establecer(null); return; }
         $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
-        $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
+        aplicarPrecioDeArticulo(a);
         aplicarAlmacenDefectoDeArticulo(a);
+        recalcularLinea();
+    }
+
+    // Coloca en #detPrecio el precio de lista del socio, o el PrecioUnitario base si no hay lista.
+    async function aplicarPrecioDeArticulo(a) {
+        const base = a.precioUnitario ?? a.PrecioUnitario ?? 0;
+        const codArt = a.codigo ?? a.Codigo;
+        const pLista = await App.resolverPrecioLista(codArt, listaPrecioSocio);
+        $('#detPrecio').val(pLista != null ? pLista : base);
         recalcularLinea();
     }
 
