@@ -335,8 +335,19 @@ $(function () {
 
         for (const l of lineasLocales) {
             const cod = l.codArticulo ?? l.CodArticulo ?? l.codigo ?? l.Codigo;
-            const p = await App.resolverPrecioLista(cod, listaPrecioSocio);
-            if (p != null) { l.precio = p; l.Precio = p; }
+            const nuevo = await App.resolverPrecioLista(cod, listaPrecioSocio);
+            if (nuevo == null) continue;
+            // impuesto y total de línea escalan linealmente con el precio (mismo %desc, misma tasa)
+            const viejo = Number(l.precio ?? l.Precio ?? 0);
+            const cant = Number(l.cantidad ?? l.Cantidad ?? 0);
+            const pd = Number(l.prctjeDesc ?? l.PrctjeDesc ?? 0);
+            const f = viejo ? (nuevo / viejo) : 1;
+            const impNuevo = Number(((Number(l.impuesto ?? l.Impuesto ?? 0)) * f).toFixed(2));
+            const bruto = cant * nuevo;
+            const totalNuevo = Number((bruto - bruto * (pd / 100) + impNuevo).toFixed(2));
+            l.precio = nuevo;          l.Precio = nuevo;
+            l.impuesto = impNuevo;     l.Impuesto = impNuevo;
+            l.totalLinea = totalNuevo; l.TotalLinea = totalNuevo;
         }
         pintarDetalle();
     }
