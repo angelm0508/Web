@@ -39,7 +39,13 @@ $(function () {
             endpoint: '/Cotizaciones/BuscarSocios',
             obtenerCodigo: s => s.codigo ?? s.Codigo,
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
-            onSeleccion: s => $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '')
+            onSeleccion: async s => {
+                $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
+                if (nueva === listaPrecioSocio) return;
+                listaPrecioSocio = nueva;
+                await ofrecerRecalcularLineas();
+            }
         });
     }
 
@@ -216,6 +222,7 @@ $(function () {
     let tasaImpuestoSeleccionado = 0;
     let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto;
     let sincronizandoArticulo = false;
+    let listaPrecioSocio = null;
 
     function esEdicionDetalle() {
         const v = $('#tblDetalleCotizacion').data('es-edicion');
@@ -227,6 +234,12 @@ $(function () {
         lineasRemotas = [];
         proximoIdLocal = 1;
         noLineaOriginalEnEdicion = null;
+
+        listaPrecioSocio = null;
+        const codSnActual = $('#CodigoSn').val();
+        if (codSnActual) {
+            App.obtenerListaDeSocio(codSnActual).then(n => { listaPrecioSocio = n; });
+        }
 
         const $tabla = $('#tblDetalleCotizacion');
         if ($tabla.length === 0) return;
@@ -305,6 +318,29 @@ $(function () {
         };
     }
 
+    // Al cambiar el socio en creación, ofrece recalcular los precios de las líneas ya cargadas.
+    async function ofrecerRecalcularLineas() {
+        if (esEdicionDetalle()) return;                 // en edición el encabezado es de solo lectura
+        if (!lineasLocales.length || listaPrecioSocio == null) return;
+
+        const ok = await Swal.fire({
+            icon: 'question',
+            title: '¿Actualizar precios?',
+            text: 'Se recalcularán los precios de las líneas según la lista de precio del socio seleccionado.',
+            showCancelButton: true,
+            confirmButtonText: 'Actualizar',
+            cancelButtonText: 'Mantener'
+        }).then(r => r.isConfirmed);
+        if (!ok) return;
+
+        for (const l of lineasLocales) {
+            const cod = l.codArticulo ?? l.CodArticulo ?? l.codigo ?? l.Codigo;
+            const p = await App.resolverPrecioLista(cod, listaPrecioSocio);
+            if (p != null) { l.precio = p; l.Precio = p; }
+        }
+        pintarDetalle();
+    }
+
     function pintarDetalle() {
         const $tbody = $('#tblDetalleCotizacion tbody');
         if ($tbody.length === 0) return;
@@ -374,8 +410,17 @@ $(function () {
         }
         if (!a) { buscadorAlmacen.establecer(null); return; }
         $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
-        $('#detPrecio').val(a.precioUnitario ?? a.PrecioUnitario ?? 0);
+        aplicarPrecioDeArticulo(a);
         aplicarAlmacenDefectoDeArticulo(a);
+        recalcularLinea();
+    }
+
+    // Coloca en #detPrecio el precio de lista del socio, o el PrecioUnitario base si no hay lista.
+    async function aplicarPrecioDeArticulo(a) {
+        const base = a.precioUnitario ?? a.PrecioUnitario ?? 0;
+        const codArt = a.codigo ?? a.Codigo;
+        const pLista = await App.resolverPrecioLista(codArt, listaPrecioSocio);
+        $('#detPrecio').val(pLista != null ? pLista : base);
         recalcularLinea();
     }
 
