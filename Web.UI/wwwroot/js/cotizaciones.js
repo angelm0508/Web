@@ -339,9 +339,10 @@ $(function () {
             if (nuevo == null) continue;
             // impuesto y total de línea escalan linealmente con el precio (mismo %desc, misma tasa)
             const viejo = Number(l.precio ?? l.Precio ?? 0);
+            if (!viejo) continue;   // sin precio previo no se puede reescalar el impuesto en proporción
             const cant = Number(l.cantidad ?? l.Cantidad ?? 0);
             const pd = Number(l.prctjeDesc ?? l.PrctjeDesc ?? 0);
-            const f = viejo ? (nuevo / viejo) : 1;
+            const f = nuevo / viejo;
             const impNuevo = Number(((Number(l.impuesto ?? l.Impuesto ?? 0)) * f).toFixed(2));
             const bruto = cant * nuevo;
             const totalNuevo = Number((bruto - bruto * (pd / 100) + impNuevo).toFixed(2));
