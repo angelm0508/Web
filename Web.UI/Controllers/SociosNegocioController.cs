@@ -65,7 +65,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("SociosNegocio", Accion.Actualizar)]
+        [RequierePermiso("SociosNegocio", Accion.Ver)]
         public async Task<IActionResult> FormularioEditar(string codigo)
         {
             var respuesta = await _socios.ObtenerAsync(codigo);

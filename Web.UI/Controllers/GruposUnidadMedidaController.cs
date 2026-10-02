@@ -47,7 +47,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("GruposUnidadMedida", Accion.Actualizar)]
+        [RequierePermiso("GruposUnidadMedida", Accion.Ver)]
         public async Task<IActionResult> FormularioEditar(int id)
         {
             var respuesta = await _grupos.ObtenerAsync(id);

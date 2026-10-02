@@ -12,7 +12,7 @@ $(function () {
             {
                 data: 'entry', orderable: false, className: 'text-end',
                 render: entry => `
-                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-entry="${entry}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    <button class="btn btn-sm btn-outline-primary btn-editar" data-entry="${entry}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
                     ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-entry="${entry}"><i class="fa-solid fa-trash"></i></button>` : ''}
                 `
             }
@@ -391,8 +391,8 @@ $(function () {
                     <td>${impuesto != null ? Number(impuesto).toFixed(2) : '0.00'}</td>
                     <td>${totalLinea != null ? Number(totalLinea).toFixed(2) : ''}</td>
                     <td class="text-end">
-                        <button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}"><i class="fa-solid fa-pen"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}"><i class="fa-solid fa-trash"></i></button>
+                        ${!esEdicionDetalle() || permisos.actualizar ? `<button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${!esEdicionDetalle() || permisos.eliminar ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </td>
                 </tr>
             `;

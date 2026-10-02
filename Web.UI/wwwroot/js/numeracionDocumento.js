@@ -12,7 +12,7 @@ $(function () {
             {
                 data: 'codigoObj', orderable: false, className: 'text-end',
                 render: codigo => `
-                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    <button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
                 `
             }
         ],

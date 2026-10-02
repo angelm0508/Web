@@ -78,7 +78,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("EntregasCompra", Accion.Actualizar)]
+        [RequierePermiso("EntregasCompra", Accion.Ver)]
         public async Task<IActionResult> FormularioEditar(int entry)
         {
             var respuesta = await _entregasCompra.ObtenerAsync(entry);
@@ -135,6 +135,10 @@ namespace Web.UI.Controllers
         [RequierePermiso("EntregasCompra", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int entry, [FromBody] EntregaCompraCrearDTO dto)
         {
+            // Cancelar un documento es una actualización, pero requiere además el permiso Eliminar.
+            if (dto.Cancelado == "S" && !User.TienePermiso("EntregasCompra", Accion.Eliminar))
+                return Json(new { resultado = false, mensaje = "No tienes permiso para cancelar documentos." });
+
             var actual = await _entregasCompra.ObtenerAsync(entry);
             if (!actual.Resultado || actual.Dato is null)
                 return NotFound(actual);

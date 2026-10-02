@@ -78,7 +78,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("PedidosCompra", Accion.Actualizar)]
+        [RequierePermiso("PedidosCompra", Accion.Ver)]
         public async Task<IActionResult> FormularioEditar(int entry)
         {
             var respuesta = await _pedidosCompra.ObtenerAsync(entry);

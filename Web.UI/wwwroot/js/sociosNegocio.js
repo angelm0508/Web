@@ -13,7 +13,7 @@ $(function () {
             {
                 data: 'codigo', orderable: false, className: 'text-end',
                 render: codigo => `
-                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    <button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
                     ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-codigo="${codigo}"><i class="fa-solid fa-trash"></i></button>` : ''}
                 `
             }

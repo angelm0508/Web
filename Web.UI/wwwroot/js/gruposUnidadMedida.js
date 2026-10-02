@@ -13,7 +13,7 @@ $(function () {
                     const bloqueado = row.bloqueado === 'S';
                     const atributos = bloqueado ? 'disabled title="Registro bloqueado"' : '';
                     return `
-                        ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}" ${atributos}><i class="fa-solid fa-pen"></i></button>` : ''}
+                        <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}" ${atributos}${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
                         ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}" ${atributos}><i class="fa-solid fa-trash"></i></button>` : ''}
                     `;
                 }

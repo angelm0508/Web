@@ -78,7 +78,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("Cotizaciones", Accion.Actualizar)]
+        [RequierePermiso("Cotizaciones", Accion.Ver)]
         public async Task<IActionResult> FormularioEditar(int entry)
         {
             var respuesta = await _cotizaciones.ObtenerAsync(entry);

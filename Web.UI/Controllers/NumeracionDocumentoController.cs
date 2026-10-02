@@ -58,7 +58,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("NumeracionDocumento", Accion.Actualizar)]
+        [RequierePermiso("NumeracionDocumento", Accion.Ver)]
         public async Task<IActionResult> FormularioEditar(string codigo)
         {
             var respuesta = await _numeraciones.ObtenerAsync(codigo);

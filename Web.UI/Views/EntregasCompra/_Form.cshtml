@@ -221,7 +221,7 @@
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-    @if (esEdicion && (Model.Cancelado ?? "N") != "S" && User.TienePermiso("EntregasCompra", Accion.Actualizar))
+    @if (esEdicion && (Model.Cancelado ?? "N") != "S" && User.TienePermiso("EntregasCompra", Accion.Eliminar))
     {
         <button type="button" class="btn btn-outline-danger" id="btnCancelarDocEntregaCompra" data-entry="@ViewBag.EntryActual">
             <i class="fa-solid fa-ban me-1"></i>Cancelar documento
