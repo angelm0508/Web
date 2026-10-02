@@ -102,6 +102,16 @@ builder.Services.AddHttpClient<IExistenciaApiClient, ExistenciaApiClient>(c => c
 builder.Services.AddHttpClient<IMovimientoInventarioApiClient, MovimientoInventarioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
+// Permisos de usuario: módulos, matriz de permisos por usuario, plantillas y listado de usuarios.
+builder.Services.AddHttpClient<IModuloApiClient, ModuloApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IUsuarioPermisoApiClient, UsuarioPermisoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IPlantillaApiClient, PlantillaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IUsuarioApiClient, UsuarioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+
 builder.Services.AddAuthentication(AuthConstants.EsquemaCookie)
     .AddCookie(AuthConstants.EsquemaCookie, options =>
     {
