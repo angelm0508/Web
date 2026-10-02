@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Text.Json.Serialization;
 using Web.ApiClient.Autenticacion;
@@ -119,6 +120,16 @@ builder.Services.AddAuthentication(AuthConstants.EsquemaCookie)
         options.AccessDeniedPath = "/Cuenta/AccesoDenegado";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         options.SlidingExpiration = true;
+        // Las sesiones emitidas antes de los permisos por usuario no traen el claim SuperUsuario:
+        // se rechazan para forzar un nuevo login que incluya los claims de autorización.
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            if (context.Principal?.FindFirst("SuperUsuario") is null)
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(AuthConstants.EsquemaCookie);
+            }
+        };
     });
 
 builder.Services.AddAuthorization();

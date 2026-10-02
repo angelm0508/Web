@@ -8,6 +8,10 @@ namespace Web.UI.Authorization
         {
             if (user.FindFirst("SuperUsuario")?.Value == "S") return true;
 
+            // "Usuarios" (administración de usuarios/permisos) es exclusivo de SuperUsuario: ningún
+            // permiso por claim lo otorga.
+            if (codigoModulo == "Usuarios") return false;
+
             var letra = accion switch
             {
                 Accion.Ver => 'V',
