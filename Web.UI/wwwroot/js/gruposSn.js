@@ -1,4 +1,6 @@
 $(function () {
+    const datosPermisosEl = document.getElementById('datosPermisosGruposSn');
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
     const tipoGrupo = $('#tblGruposSn').data('tipo-grupo');
 
     const tabla = $('#tblGruposSn').DataTable({
@@ -11,8 +13,8 @@ $(function () {
                     const bloqueado = row.bloqueado === 'S';
                     const atributos = bloqueado ? 'disabled title="Registro bloqueado"' : '';
                     return `
-                        <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${entry}" ${atributos}><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${entry}" ${atributos}><i class="fa-solid fa-trash"></i></button>
+                        ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-id="${entry}" ${atributos}><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${entry}" ${atributos}><i class="fa-solid fa-trash"></i></button>` : ''}
                     `;
                 }
             }

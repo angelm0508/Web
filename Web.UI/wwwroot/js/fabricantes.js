@@ -1,4 +1,6 @@
 $(function () {
+    const datosPermisosEl = document.getElementById('datosPermisosFabricantes');
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
     const tabla = $('#tblFabricantes').DataTable({
         ajax: { url: '/Fabricantes/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
@@ -6,8 +8,8 @@ $(function () {
             {
                 data: 'entry', orderable: false, className: 'text-end',
                 render: id => `
-                    <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}"><i class="fa-solid fa-trash"></i></button>
+                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}"><i class="fa-solid fa-trash"></i></button>` : ''}
                 `
             }
         ],

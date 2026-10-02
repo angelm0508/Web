@@ -4,9 +4,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">Grupos de artículo</h3>
-    <button type="button" class="btn btn-primary" id="btnNuevo">
-        <i class="fa-solid fa-plus me-1"></i>Nuevo
-    </button>
+    @if (User.TienePermiso("GruposArticulo", Accion.Agregar))
+    {
+        <button type="button" class="btn btn-primary" id="btnNuevo">
+            <i class="fa-solid fa-plus me-1"></i>Nuevo
+        </button>
+    }
 </div>
 
 <div class="card card-modulo">
@@ -32,6 +35,11 @@
         </div>
     </div>
 </div>
+
+<script id="datosPermisosGruposArticulo" type="application/json">
+    { "actualizar": @(User.TienePermiso("GruposArticulo", Accion.Actualizar) ? "true" : "false"),
+      "eliminar": @(User.TienePermiso("GruposArticulo", Accion.Eliminar) ? "true" : "false") }
+</script>
 
 @section Scripts {
     <script src="~/js/gruposArticulo.js" asp-append-version="true"></script>

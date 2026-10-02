@@ -4,9 +4,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">Unidades de medida</h3>
-    <button type="button" class="btn btn-primary" id="btnNuevo">
-        <i class="fa-solid fa-plus me-1"></i>Nuevo
-    </button>
+    @if (User.TienePermiso("UnidadesMedida", Accion.Agregar))
+    {
+        <button type="button" class="btn btn-primary" id="btnNuevo">
+            <i class="fa-solid fa-plus me-1"></i>Nuevo
+        </button>
+    }
 </div>
 
 <div class="card card-modulo">
@@ -38,6 +41,11 @@
         </div>
     </div>
 </div>
+
+<script id="datosPermisosUnidadesMedida" type="application/json">
+    { "actualizar": @(User.TienePermiso("UnidadesMedida", Accion.Actualizar) ? "true" : "false"),
+      "eliminar": @(User.TienePermiso("UnidadesMedida", Accion.Eliminar) ? "true" : "false") }
+</script>
 
 @section Scripts {
     <script src="~/js/unidadesMedida.js" asp-append-version="true"></script>
