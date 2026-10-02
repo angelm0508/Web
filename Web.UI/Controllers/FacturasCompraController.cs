@@ -5,6 +5,7 @@ using System.Linq;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.FacturaCompra;
 using Web.ApiClient.Dtos.FacturaCompraDetalle;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -47,9 +48,11 @@ namespace Web.UI.Controllers
             _numeracion = numeracion;
         }
 
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _facturasCompra.ObtenerTodoAsync();
@@ -57,6 +60,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Agregar)]
         public async Task<IActionResult> FormularioCrear()
         {
             await CargarDropdownsAsync();
@@ -74,6 +78,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int entry)
         {
             var respuesta = await _facturasCompra.ObtenerAsync(entry);
@@ -114,6 +119,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("FacturasCompra", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] FacturaCompraCrearDTO dto)
         {
             var respuesta = await _facturasCompra.InsertarAsync(dto);
@@ -126,6 +132,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("FacturasCompra", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int entry, [FromBody] FacturaCompraCrearDTO dto)
         {
             var actual = await _facturasCompra.ObtenerAsync(entry);
@@ -160,6 +167,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("FacturasCompra", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int entry)
         {
             var respuesta = await _facturasCompra.EliminarAsync(entry);
@@ -167,6 +175,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> ObtenerDetalle(int entry)
         {
             var respuesta = await _detalles.ObtenerPorFacturaCompraAsync(entry);
@@ -175,6 +184,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("FacturasCompra", Accion.Agregar)]
         public async Task<IActionResult> CrearLinea([FromBody] FacturaCompraDetalleCrearDTO dto)
         {
             var respuesta = await _detalles.InsertarAsync(dto);
@@ -183,6 +193,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("FacturasCompra", Accion.Actualizar)]
         public async Task<IActionResult> EditarLinea(int entry, int noLinea, [FromBody] FacturaCompraDetalleActualizarDTO dto)
         {
             var respuesta = await _detalles.ActualizarAsync(entry, noLinea, dto);
@@ -191,6 +202,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("FacturasCompra", Accion.Eliminar)]
         public async Task<IActionResult> EliminarLinea(int entry, int noLinea)
         {
             var respuesta = await _detalles.EliminarAsync(entry, noLinea);
@@ -198,6 +210,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> BuscarSocios(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -207,6 +220,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> BuscarArticulos(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -216,6 +230,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> BuscarArticulosPorCodigo(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -225,6 +240,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> BuscarAlmacenes(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -234,6 +250,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> BuscarImpuestos(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -243,6 +260,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> ObtenerAlmacenPorCodigo(string codigo)
         {
             var respuesta = await _almacenes.ObtenerAsync(codigo);
@@ -250,6 +268,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("FacturasCompra", Accion.Ver)]
         public async Task<IActionResult> ObtenerImpuestoPorCodigo(string codigo)
         {
             var respuesta = await _impuestos.ObtenerAsync(codigo);

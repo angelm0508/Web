@@ -5,6 +5,7 @@ using System.Linq;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.Pedido;
 using Web.ApiClient.Dtos.PedidoDetalle;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -47,9 +48,11 @@ namespace Web.UI.Controllers
             _numeracion = numeracion;
         }
 
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _pedidos.ObtenerTodoAsync();
@@ -57,6 +60,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Agregar)]
         public async Task<IActionResult> FormularioCrear()
         {
             await CargarDropdownsAsync();
@@ -74,6 +78,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int entry)
         {
             var respuesta = await _pedidos.ObtenerAsync(entry);
@@ -113,6 +118,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Pedidos", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] PedidoCrearDTO dto)
         {
             var respuesta = await _pedidos.InsertarAsync(dto);
@@ -125,6 +131,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Pedidos", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int entry, [FromBody] PedidoCrearDTO dto)
         {
             var actual = await _pedidos.ObtenerAsync(entry);
@@ -158,6 +165,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Pedidos", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int entry)
         {
             var respuesta = await _pedidos.EliminarAsync(entry);
@@ -165,6 +173,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> ObtenerDetalle(int entry)
         {
             var respuesta = await _detalles.ObtenerPorPedidoAsync(entry);
@@ -172,6 +181,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> BuscarSocios(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -181,6 +191,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> BuscarArticulos(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -190,6 +201,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> BuscarArticulosPorCodigo(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -199,6 +211,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> BuscarAlmacenes(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -208,6 +221,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> BuscarImpuestos(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -217,6 +231,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> ObtenerAlmacenPorCodigo(string codigo)
         {
             var respuesta = await _almacenes.ObtenerAsync(codigo);
@@ -224,6 +239,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Pedidos", Accion.Ver)]
         public async Task<IActionResult> ObtenerImpuestoPorCodigo(string codigo)
         {
             var respuesta = await _impuestos.ObtenerAsync(codigo);
@@ -232,6 +248,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Pedidos", Accion.Agregar)]
         public async Task<IActionResult> CrearLinea([FromBody] PedidoDetalleCrearDTO dto)
         {
             var respuesta = await _detalles.InsertarAsync(dto);
@@ -240,6 +257,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Pedidos", Accion.Actualizar)]
         public async Task<IActionResult> EditarLinea(int entry, int noLinea, [FromBody] PedidoDetalleActualizarDTO dto)
         {
             var respuesta = await _detalles.ActualizarAsync(entry, noLinea, dto);
@@ -248,6 +266,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Pedidos", Accion.Eliminar)]
         public async Task<IActionResult> EliminarLinea(int entry, int noLinea)
         {
             var respuesta = await _detalles.EliminarAsync(entry, noLinea);
