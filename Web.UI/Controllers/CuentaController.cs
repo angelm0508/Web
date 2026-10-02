@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -56,6 +57,12 @@ namespace Web.UI.Controllers
                 new(AuthConstants.ClaimJwtToken, respuesta.Dato.Token)
             };
 
+            // El JWT ya fue validado/firmado por la API al emitirlo -- acá solo se decodifica para copiar
+            // sus claims de autorizacion (SuperUsuario/perm) a la cookie de sesion de la Web, que hoy no
+            // llevaba ninguno de los dos.
+            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(respuesta.Dato.Token);
+            claims.AddRange(jwt.Claims.Where(c => c.Type == "SuperUsuario" || c.Type == "perm"));
+
             var identity = new ClaimsIdentity(claims, AuthConstants.EsquemaCookie);
             var principal = new ClaimsPrincipal(identity);
 
@@ -69,6 +76,12 @@ namespace Web.UI.Controllers
                 return Redirect(returnUrl);
 
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet]
+        public IActionResult AccesoDenegado()
+        {
+            return View();
         }
 
         [HttpPost]

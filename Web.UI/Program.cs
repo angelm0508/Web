@@ -106,7 +106,7 @@ builder.Services.AddAuthentication(AuthConstants.EsquemaCookie)
     .AddCookie(AuthConstants.EsquemaCookie, options =>
     {
         options.LoginPath = "/Cuenta/Login";
-        options.AccessDeniedPath = "/Cuenta/Login";
+        options.AccessDeniedPath = "/Cuenta/AccesoDenegado";
         options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
         options.SlidingExpiration = true;
     });
