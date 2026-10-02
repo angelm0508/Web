@@ -55,6 +55,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequierePermiso("Usuarios", Accion.Actualizar)]
         public async Task<IActionResult> GuardarPermisos([FromBody] GuardarPermisosRequest body) =>
             Json(await _usuarioPermisos.GuardarAsync(body.UsuarioId, body.Matriz));
@@ -66,6 +67,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequierePermiso("Usuarios", Accion.Actualizar)]
         public async Task<IActionResult> AplicarPlantilla([FromBody] AplicarPlantillaRequest body) =>
             Json(await _usuarioPermisos.AplicarPlantillaAsync(body.UsuarioId, body.PlantillaId));

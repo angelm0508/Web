@@ -26,14 +26,17 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> ObtenerTodos() => Json(await _plantillas.ObtenerTodoAsync());
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequierePermiso("Usuarios", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] PlantillaCrearDTO dto) => Json(await _plantillas.InsertarAsync(dto));
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequierePermiso("Usuarios", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int id, [FromBody] PlantillaActualizarDTO dto) => Json(await _plantillas.ActualizarAsync(id, dto));
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequierePermiso("Usuarios", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int id) => Json(await _plantillas.EliminarAsync(id));
 
@@ -55,6 +58,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequierePermiso("Usuarios", Accion.Actualizar)]
         public async Task<IActionResult> GuardarPermisos([FromBody] GuardarPermisosRequest body) =>
             Json(await _plantillas.GuardarPermisosAsync(body.PlantillaId, body.Matriz));
