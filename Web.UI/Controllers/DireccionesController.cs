@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.DireccionSocioNegocio;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -20,9 +21,11 @@ namespace Web.UI.Controllers
             _socios = socios;
         }
 
+        [RequierePermiso("SociosNegocio", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("SociosNegocio", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _direcciones.ObtenerTodoAsync();
@@ -30,6 +33,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SociosNegocio", Accion.Ver)]
         public async Task<IActionResult> ObtenerPorSocio(string codigoSn)
         {
             var respuesta = await _direcciones.ObtenerTodoAsync();
@@ -41,6 +45,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SociosNegocio", Accion.Agregar)]
         public async Task<IActionResult> FormularioCrear()
         {
             await CargarDropdownsAsync();
@@ -49,6 +54,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SociosNegocio", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(string direccion)
         {
             var respuesta = await _direcciones.ObtenerAsync(direccion);
@@ -77,6 +83,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("SociosNegocio", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] DireccionSocioNegocioCrearDTO dto)
         {
             var respuesta = await _direcciones.InsertarAsync(dto);
@@ -85,6 +92,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("SociosNegocio", Accion.Actualizar)]
         public async Task<IActionResult> Editar(string direccion, [FromBody] DireccionSocioNegocioCrearDTO dto)
         {
             var actualizar = new DireccionSocioNegocioActualizarDTO
@@ -105,6 +113,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("SociosNegocio", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(string direccion)
         {
             var respuesta = await _direcciones.EliminarAsync(direccion);

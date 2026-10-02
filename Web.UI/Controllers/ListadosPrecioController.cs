@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.ListadoPrecio;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -16,9 +17,11 @@ namespace Web.UI.Controllers
             _listados = listados;
         }
 
+        [RequierePermiso("ListadosPrecio", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("ListadosPrecio", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _listados.ObtenerTodoAsync();
@@ -26,6 +29,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("ListadosPrecio", Accion.Agregar)]
         public async Task<IActionResult> FormularioCrear()
         {
             await CargarDropdownsAsync(null);
@@ -34,6 +38,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("ListadosPrecio", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int id)
         {
             var respuesta = await _listados.ObtenerAsync(id);
@@ -58,6 +63,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("ListadosPrecio", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] ListadoPrecioCrearDTO dto)
         {
             var respuesta = await _listados.InsertarAsync(dto);
@@ -66,6 +72,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("ListadosPrecio", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int id, [FromBody] ListadoPrecioCrearDTO dto)
         {
             var actualizar = new ListadoPrecioActualizarDTO
@@ -83,6 +90,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("ListadosPrecio", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int id)
         {
             var respuesta = await _listados.EliminarAsync(id);

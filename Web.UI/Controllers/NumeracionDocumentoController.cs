@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.NumeracionDocumento;
 using Web.ApiClient.Dtos.NumeracionDocumentoDet;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -18,9 +19,11 @@ namespace Web.UI.Controllers
             _detalles = detalles;
         }
 
+        [RequierePermiso("NumeracionDocumento", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("NumeracionDocumento", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuestaCabeceras = await _numeraciones.ObtenerTodoAsync();
@@ -55,6 +58,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("NumeracionDocumento", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(string codigo)
         {
             var respuesta = await _numeraciones.ObtenerAsync(codigo);
@@ -76,6 +80,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("NumeracionDocumento", Accion.Actualizar)]
         public async Task<IActionResult> Editar(string codigo, [FromBody] NumeracionDocumentoCrearDTO dto)
         {
             // El subtipo de documento está deshabilitado en el formulario de edición (no viaja en
@@ -96,6 +101,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("NumeracionDocumento", Accion.Ver)]
         public async Task<IActionResult> ObtenerDetalle(string codigoObj)
         {
             var respuesta = await _detalles.ObtenerPorDocumentoAsync(codigoObj);
@@ -104,6 +110,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("NumeracionDocumento", Accion.Agregar)]
         public async Task<IActionResult> CrearLinea([FromBody] NumeracionDocumentoDetCrearDTO dto)
         {
             var respuesta = await _detalles.InsertarAsync(dto);
@@ -112,6 +119,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("NumeracionDocumento", Accion.Actualizar)]
         public async Task<IActionResult> EditarLinea(int serie, [FromBody] NumeracionDocumentoDetActualizarDTO dto)
         {
             // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
@@ -127,6 +135,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("NumeracionDocumento", Accion.Eliminar)]
         public async Task<IActionResult> EliminarLinea(int serie)
         {
             var respuesta = await _detalles.EliminarAsync(serie);

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos;
 using Web.ApiClient.Dtos.GrupoSn;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -16,6 +17,7 @@ namespace Web.UI.Controllers
             _grupos = grupos;
         }
 
+        [RequierePermiso("GruposSn", Accion.Ver)]
         public IActionResult Clientes()
         {
             ViewBag.TipoGrupo = "C";
@@ -23,6 +25,7 @@ namespace Web.UI.Controllers
             return View("Index");
         }
 
+        [RequierePermiso("GruposSn", Accion.Ver)]
         public IActionResult Proveedores()
         {
             ViewBag.TipoGrupo = "P";
@@ -31,6 +34,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposSn", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos(string tipoGrupo)
         {
             var respuesta = await _grupos.ObtenerTodoAsync();
@@ -49,6 +53,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposSn", Accion.Agregar)]
         public IActionResult FormularioCrear(string tipoGrupo)
         {
             ViewBag.EsEdicion = false;
@@ -57,6 +62,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposSn", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int id)
         {
             var respuesta = await _grupos.ObtenerAsync(id);
@@ -77,6 +83,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposSn", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] GrupoSnCrearDTO dto, string tipoGrupo)
         {
             dto.TipoGrupo = tipoGrupo;
@@ -86,6 +93,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposSn", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int id, [FromBody] GrupoSnCrearDTO dto, string tipoGrupo)
         {
             // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
@@ -106,6 +114,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposSn", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int id)
         {
             var respuesta = await _grupos.EliminarAsync(id);
