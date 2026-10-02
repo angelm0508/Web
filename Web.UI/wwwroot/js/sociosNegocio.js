@@ -1,4 +1,6 @@
 $(function () {
+    const datosPermisosEl = document.getElementById('datosPermisosSociosNegocio');
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
     const tabla = $('#tblSociosNegocio').DataTable({
         ajax: { url: '/SociosNegocio/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
@@ -11,8 +13,8 @@ $(function () {
             {
                 data: 'codigo', orderable: false, className: 'text-end',
                 render: codigo => `
-                    <button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn btn-sm btn-outline-danger btn-eliminar" data-codigo="${codigo}"><i class="fa-solid fa-trash"></i></button>
+                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-codigo="${codigo}"><i class="fa-solid fa-trash"></i></button>` : ''}
                 `
             }
         ],
@@ -237,6 +239,9 @@ $(function () {
         if ($tbody.length === 0) return;
 
         const lista = esEdicionDirecciones() ? direccionesRemotas : direccionesLocales;
+        // En edición las direcciones se guardan en vivo contra la API: editar requiere Actualizar y eliminar requiere Eliminar.
+        const puedeEditarDireccion = !esEdicionDirecciones() || permisos.actualizar;
+        const puedeEliminarDireccion = !esEdicionDirecciones() || permisos.eliminar;
 
         actualizarChecklistSocio();
 
@@ -253,8 +258,8 @@ $(function () {
                 <td>${d.departamento ?? d.Departamento ?? ''}</td>
                 <td>${d.tipoDireccion ?? d.TipoDireccion ?? ''}</td>
                 <td class="text-end">
-                    <button type="button" class="btn btn-sm btn-outline-primary btn-editar-direccion" data-direccion="${d.direccion ?? d.Direccion}"><i class="fa-solid fa-pen"></i></button>
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-direccion" data-direccion="${d.direccion ?? d.Direccion}"><i class="fa-solid fa-trash"></i></button>
+                    ${puedeEditarDireccion ? `<button type="button" class="btn btn-sm btn-outline-primary btn-editar-direccion" data-direccion="${d.direccion ?? d.Direccion}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    ${puedeEliminarDireccion ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-direccion" data-direccion="${d.direccion ?? d.Direccion}"><i class="fa-solid fa-trash"></i></button>` : ''}
                 </td>
             </tr>
         `).join(''));

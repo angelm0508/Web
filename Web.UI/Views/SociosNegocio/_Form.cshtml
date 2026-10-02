@@ -100,9 +100,12 @@
     <hr />
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h6 class="mb-0">Direcciones</h6>
-        <button type="button" class="btn btn-sm btn-outline-primary" id="btnNuevaDireccion">
-            <i class="fa-solid fa-plus me-1"></i>Agregar dirección
-        </button>
+        @if (User.TienePermiso("SociosNegocio", Accion.Agregar))
+        {
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnNuevaDireccion">
+                <i class="fa-solid fa-plus me-1"></i>Agregar dirección
+            </button>
+        }
     </div>
 
     <div class="table-responsive">
@@ -192,7 +195,10 @@
 <div class="modal-footer">
     <span class="small text-muted me-auto">Esc para cerrar</span>
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-    <button type="button" class="btn btn-primary" id="btnGuardarSocioNegocio" data-codigo="@Model.Codigo">
-        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios
-    </button>
+    @if (User.TienePermiso("SociosNegocio", Accion.Actualizar))
+    {
+        <button type="button" class="btn btn-primary" id="btnGuardarSocioNegocio" data-codigo="@Model.Codigo">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Guardar cambios
+        </button>
+    }
 </div>

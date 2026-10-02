@@ -1,4 +1,6 @@
 $(function () {
+    const datosPermisosEl = document.getElementById('datosPermisosGruposUnidadMedida');
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
     const tabla = $('#tblGruposUnidadMedida').DataTable({
         ajax: { url: '/GruposUnidadMedida/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
@@ -11,8 +13,8 @@ $(function () {
                     const bloqueado = row.bloqueado === 'S';
                     const atributos = bloqueado ? 'disabled title="Registro bloqueado"' : '';
                     return `
-                        <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}" ${atributos}><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}" ${atributos}><i class="fa-solid fa-trash"></i></button>
+                        ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-id="${id}" ${atributos}><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-id="${id}" ${atributos}><i class="fa-solid fa-trash"></i></button>` : ''}
                     `;
                 }
             }
@@ -166,6 +168,9 @@ $(function () {
             const cantAlternativa = linea.cantAlternativa ?? linea.CantAlternativa;
             const cantBase = linea.cantBase ?? linea.CantBase;
             const clave = esEdicionDetalle() ? linea.numLinea : linea._id;
+            // En edición las líneas se guardan en vivo contra la API: editar requiere Actualizar y eliminar requiere Eliminar.
+            const puedeEditarLinea = !esEdicionDetalle() || permisos.actualizar;
+            const puedeEliminarLinea = !esEdicionDetalle() || permisos.eliminar;
             return `
                 <tr>
                     <td>${nombreUnidad(medidaEntry)}</td>
@@ -177,8 +182,8 @@ $(function () {
                         </select>
                     </td>
                     <td class="text-end">
-                        <button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}"><i class="fa-solid fa-pen"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}"><i class="fa-solid fa-trash"></i></button>
+                        ${puedeEditarLinea ? `<button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${puedeEliminarLinea ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </td>
                 </tr>
             `;

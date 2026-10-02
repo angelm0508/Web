@@ -1,4 +1,6 @@
 $(function () {
+    const datosPermisosEl = document.getElementById('datosPermisosNumeracionDocumento');
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
     const tabla = $('#tblNumeracionDocumento').DataTable({
         ajax: { url: '/NumeracionDocumento/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
@@ -10,7 +12,7 @@ $(function () {
             {
                 data: 'codigoObj', orderable: false, className: 'text-end',
                 render: codigo => `
-                    <button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"><i class="fa-solid fa-pen"></i></button>
+                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"><i class="fa-solid fa-pen"></i></button>` : ''}
                 `
             }
         ],
@@ -110,6 +112,9 @@ $(function () {
             const bloqueado = linea.bloqueado ?? linea.Bloqueado;
             const estaBloqueada = bloqueado === 'S';
             const clave = esEdicionDetalle() ? serie : linea._id;
+            // En edición las líneas se guardan en vivo contra la API: editar requiere Actualizar y eliminar requiere Eliminar.
+            const puedeEditarLinea = !esEdicionDetalle() || permisos.actualizar;
+            const puedeEliminarLinea = !esEdicionDetalle() || permisos.eliminar;
             return `
                 <tr>
                     <td>${serie}</td>
@@ -120,8 +125,8 @@ $(function () {
                     <td>${finNumero ?? ''}</td>
                     <td>${estaBloqueada ? 'Sí' : 'No'}</td>
                     <td class="text-end">
-                        <button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}" ${estaBloqueada ? 'disabled title="Línea bloqueada"' : ''}><i class="fa-solid fa-pen"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}" ${estaBloqueada ? 'disabled title="Línea bloqueada"' : ''}><i class="fa-solid fa-trash"></i></button>
+                        ${puedeEditarLinea ? `<button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-clave="${clave}" ${estaBloqueada ? 'disabled title="Línea bloqueada"' : ''}><i class="fa-solid fa-pen"></i></button>` : ''}
+                        ${puedeEliminarLinea ? `<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-clave="${clave}" ${estaBloqueada ? 'disabled title="Línea bloqueada"' : ''}><i class="fa-solid fa-trash"></i></button>` : ''}
                     </td>
                 </tr>
             `;

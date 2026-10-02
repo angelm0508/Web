@@ -34,6 +34,11 @@
     </div>
 </div>
 
+<script id="datosPermisosNumeracionDocumento" type="application/json">
+    { "actualizar": @(User.TienePermiso("NumeracionDocumento", Accion.Actualizar) ? "true" : "false"),
+      "eliminar": @(User.TienePermiso("NumeracionDocumento", Accion.Eliminar) ? "true" : "false") }
+</script>
+
 @section Scripts {
     <script src="~/js/numeracionDocumento.js" asp-append-version="true"></script>
 }
