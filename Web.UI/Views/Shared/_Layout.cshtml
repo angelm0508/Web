@@ -4,10 +4,17 @@
     var accionActual = $"{ViewContext.RouteData.Values["action"]}";
     bool EsActivo(string controlador) => string.Equals(rutaActual, controlador, StringComparison.OrdinalIgnoreCase);
     bool EsActivoAccion(string controlador, string accion) => EsActivo(controlador) && string.Equals(accionActual, accion, StringComparison.OrdinalIgnoreCase);
+    bool Puede(string codigoModulo) => User.TienePermiso(codigoModulo, Accion.Ver);
     bool EsActivoInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias", "EntradasMercancia", "SalidasMercancia" }.Any(EsActivo);
     bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(EsActivo);
     bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas" }.Any(EsActivo);
     bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra" }.Any(EsActivo);
+    bool EsActivoAdministracion = new[] { "Usuarios", "Plantillas" }.Any(EsActivo);
+    bool MuestraInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias", "EntradasMercancia", "SalidasMercancia" }.Any(Puede);
+    bool MuestraSociosNegocio = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(Puede);
+    bool MuestraVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas" }.Any(Puede);
+    bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra" }.Any(Puede);
+    bool MuestraAdministracion = Puede("Usuarios");
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 <!DOCTYPE html>
@@ -50,104 +57,192 @@
                         <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
                     </a>
 
-                    <a class="nav-link nav-link-toggle @(EsActivoInventario ? "active" : "")" data-bs-toggle="collapse" href="#submenuInventario" role="button" aria-expanded="@(EsActivoInventario ? "true" : "false")" aria-controls="submenuInventario">
-                        <i class="fa-solid fa-boxes-stacked"></i><span>Inventario</span>
-                        <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
-                    </a>
-                    <div class="collapse @(EsActivoInventario ? "show" : "")" id="submenuInventario">
-                        <a class="nav-link nav-sublink @(EsActivo("Articulos") ? "active" : "")" asp-controller="Articulos" asp-action="Index">
-                            <i class="fa-solid fa-box"></i><span>Artículos</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("Fabricantes") ? "active" : "")" asp-controller="Fabricantes" asp-action="Index">
-                            <i class="fa-solid fa-industry"></i><span>Fabricantes</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("GruposArticulo") ? "active" : "")" asp-controller="GruposArticulo" asp-action="Index">
-                            <i class="fa-solid fa-layer-group"></i><span>Grupos</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("UnidadesMedida") ? "active" : "")" asp-controller="UnidadesMedida" asp-action="Index">
-                            <i class="fa-solid fa-ruler-combined"></i><span>Unidades de medida</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("GruposUnidadMedida") ? "active" : "")" asp-controller="GruposUnidadMedida" asp-action="Index">
-                            <i class="fa-solid fa-boxes-packing"></i><span>Grupo unidades de medida</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("Almacenes") ? "active" : "")" asp-controller="Almacenes" asp-action="Index">
-                            <i class="fa-solid fa-warehouse"></i><span>Almacenes</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("Existencias") ? "active" : "")" asp-controller="Existencias" asp-action="Index">
-                            <i class="fa-solid fa-boxes-stacked"></i><span>Existencias</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("EntradasMercancia") ? "active" : "")" asp-controller="EntradasMercancia" asp-action="Index">
-                            <i class="fa-solid fa-arrow-right-to-bracket"></i><span>Entradas de mercancía</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("SalidasMercancia") ? "active" : "")" asp-controller="SalidasMercancia" asp-action="Index">
-                            <i class="fa-solid fa-arrow-right-from-bracket"></i><span>Salidas de mercancía</span>
-                        </a>
-                    </div>
-
-                    <a class="nav-link nav-link-toggle @(EsActivoSociosNegocioGrupo ? "active" : "")" data-bs-toggle="collapse" href="#submenuSociosNegocio" role="button" aria-expanded="@(EsActivoSociosNegocioGrupo ? "true" : "false")" aria-controls="submenuSociosNegocio">
-                        <i class="fa-solid fa-handshake"></i><span>Socios de Negocio</span>
-                        <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
-                    </a>
-                    <div class="collapse @(EsActivoSociosNegocioGrupo ? "show" : "")" id="submenuSociosNegocio">
-                        <a class="nav-link nav-sublink @(EsActivo("SociosNegocio") ? "active" : "")" asp-controller="SociosNegocio" asp-action="Index">
-                            <i class="fa-solid fa-handshake"></i><span>Socios de Negocio</span>
-                        </a>
-                        <a class="nav-link nav-sublink nav-link-toggle @(EsActivo("GruposSn") ? "active" : "")" data-bs-toggle="collapse" href="#submenuGruposSn" role="button" aria-expanded="@(EsActivo("GruposSn") ? "true" : "false")" aria-controls="submenuGruposSn">
-                            <i class="fa-solid fa-people-group"></i><span>Grupos SN</span>
+                    @if (MuestraInventario)
+                    {
+                        <a class="nav-link nav-link-toggle @(EsActivoInventario ? "active" : "")" data-bs-toggle="collapse" href="#submenuInventario" role="button" aria-expanded="@(EsActivoInventario ? "true" : "false")" aria-controls="submenuInventario">
+                            <i class="fa-solid fa-boxes-stacked"></i><span>Inventario</span>
                             <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
                         </a>
-                        <div class="collapse @(EsActivo("GruposSn") ? "show" : "")" id="submenuGruposSn">
-                            <a class="nav-link nav-sublink2 @(EsActivoAccion("GruposSn", "Clientes") ? "active" : "")" asp-controller="GruposSn" asp-action="Clientes">
-                                <i class="fa-solid fa-user"></i><span>Clientes</span>
+                        <div class="collapse @(EsActivoInventario ? "show" : "")" id="submenuInventario">
+                            @if (Puede("Articulos"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Articulos") ? "active" : "")" asp-controller="Articulos" asp-action="Index">
+                                    <i class="fa-solid fa-box"></i><span>Artículos</span>
+                                </a>
+                            }
+                            @if (Puede("Fabricantes"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Fabricantes") ? "active" : "")" asp-controller="Fabricantes" asp-action="Index">
+                                    <i class="fa-solid fa-industry"></i><span>Fabricantes</span>
+                                </a>
+                            }
+                            @if (Puede("GruposArticulo"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("GruposArticulo") ? "active" : "")" asp-controller="GruposArticulo" asp-action="Index">
+                                    <i class="fa-solid fa-layer-group"></i><span>Grupos</span>
+                                </a>
+                            }
+                            @if (Puede("UnidadesMedida"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("UnidadesMedida") ? "active" : "")" asp-controller="UnidadesMedida" asp-action="Index">
+                                    <i class="fa-solid fa-ruler-combined"></i><span>Unidades de medida</span>
+                                </a>
+                            }
+                            @if (Puede("GruposUnidadMedida"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("GruposUnidadMedida") ? "active" : "")" asp-controller="GruposUnidadMedida" asp-action="Index">
+                                    <i class="fa-solid fa-boxes-packing"></i><span>Grupo unidades de medida</span>
+                                </a>
+                            }
+                            @if (Puede("Almacenes"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Almacenes") ? "active" : "")" asp-controller="Almacenes" asp-action="Index">
+                                    <i class="fa-solid fa-warehouse"></i><span>Almacenes</span>
+                                </a>
+                            }
+                            @if (Puede("Existencias"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Existencias") ? "active" : "")" asp-controller="Existencias" asp-action="Index">
+                                    <i class="fa-solid fa-boxes-stacked"></i><span>Existencias</span>
+                                </a>
+                            }
+                            @if (Puede("EntradasMercancia"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("EntradasMercancia") ? "active" : "")" asp-controller="EntradasMercancia" asp-action="Index">
+                                    <i class="fa-solid fa-arrow-right-to-bracket"></i><span>Entradas de mercancía</span>
+                                </a>
+                            }
+                            @if (Puede("SalidasMercancia"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("SalidasMercancia") ? "active" : "")" asp-controller="SalidasMercancia" asp-action="Index">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i><span>Salidas de mercancía</span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (MuestraSociosNegocio)
+                    {
+                        <a class="nav-link nav-link-toggle @(EsActivoSociosNegocioGrupo ? "active" : "")" data-bs-toggle="collapse" href="#submenuSociosNegocio" role="button" aria-expanded="@(EsActivoSociosNegocioGrupo ? "true" : "false")" aria-controls="submenuSociosNegocio">
+                            <i class="fa-solid fa-handshake"></i><span>Socios de Negocio</span>
+                            <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                        </a>
+                        <div class="collapse @(EsActivoSociosNegocioGrupo ? "show" : "")" id="submenuSociosNegocio">
+                            @if (Puede("SociosNegocio"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("SociosNegocio") ? "active" : "")" asp-controller="SociosNegocio" asp-action="Index">
+                                    <i class="fa-solid fa-handshake"></i><span>Socios de Negocio</span>
+                                </a>
+                            }
+                            @if (Puede("GruposSn"))
+                            {
+                                <a class="nav-link nav-sublink nav-link-toggle @(EsActivo("GruposSn") ? "active" : "")" data-bs-toggle="collapse" href="#submenuGruposSn" role="button" aria-expanded="@(EsActivo("GruposSn") ? "true" : "false")" aria-controls="submenuGruposSn">
+                                    <i class="fa-solid fa-people-group"></i><span>Grupos SN</span>
+                                    <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                                </a>
+                                <div class="collapse @(EsActivo("GruposSn") ? "show" : "")" id="submenuGruposSn">
+                                    <a class="nav-link nav-sublink2 @(EsActivoAccion("GruposSn", "Clientes") ? "active" : "")" asp-controller="GruposSn" asp-action="Clientes">
+                                        <i class="fa-solid fa-user"></i><span>Clientes</span>
+                                    </a>
+                                    <a class="nav-link nav-sublink2 @(EsActivoAccion("GruposSn", "Proveedores") ? "active" : "")" asp-controller="GruposSn" asp-action="Proveedores">
+                                        <i class="fa-solid fa-truck-field"></i><span>Proveedores</span>
+                                    </a>
+                                </div>
+                            }
+                            @if (Puede("ListadosPrecio"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("ListadosPrecio") ? "active" : "")" asp-controller="ListadosPrecio" asp-action="Index">
+                                    <i class="fa-solid fa-tags"></i><span>Listado de Precios</span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (Puede("NumeracionDocumento"))
+                    {
+                        <div class="nav-section-title">Documentos</div>
+                        <a class="nav-link @(EsActivo("NumeracionDocumento") ? "active" : "")" asp-controller="NumeracionDocumento" asp-action="Index">
+                            <i class="fa-solid fa-hashtag"></i><span>Numeración de documentos</span>
+                        </a>
+                    }
+
+                    @if (MuestraVentas)
+                    {
+                        <a class="nav-link nav-link-toggle @(EsActivoVentas ? "active" : "")" data-bs-toggle="collapse" href="#submenuVentas" role="button" aria-expanded="@(EsActivoVentas ? "true" : "false")" aria-controls="submenuVentas">
+                            <i class="fa-solid fa-cart-shopping"></i><span>Ventas</span>
+                            <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                        </a>
+                        <div class="collapse @(EsActivoVentas ? "show" : "")" id="submenuVentas">
+                            @if (Puede("Cotizaciones"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Cotizaciones") ? "active" : "")" asp-controller="Cotizaciones" asp-action="Index">
+                                    <i class="fa-solid fa-file-invoice"></i><span>Cotizaciones</span>
+                                </a>
+                            }
+                            @if (Puede("Pedidos"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Pedidos") ? "active" : "")" asp-controller="Pedidos" asp-action="Index">
+                                    <i class="fa-solid fa-cart-arrow-down"></i><span>Pedidos</span>
+                                </a>
+                            }
+                            @if (Puede("Entregas"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Entregas") ? "active" : "")" asp-controller="Entregas" asp-action="Index">
+                                    <i class="fa-solid fa-truck"></i><span>Entregas</span>
+                                </a>
+                            }
+                            @if (Puede("Facturas"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Facturas") ? "active" : "")" asp-controller="Facturas" asp-action="Index">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas</span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (MuestraCompras)
+                    {
+                        <a class="nav-link nav-link-toggle @(EsActivoCompras ? "active" : "")" data-bs-toggle="collapse" href="#submenuCompras" role="button" aria-expanded="@(EsActivoCompras ? "true" : "false")" aria-controls="submenuCompras">
+                            <i class="fa-solid fa-cart-flatbed"></i><span>Compras</span>
+                            <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                        </a>
+                        <div class="collapse @(EsActivoCompras ? "show" : "")" id="submenuCompras">
+                            @if (Puede("PedidosCompra"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("PedidosCompra") ? "active" : "")" asp-controller="PedidosCompra" asp-action="Index">
+                                    <i class="fa-solid fa-cart-arrow-down"></i><span>Pedidos de compra</span>
+                                </a>
+                            }
+                            @if (Puede("EntregasCompra"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("EntregasCompra") ? "active" : "")" asp-controller="EntregasCompra" asp-action="Index">
+                                    <i class="fa-solid fa-truck-ramp-box"></i><span>Entregas de compra</span>
+                                </a>
+                            }
+                            @if (Puede("FacturasCompra"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("FacturasCompra") ? "active" : "")" asp-controller="FacturasCompra" asp-action="Index">
+                                    <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas de compra</span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (MuestraAdministracion)
+                    {
+                        <a class="nav-link nav-link-toggle @(EsActivoAdministracion ? "active" : "")" data-bs-toggle="collapse" href="#submenuAdministracion" role="button" aria-expanded="@(EsActivoAdministracion ? "true" : "false")" aria-controls="submenuAdministracion">
+                            <i class="fa-solid fa-user-shield"></i><span>Administración</span>
+                            <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                        </a>
+                        <div class="collapse @(EsActivoAdministracion ? "show" : "")" id="submenuAdministracion">
+                            <a class="nav-link nav-sublink @(EsActivo("Usuarios") ? "active" : "")" asp-controller="Usuarios" asp-action="Index">
+                                <i class="fa-solid fa-users"></i><span>Usuarios</span>
                             </a>
-                            <a class="nav-link nav-sublink2 @(EsActivoAccion("GruposSn", "Proveedores") ? "active" : "")" asp-controller="GruposSn" asp-action="Proveedores">
-                                <i class="fa-solid fa-truck-field"></i><span>Proveedores</span>
+                            <a class="nav-link nav-sublink @(EsActivo("Plantillas") ? "active" : "")" asp-controller="Plantillas" asp-action="Index">
+                                <i class="fa-solid fa-copy"></i><span>Plantillas de permisos</span>
                             </a>
                         </div>
-                        <a class="nav-link nav-sublink @(EsActivo("ListadosPrecio") ? "active" : "")" asp-controller="ListadosPrecio" asp-action="Index">
-                            <i class="fa-solid fa-tags"></i><span>Listado de Precios</span>
-                        </a>
-                    </div>
-
-                    <div class="nav-section-title">Documentos</div>
-                    <a class="nav-link @(EsActivo("NumeracionDocumento") ? "active" : "")" asp-controller="NumeracionDocumento" asp-action="Index">
-                        <i class="fa-solid fa-hashtag"></i><span>Numeración de documentos</span>
-                    </a>
-
-                    <a class="nav-link nav-link-toggle @(EsActivoVentas ? "active" : "")" data-bs-toggle="collapse" href="#submenuVentas" role="button" aria-expanded="@(EsActivoVentas ? "true" : "false")" aria-controls="submenuVentas">
-                        <i class="fa-solid fa-cart-shopping"></i><span>Ventas</span>
-                        <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
-                    </a>
-                    <div class="collapse @(EsActivoVentas ? "show" : "")" id="submenuVentas">
-                        <a class="nav-link nav-sublink @(EsActivo("Cotizaciones") ? "active" : "")" asp-controller="Cotizaciones" asp-action="Index">
-                            <i class="fa-solid fa-file-invoice"></i><span>Cotizaciones</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("Pedidos") ? "active" : "")" asp-controller="Pedidos" asp-action="Index">
-                            <i class="fa-solid fa-cart-arrow-down"></i><span>Pedidos</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("Entregas") ? "active" : "")" asp-controller="Entregas" asp-action="Index">
-                            <i class="fa-solid fa-truck"></i><span>Entregas</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("Facturas") ? "active" : "")" asp-controller="Facturas" asp-action="Index">
-                            <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas</span>
-                        </a>
-                    </div>
-
-                    <a class="nav-link nav-link-toggle @(EsActivoCompras ? "active" : "")" data-bs-toggle="collapse" href="#submenuCompras" role="button" aria-expanded="@(EsActivoCompras ? "true" : "false")" aria-controls="submenuCompras">
-                        <i class="fa-solid fa-cart-flatbed"></i><span>Compras</span>
-                        <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
-                    </a>
-                    <div class="collapse @(EsActivoCompras ? "show" : "")" id="submenuCompras">
-                        <a class="nav-link nav-sublink @(EsActivo("PedidosCompra") ? "active" : "")" asp-controller="PedidosCompra" asp-action="Index">
-                            <i class="fa-solid fa-cart-arrow-down"></i><span>Pedidos de compra</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("EntregasCompra") ? "active" : "")" asp-controller="EntregasCompra" asp-action="Index">
-                            <i class="fa-solid fa-truck-ramp-box"></i><span>Entregas de compra</span>
-                        </a>
-                        <a class="nav-link nav-sublink @(EsActivo("FacturasCompra") ? "active" : "")" asp-controller="FacturasCompra" asp-action="Index">
-                            <i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas de compra</span>
-                        </a>
-                    </div>
+                    }
                 </nav>
             </aside>
 
