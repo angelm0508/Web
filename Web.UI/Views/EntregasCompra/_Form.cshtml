@@ -112,7 +112,7 @@
     <hr />
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h6 class="mb-0">Detalle</h6>
-        @if (!esEdicion)
+        @if (!esEdicion && User.TienePermiso("EntregasCompra", Accion.Agregar))
         {
             <button type="button" class="btn btn-sm btn-outline-primary" id="btnNuevaLinea">
                 <i class="fa-solid fa-plus me-1"></i>Agregar línea
@@ -221,13 +221,16 @@
 </div>
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-    @if (esEdicion && (Model.Cancelado ?? "N") != "S")
+    @if (esEdicion && (Model.Cancelado ?? "N") != "S" && User.TienePermiso("EntregasCompra", Accion.Actualizar))
     {
         <button type="button" class="btn btn-outline-danger" id="btnCancelarDocEntregaCompra" data-entry="@ViewBag.EntryActual">
             <i class="fa-solid fa-ban me-1"></i>Cancelar documento
         </button>
     }
-    @if ((Model.Cancelado ?? "N") != "S")
+    @{
+        var puedeGuardar = esEdicion ? User.TienePermiso("EntregasCompra", Accion.Actualizar) : User.TienePermiso("EntregasCompra", Accion.Agregar);
+    }
+    @if ((Model.Cancelado ?? "N") != "S" && puedeGuardar)
     {
         <button type="button" class="btn btn-primary" id="btnGuardarEntregaCompra" data-edicion="@esEdicion.ToString().ToLower()" data-entry="@ViewBag.EntryActual">
             <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
