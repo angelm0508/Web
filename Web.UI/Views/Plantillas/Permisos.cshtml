@@ -1,0 +1,69 @@
+@{
+    ViewData["Title"] = "Permisos de la plantilla";
+    var plantillaId = Context.Request.Query["plantillaId"];
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Permisos de la plantilla</h3>
+    <a asp-controller="Plantillas" asp-action="Index" class="btn btn-sm btn-outline-secondary">
+        <i class="fa-solid fa-arrow-left me-1"></i>Volver
+    </a>
+</div>
+
+<div class="card card-modulo">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="tblGrillaPermisos" class="table table-sm table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Módulo</th>
+                        <th class="text-center">Ver</th>
+                        <th class="text-center">Agregar</th>
+                        <th class="text-center">Actualizar</th>
+                        <th class="text-center">Eliminar</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="text-end mt-3">
+            <button type="button" class="btn btn-primary" id="btnGuardarPermisos">
+                <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="plantillaIdActual" value="@plantillaId" />
+
+@section Scripts {
+    <script src="~/js/permisos.js" asp-append-version="true"></script>
+    <script>
+        $(function () {
+            const plantillaId = $('#plantillaIdActual').val();
+
+            async function cargar() {
+                const [modulosResp, permisosResp] = await Promise.all([
+                    $.get('/Plantillas/ObtenerModulos'),
+                    $.get('/Plantillas/ObtenerPermisos', { plantillaId })
+                ]);
+                const modulos = (modulosResp.resultado && modulosResp.dato) ? modulosResp.dato : [];
+                const matriz = (permisosResp.resultado && permisosResp.dato) ? permisosResp.dato : [];
+                $('#tblGrillaPermisos tbody').html(pintarGrillaPermisos(modulos, matriz));
+            }
+
+            $(document).on('click', '#btnGuardarPermisos', async function () {
+                const matriz = leerGrillaPermisos();
+                const respuesta = await App.enviarJson('/Plantillas/GuardarPermisos', 'POST', { PlantillaId: Number(plantillaId), Matriz: matriz });
+                if (!respuesta.resultado) {
+                    App.mostrarError(respuesta.mensaje);
+                    return;
+                }
+                App.mostrarExito('Permisos guardados correctamente.');
+            });
+
+            cargar();
+        });
+    </script>
+}
