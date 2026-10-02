@@ -26,6 +26,10 @@
             </div>
         </div>
 
+        <div id="alertaSinMatriz" class="alert alert-info d-none" role="alert">
+            Este usuario no tiene matriz asignada: tiene acceso total (excepto Administración). Al guardar, quedará restringido a lo marcado.
+        </div>
+
         <div class="table-responsive">
             <table id="tblGrillaPermisos" class="table table-sm table-hover align-middle">
                 <thead>
@@ -66,11 +70,14 @@
 
                 const modulos = (modulosResp.resultado && modulosResp.dato) ? modulosResp.dato : [];
                 const matriz = (permisosResp.resultado && permisosResp.dato) ? permisosResp.dato : [];
+                // Sin filas = sin matriz propia = acceso total; solo se avisa si la consulta fue exitosa.
+                $('#alertaSinMatriz').toggleClass('d-none', !(permisosResp.resultado && matriz.length === 0));
                 $('#tblGrillaPermisos tbody').html(pintarGrillaPermisos(modulos, matriz));
 
                 const plantillas = (plantillasResp.resultado && plantillasResp.dato) ? plantillasResp.dato : [];
                 const $select = $('#selectPlantilla');
-                plantillas.forEach(p => $select.append(`<option value="${p.id ?? p.Id}">${p.nombre ?? p.Nombre}</option>`));
+                $select.find('option:gt(0)').remove();
+                plantillas.forEach(p => $select.append($('<option>').val(p.id ?? p.Id).text(p.nombre ?? p.Nombre)));
             }
 
             $(document).on('click', '#btnGuardarPermisos', async function () {
@@ -80,6 +87,7 @@
                     App.mostrarError(respuesta.mensaje);
                     return;
                 }
+                $('#alertaSinMatriz').addClass('d-none');
                 App.mostrarExito('Permisos guardados correctamente.');
             });
 

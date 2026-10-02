@@ -2,7 +2,7 @@ $(function () {
     const tabla = $('#tblPlantillas').DataTable({
         ajax: { url: '/Plantillas/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
-            { data: 'nombre' },
+            { data: 'nombre', render: nombre => $('<div>').text(nombre ?? '').html() },
             {
                 data: 'id', orderable: false, className: 'text-end',
                 render: id => `
