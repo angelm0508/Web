@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.Almacen;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -26,9 +27,11 @@ namespace Web.UI.Controllers
             _municipios = municipios;
         }
 
+        [RequierePermiso("Almacenes", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("Almacenes", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _almacenes.ObtenerTodoAsync();
@@ -36,6 +39,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Almacenes", Accion.Agregar)]
         public async Task<IActionResult> FormularioCrear()
         {
             await CargarUbicacionesAsync();
@@ -44,6 +48,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Almacenes", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(string codigo)
         {
             var respuesta = await _almacenes.ObtenerAsync(codigo);
@@ -70,6 +75,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Almacenes", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] AlmacenCrearDTO dto)
         {
             var respuesta = await _almacenes.InsertarAsync(dto);
@@ -78,6 +84,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Almacenes", Accion.Actualizar)]
         public async Task<IActionResult> Editar(string codigo, [FromBody] AlmacenCrearDTO dto)
         {
             // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
@@ -103,6 +110,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Almacenes", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(string codigo)
         {
             var respuesta = await _almacenes.EliminarAsync(codigo);

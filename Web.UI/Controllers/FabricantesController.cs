@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.FabricanteArticulo;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -15,9 +16,11 @@ namespace Web.UI.Controllers
             _fabricantes = fabricantes;
         }
 
+        [RequierePermiso("Fabricantes", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("Fabricantes", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _fabricantes.ObtenerTodoAsync();
@@ -25,6 +28,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Fabricantes", Accion.Agregar)]
         public IActionResult FormularioCrear()
         {
             ViewBag.EsEdicion = false;
@@ -33,6 +37,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Fabricantes", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int id)
         {
             var respuesta = await _fabricantes.ObtenerAsync(id);
@@ -52,6 +57,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Fabricantes", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] FabricanteArticuloCrearDTO dto)
         {
             var respuesta = await _fabricantes.InsertarAsync(dto);
@@ -60,6 +66,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Fabricantes", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int id, [FromBody] FabricanteArticuloCrearDTO dto)
         {
             var actualizar = new FabricanteArticuloActualizarDTO
@@ -73,6 +80,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Fabricantes", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int id)
         {
             var respuesta = await _fabricantes.EliminarAsync(id);

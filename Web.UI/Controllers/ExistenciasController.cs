@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Web.ApiClient.Clientes;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -21,9 +22,11 @@ namespace Web.UI.Controllers
             _articulos = articulos;
         }
 
+        [RequierePermiso("Existencias", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("Existencias", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos(string? articulo, string? almacen)
         {
             var respuesta = await _existencias.ObtenerTodoAsync(articulo, almacen);
@@ -31,6 +34,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Existencias", Accion.Ver)]
         public async Task<IActionResult> BuscarArticulos(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -40,6 +44,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Existencias", Accion.Ver)]
         public async Task<IActionResult> Kardex(string codArticulo)
         {
             var respuesta = await _movimientos.ObtenerPorArticuloAsync(codArticulo);

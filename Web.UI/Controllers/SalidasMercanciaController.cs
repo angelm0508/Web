@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.SalidaMercancia;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -36,9 +37,11 @@ namespace Web.UI.Controllers
             _numeracion = numeracion;
         }
 
+        [RequierePermiso("SalidasMercancia", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("SalidasMercancia", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _salidasMercancia.ObtenerTodoAsync();
@@ -46,6 +49,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SalidasMercancia", Accion.Agregar)]
         public async Task<IActionResult> FormularioCrear()
         {
             var series = await _series.ObtenerPorDocumentoAsync(CodigoObjSalidaMercancia);
@@ -62,6 +66,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SalidasMercancia", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int entry)
         {
             var respuesta = await _salidasMercancia.ObtenerAsync(entry);
@@ -91,6 +96,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("SalidasMercancia", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] SalidaMercanciaCrearDTO dto)
         {
             var respuesta = await _salidasMercancia.InsertarAsync(dto);
@@ -103,6 +109,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("SalidasMercancia", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int entry, [FromBody] SalidaMercanciaCrearDTO dto)
         {
             var actual = await _salidasMercancia.ObtenerAsync(entry);
@@ -129,6 +136,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("SalidasMercancia", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int entry)
         {
             var respuesta = await _salidasMercancia.EliminarAsync(entry);
@@ -136,6 +144,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SalidasMercancia", Accion.Ver)]
         public async Task<IActionResult> ObtenerDetalle(int entry)
         {
             var respuesta = await _detalles.ObtenerPorSalidaMercanciaAsync(entry);
@@ -143,6 +152,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SalidasMercancia", Accion.Ver)]
         public async Task<IActionResult> BuscarArticulos(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -152,6 +162,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SalidasMercancia", Accion.Ver)]
         public async Task<IActionResult> BuscarAlmacenes(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -161,6 +172,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("SalidasMercancia", Accion.Ver)]
         public async Task<IActionResult> ObtenerAlmacenPorCodigo(string codigo)
         {
             var respuesta = await _almacenes.ObtenerAsync(codigo);

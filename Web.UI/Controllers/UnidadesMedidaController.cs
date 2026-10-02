@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.UnidadMedidaArticulo;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -15,9 +16,11 @@ namespace Web.UI.Controllers
             _unidadesMedida = unidadesMedida;
         }
 
+        [RequierePermiso("UnidadesMedida", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("UnidadesMedida", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _unidadesMedida.ObtenerTodoAsync();
@@ -25,6 +28,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("UnidadesMedida", Accion.Agregar)]
         public IActionResult FormularioCrear()
         {
             ViewBag.EsEdicion = false;
@@ -33,6 +37,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("UnidadesMedida", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int id)
         {
             var respuesta = await _unidadesMedida.ObtenerAsync(id);
@@ -58,6 +63,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("UnidadesMedida", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] UnidadMedidaArticuloCrearDTO dto)
         {
             var respuesta = await _unidadesMedida.InsertarAsync(dto);
@@ -66,6 +72,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("UnidadesMedida", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int id, [FromBody] UnidadMedidaArticuloCrearDTO dto)
         {
             // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
@@ -93,6 +100,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("UnidadesMedida", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int id)
         {
             var respuesta = await _unidadesMedida.EliminarAsync(id);

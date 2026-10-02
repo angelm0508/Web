@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.Articulo;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -37,9 +38,11 @@ namespace Web.UI.Controllers
             _almacenes = almacenes;
         }
 
+        [RequierePermiso("Articulos", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("Articulos", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _articulos.ObtenerTodoAsync();
@@ -47,6 +50,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Articulos", Accion.Agregar)]
         public async Task<IActionResult> Crear()
         {
             await CargarDropdownsAsync();
@@ -56,6 +60,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Articulos", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(string codigo)
         {
             var respuesta = await _articulos.ObtenerAsync(codigo);
@@ -105,6 +110,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Articulos", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] ArticuloCrearDTO dto)
         {
             var respuesta = await _articulos.InsertarAsync(dto);
@@ -115,6 +121,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Articulos", Accion.Actualizar)]
         public async Task<IActionResult> Editar(string codigo, [FromBody] ArticuloCrearDTO dto)
         {
             // La serie no se edita desde este formulario (solo se muestra a modo informativo) --
@@ -155,6 +162,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("Articulos", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(string codigo)
         {
             var respuesta = await _articulos.EliminarAsync(codigo);
@@ -162,6 +170,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Articulos", Accion.Ver)]
         public async Task<IActionResult> BuscarAlmacenes(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -171,6 +180,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("Articulos", Accion.Ver)]
         public async Task<IActionResult> ObtenerAlmacenPorCodigo(string codigo)
         {
             var respuesta = await _almacenes.ObtenerAsync(codigo);

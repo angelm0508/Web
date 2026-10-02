@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.GrupoUnidadMedidaArticulo;
 using Web.ApiClient.Dtos.GrupoUnidadMedidaDetArticulo;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -24,9 +25,11 @@ namespace Web.UI.Controllers
             _unidades = unidades;
         }
 
+        [RequierePermiso("GruposUnidadMedida", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("GruposUnidadMedida", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _grupos.ObtenerTodoAsync();
@@ -34,6 +37,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposUnidadMedida", Accion.Agregar)]
         public async Task<IActionResult> FormularioCrear()
         {
             await CargarUnidadesAsync();
@@ -43,6 +47,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposUnidadMedida", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int id)
         {
             var respuesta = await _grupos.ObtenerAsync(id);
@@ -66,6 +71,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposUnidadMedida", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] GrupoUnidadMedidaArticuloCrearDTO dto)
         {
             dto.Bloqueado ??= "N";
@@ -75,6 +81,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposUnidadMedida", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int id, [FromBody] GrupoUnidadMedidaArticuloCrearDTO dto)
         {
             var actual = await _grupos.ObtenerAsync(id);
@@ -95,6 +102,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposUnidadMedida", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int id)
         {
             var respuesta = await _grupos.EliminarAsync(id);
@@ -102,6 +110,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposUnidadMedida", Accion.Ver)]
         public async Task<IActionResult> ObtenerDetalle(int grpMedidaEntry)
         {
             var respuesta = await _detalles.ObtenerPorGrupoAsync(grpMedidaEntry);
@@ -110,6 +119,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposUnidadMedida", Accion.Agregar)]
         public async Task<IActionResult> CrearLinea([FromBody] GrupoUnidadMedidaDetArticuloCrearDTO dto)
         {
             var respuesta = await _detalles.InsertarAsync(dto);
@@ -118,6 +128,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposUnidadMedida", Accion.Actualizar)]
         public async Task<IActionResult> EditarLinea(int grpMedidaEntry, int numLinea, [FromBody] GrupoUnidadMedidaDetArticuloActualizarDTO dto)
         {
             var respuesta = await _detalles.ActualizarAsync(grpMedidaEntry, numLinea, dto);
@@ -126,6 +137,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposUnidadMedida", Accion.Eliminar)]
         public async Task<IActionResult> EliminarLinea(int grpMedidaEntry, int numLinea)
         {
             var respuesta = await _detalles.EliminarAsync(grpMedidaEntry, numLinea);

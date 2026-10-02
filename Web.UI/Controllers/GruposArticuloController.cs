@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.GrupoArticulo;
+using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
 {
@@ -15,9 +16,11 @@ namespace Web.UI.Controllers
             _grupos = grupos;
         }
 
+        [RequierePermiso("GruposArticulo", Accion.Ver)]
         public IActionResult Index() => View();
 
         [HttpGet]
+        [RequierePermiso("GruposArticulo", Accion.Ver)]
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _grupos.ObtenerTodoAsync();
@@ -25,6 +28,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposArticulo", Accion.Agregar)]
         public IActionResult FormularioCrear()
         {
             ViewBag.EsEdicion = false;
@@ -33,6 +37,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
+        [RequierePermiso("GruposArticulo", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(int id)
         {
             var respuesta = await _grupos.ObtenerAsync(id);
@@ -52,6 +57,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposArticulo", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] GrupoArticuloCrearDTO dto)
         {
             var respuesta = await _grupos.InsertarAsync(dto);
@@ -60,6 +66,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposArticulo", Accion.Actualizar)]
         public async Task<IActionResult> Editar(int id, [FromBody] GrupoArticuloCrearDTO dto)
         {
             // Bloqueado ya no se edita desde este formulario -- se conserva el valor actual.
@@ -79,6 +86,7 @@ namespace Web.UI.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequierePermiso("GruposArticulo", Accion.Eliminar)]
         public async Task<IActionResult> Eliminar(int id)
         {
             var respuesta = await _grupos.EliminarAsync(id);
