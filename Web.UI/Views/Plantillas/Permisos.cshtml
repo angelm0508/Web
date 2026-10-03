@@ -12,6 +12,15 @@
 
 <div class="card card-modulo">
     <div class="card-body">
+        <div class="mb-3">
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnMarcarTodos">
+                <i class="fa-solid fa-square-check me-1"></i>Marcar todos
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDesmarcarTodos">
+                <i class="fa-regular fa-square me-1"></i>Desmarcar todos
+            </button>
+        </div>
+
         <div class="table-responsive">
             <table id="tblGrillaPermisos" class="table table-sm table-hover align-middle">
                 <thead>
@@ -60,7 +69,8 @@
                     App.mostrarError(respuesta.mensaje);
                     return;
                 }
-                App.mostrarExito('Permisos guardados correctamente.');
+                await App.mostrarExito('Permisos guardados correctamente.');
+                window.location.href = '@Url.Action("Index", "Plantillas")';
             });
 
             cargar();

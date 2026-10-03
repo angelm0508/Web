@@ -39,6 +39,14 @@ function pintarGrillaPermisos(modulos, matriz) {
     return filas;
 }
 
+/** Marca o desmarca todos los checkboxes de #tblGrillaPermisos. */
+function marcarTodosLosPermisos(marcar) {
+    $('#tblGrillaPermisos tbody input[type="checkbox"]').prop('checked', marcar);
+}
+
+$(document).on('click', '#btnMarcarTodos', function () { marcarTodosLosPermisos(true); });
+$(document).on('click', '#btnDesmarcarTodos', function () { marcarTodosLosPermisos(false); });
+
 /** Lee el estado actual de los checkboxes de #tblGrillaPermisos y arma la matriz a guardar. */
 function leerGrillaPermisos() {
     const matriz = [];
