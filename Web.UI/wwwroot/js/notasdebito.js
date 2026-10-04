@@ -325,6 +325,8 @@ $(function () {
             TotalLinea: l.totalLinea,
             _id: proximoIdLocal++
         }));
+        lineaEnEdicionId = null;
+        $('#panelLineaDetalle').addClass('d-none');
         pintarDetalle();
     });
 
@@ -494,9 +496,12 @@ $(function () {
         const codigoImpuesto = linea.CodigoImpuesto ?? linea.codigoImpuesto ?? '';
         if (codigoImpuesto) {
             const respuestaImpuesto = await $.get('/NotasDebito/ObtenerImpuestoPorCodigo', { codigo: codigoImpuesto });
-            buscadorImpuesto.establecer(respuestaImpuesto.resultado && respuestaImpuesto.dato
-                ? respuestaImpuesto.dato
-                : { codigo: codigoImpuesto, nombre: codigoImpuesto, tasa: 0 });
+            if (!respuestaImpuesto.resultado || !respuestaImpuesto.dato) {
+                App.mostrarError('No se pudo cargar el impuesto de la línea. Vuelve a intentarlo.');
+                limpiarPanelLinea();
+                return;
+            }
+            buscadorImpuesto.establecer(respuestaImpuesto.dato);
         }
 
         $('#detDescripcion').val(linea.Descripcion ?? linea.descripcion ?? '');
@@ -515,6 +520,8 @@ $(function () {
         if (!confirmado) return;
 
         lineasLocales = lineasLocales.filter(l => l._id !== id);
+        lineaEnEdicionId = null;
+        $('#panelLineaDetalle').addClass('d-none');
         pintarDetalle();
     });
 
@@ -559,8 +566,9 @@ $(function () {
             TotalLinea: Number($('#detTotalLinea').val()) || 0
         };
 
-        if (lineaEnEdicionId !== null) {
-            lineasLocales = lineasLocales.map(l => l._id === lineaEnEdicionId ? { ...linea, _id: l._id } : l);
+        const existe = lineasLocales.some(l => l._id === lineaEnEdicionId);
+        if (lineaEnEdicionId !== null && existe) {
+            lineasLocales =lineasLocales.map(l => l._id === lineaEnEdicionId ? { ...linea, _id: l._id } : l);
         } else {
             lineasLocales.push({ ...linea, _id: proximoIdLocal++ });
         }

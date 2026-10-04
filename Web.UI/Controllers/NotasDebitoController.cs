@@ -99,7 +99,7 @@ namespace Web.UI.Controllers
                 NumDoc = respuesta.Dato.NumDoc,
                 Serie = respuesta.Dato.Serie,
                 Cancelado = respuesta.Dato.Cancelado,
-                EstadoDoc = respuesta.Dato.EstadoDoc,
+                EstadoDoc = respuesta.Dato.Cancelado == "S" ? "C" : respuesta.Dato.EstadoDoc,
                 TipoObjeto = respuesta.Dato.TipoObjeto,
                 FechaDoc = respuesta.Dato.FechaDoc,
                 FechaEmision = respuesta.Dato.FechaEmision,
