@@ -7,13 +7,13 @@
     bool Puede(string codigoModulo) => User.TienePermiso(codigoModulo, Accion.Ver);
     bool EsActivoInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias", "EntradasMercancia", "SalidasMercancia" }.Any(EsActivo);
     bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(EsActivo);
-    bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito" }.Any(EsActivo);
-    bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra" }.Any(EsActivo);
+    bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito" }.Any(EsActivo);
+    bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra" }.Any(EsActivo);
     bool EsActivoAdministracion = new[] { "Usuarios", "Plantillas" }.Any(EsActivo);
     bool MuestraInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias", "EntradasMercancia", "SalidasMercancia" }.Any(Puede);
     bool MuestraSociosNegocio = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(Puede);
-    bool MuestraVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito" }.Any(Puede);
-    bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra" }.Any(Puede);
+    bool MuestraVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito" }.Any(Puede);
+    bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra" }.Any(Puede);
     bool MuestraAdministracion = Puede("Usuarios");
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
@@ -203,6 +203,13 @@
                                     <i class="fa-solid fa-file-circle-plus"></i><span>Notas de débito</span>
                                 </a>
                             }
+
+                            @if (Puede("NotasCredito"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("NotasCredito") ? "active" : "")" asp-controller="NotasCredito" asp-action="Index">
+                                    <i class="fa-solid fa-file-circle-minus"></i><span>Notas de crédito</span>
+                                </a>
+                            }
                         </div>
                     }
 
@@ -235,6 +242,13 @@
                             {
                                 <a class="nav-link nav-sublink @(EsActivo("NotasDebitoCompra") ? "active" : "")" asp-controller="NotasDebitoCompra" asp-action="Index">
                                     <i class="fa-solid fa-file-circle-plus"></i><span>Notas de débito de compra</span>
+                                </a>
+                            }
+
+                            @if (Puede("NotasCreditoCompra"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("NotasCreditoCompra") ? "active" : "")" asp-controller="NotasCreditoCompra" asp-action="Index">
+                                    <i class="fa-solid fa-file-circle-minus"></i><span>Notas de crédito de compra</span>
                                 </a>
                             }
                         </div>
