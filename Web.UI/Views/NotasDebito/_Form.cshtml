@@ -1,0 +1,239 @@
+@using System.Text.Json
+@model Web.ApiClient.Dtos.NotaDebito.NotaDebitoCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+    var opcionesJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar nota de débito" : "Nueva nota de débito")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formNotaDebito" novalidate>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small"></div>
+
+        <div class="row g-3">
+            @if (!esEdicion)
+            {
+                <div class="col-md-3">
+                    <label class="form-label">Serie</label>
+                    <select id="selectSerieNotaDebito" class="form-select" data-serie-defecto="@ViewBag.SerieDefecto"></select>
+                    <span class="form-text">Si eliges una serie distinta de "Manual", el número se genera solo al guardar.</span>
+                </div>
+            }
+            else
+            {
+                <div class="col-md-3">
+                    <label class="form-label">Serie</label>
+                    <input class="form-control" value="@ViewBag.NombreSerieActual" disabled />
+                </div>
+            }
+            <div class="col-md-3">
+                <label asp-for="NumDoc" class="form-label">No. documento</label>
+                <input asp-for="NumDoc" type="number" class="form-control" readonly="@esEdicion" />
+                <span asp-validation-for="NumDoc" class="text-danger small"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="EstadoDoc" class="form-label">Estado</label>
+                <select asp-for="EstadoDoc" class="form-select" disabled="@esEdicion">
+                    <option value="A">Abierto</option>
+                    <option value="C">Cancelado</option>
+                </select>
+            </div>
+            <div class="col-md-3" hidden>
+                <label asp-for="TipoObjeto" class="form-label">Tipo</label>
+                <input asp-for="TipoObjeto" class="form-control" readonly="@esEdicion" />
+            </div>
+
+            <div class="col-md-4 position-relative">
+                <label asp-for="CodigoSn" class="form-label">Socio de negocio</label>
+                @if (esEdicion)
+                {
+                    <input class="form-control" value="@(!string.IsNullOrEmpty(Model.NombreSn) ? $"{Model.CodigoSn} - {Model.NombreSn}" : Model.CodigoSn)" disabled />
+                    <input type="hidden" asp-for="CodigoSn" />
+                }
+                else
+                {
+                    <input type="text" id="CodigoSnTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off" />
+                    <input type="hidden" asp-for="CodigoSn" />
+                    <div class="invalid-feedback" id="CodigoSnError">Selecciona una opción de la lista o borra el texto.</div>
+                    <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="CodigoSnResultados"></ul>
+                }
+            </div>
+            <div class="col-md-4">
+                <label asp-for="NombreSn" class="form-label">Nombre</label>
+                <input asp-for="NombreSn" class="form-control" readonly="@esEdicion" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="MonedaDoc" class="form-label">Moneda</label>
+                <select asp-for="MonedaDoc" class="form-select" asp-items="ViewBag.Monedas" disabled="@esEdicion">
+                    <option value="">-- Seleccione --</option>
+                </select>
+            </div>
+
+            @if (!esEdicion)
+            {
+                <div class="col-12" id="bloqueFacturaBase">
+                    <label class="form-label">Basado en factura (opcional)</label>
+                    <div class="input-group">
+                        <select id="selectFacturaBase" class="form-select" disabled>
+                            <option value="">-- Selecciona un socio para ver sus facturas --</option>
+                        </select>
+                        <button type="button" class="btn btn-outline-primary" id="btnCargarFacturaBase" disabled>Cargar</button>
+                        <button type="button" class="btn btn-outline-secondary d-none" id="btnQuitarFacturaBase">Quitar</button>
+                    </div>
+                    <span class="form-text" id="textoFacturaBase">Sin factura base: puedes crear la nota libremente.</span>
+                    <input type="hidden" id="baseEntry" value="" />
+                </div>
+            }
+            else if (Model.BaseTipo == 6 && Model.BaseEntry.HasValue)
+            {
+                <div class="col-12">
+                    <label class="form-label">Documento base</label>
+                    <input class="form-control" value="Factura (entrada @Model.BaseEntry)" disabled />
+                </div>
+            }
+
+            <div class="col-md-4">
+                <label asp-for="Direccion" class="form-label"></label>
+                <input asp-for="Direccion" class="form-control" readonly="@esEdicion" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha documento</label>
+                <input type="date" name="FechaDoc" id="FechaDoc" class="form-control" value="@Model.FechaDoc?.ToString("yyyy-MM-dd")" readonly="@esEdicion" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha emisión</label>
+                <input type="date" name="FechaEmision" id="FechaEmision" class="form-control" value="@Model.FechaEmision?.ToString("yyyy-MM-dd")" readonly="@esEdicion" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="PrctjeDesc" class="form-label">% Descuento</label>
+                <input asp-for="PrctjeDesc" type="number" step="0.01" class="form-control" readonly="@esEdicion" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Total bruto</label>
+                <input id="TotalBruto" class="form-control" value="@Model.TotalBruto" disabled />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Total impuesto</label>
+                <input id="TotalImp" class="form-control" value="@Model.TotalImp" disabled />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Total documento</label>
+                <input id="TotalDoc" class="form-control" value="@Model.TotalDoc" disabled />
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Comentario" class="form-label"></label>
+                <textarea asp-for="Comentario" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+    </form>
+
+    <hr />
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">Detalle</h6>
+        @if (!esEdicion && User.TienePermiso("NotasDebito", Accion.Agregar))
+        {
+            <button type="button" class="btn btn-sm btn-outline-primary" id="btnNuevaLinea">
+                <i class="fa-solid fa-plus me-1"></i>Agregar línea
+            </button>
+        }
+    </div>
+
+    @if (!esEdicion)
+    {
+        <p class="text-muted small">Las líneas agregadas aquí se guardarán junto con la nota de débito. Después no se pueden modificar.</p>
+    }
+    else
+    {
+        <p class="text-muted small">El documento ya está registrado. Solo se puede modificar el comentario; las líneas son de solo lectura.</p>
+    }
+
+    <div class="table-responsive">
+        <table id="tblDetalleNotaDebito" class="table table-sm table-hover align-middle w-100" data-entry="@ViewBag.EntryActual" data-es-edicion="@esEdicion.ToString().ToLower()">
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>% Desc.</th>
+                    <th>Impuesto</th>
+                    <th>Total línea</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="panelLineaDetalle" class="border rounded p-3 mb-2 d-none">
+        <form id="formLineaDetalle">
+            <div class="row g-2">
+                <div class="col-md-8">
+                    <label class="form-label">Descripción del concepto</label>
+                    <input id="detDescripcion" class="form-control" maxlength="200" />
+                </div>
+                <div class="col-md-4 position-relative">
+                    <label class="form-label">Impuesto</label>
+                    <input type="text" id="detCodigoImpuestoTexto" class="form-control" placeholder="Buscar por nombre..." autocomplete="off" />
+                    <input type="hidden" id="detCodigoImpuesto" />
+                    <div class="invalid-feedback" id="detCodigoImpuestoError">Selecciona una opción de la lista o borra el texto.</div>
+                    <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodigoImpuestoResultados"></ul>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Cantidad</label>
+                    <input id="detCantidad" type="number" step="0.01" class="form-control" value="1" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Precio</label>
+                    <input id="detPrecio" type="number" step="0.01" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">% Desc.</label>
+                    <input id="detPrctjeDesc" type="number" step="0.01" class="form-control" value="0" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Impuesto (Q)</label>
+                    <input id="detImpuestoMonto" type="number" step="0.01" class="form-control" readonly />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Total línea</label>
+                    <input id="detTotalLinea" type="number" step="0.01" class="form-control" readonly />
+                </div>
+            </div>
+            <div class="text-end mt-2">
+                <button type="button" class="btn btn-sm btn-secondary" id="btnCancelarLinea">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnGuardarLinea">Guardar línea</button>
+            </div>
+        </form>
+    </div>
+
+    @if (!esEdicion)
+    {
+        <script id="datosSeriesNotaDebito" type="application/json">
+            @Html.Raw(JsonSerializer.Serialize(ViewBag.SeriesNotaDebito, opcionesJson))
+        </script>
+    }
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    @if (esEdicion && (Model.Cancelado ?? "N") != "S" && User.TienePermiso("NotasDebito", Accion.Eliminar))
+    {
+        <button type="button" class="btn btn-outline-danger" id="btnCancelarDocNotaDebito" data-entry="@ViewBag.EntryActual">
+            <i class="fa-solid fa-ban me-1"></i>Cancelar documento
+        </button>
+    }
+    @{
+        var puedeGuardar = esEdicion ? User.TienePermiso("NotasDebito", Accion.Actualizar) : User.TienePermiso("NotasDebito", Accion.Agregar);
+    }
+    @if ((Model.Cancelado ?? "N") != "S" && puedeGuardar)
+    {
+        <button type="button" class="btn btn-primary" id="btnGuardarNotaDebito" data-edicion="@esEdicion.ToString().ToLower()" data-entry="@ViewBag.EntryActual">
+            <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+        </button>
+    }
+</div>
