@@ -513,7 +513,7 @@ $(function () {
 
         const bruto = r2(cantidad * precio);
         const desc = r2(bruto * prctjeDesc / 100);
-        const subtotal = bruto - desc;
+        const subtotal = r2(bruto - desc);
         const impuesto = r2(subtotal * tasa / 100);
         const total = subtotal + impuesto;
 
