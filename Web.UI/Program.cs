@@ -86,6 +86,10 @@ builder.Services.AddHttpClient<IFacturaCompraApiClient, FacturaCompraApiClient>(
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IFacturaCompraDetalleApiClient, FacturaCompraDetalleApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<INotaDebitoApiClient, NotaDebitoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<INotaDebitoCompraApiClient, NotaDebitoCompraApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
 // Solo lectura, usados como fuente de dropdowns (ej. País/Departamento/Municipio en Almacenes).
 builder.Services.AddHttpClient<IPaisApiClient, PaisApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
