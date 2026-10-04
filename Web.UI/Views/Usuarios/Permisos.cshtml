@@ -27,7 +27,7 @@
         </div>
 
         <div id="alertaSinMatriz" class="alert alert-info d-none" role="alert">
-            Este usuario no tiene matriz asignada: tiene acceso total (excepto Administración). Al guardar, quedará restringido a lo marcado.
+            Este usuario no tiene permisos asignados: no puede acceder a ningún módulo. Marca los permisos y guarda, o aplica una plantilla.
         </div>
 
         <div class="mb-3">
@@ -79,7 +79,7 @@
 
                 const modulos = (modulosResp.resultado && modulosResp.dato) ? modulosResp.dato : [];
                 const matriz = (permisosResp.resultado && permisosResp.dato) ? permisosResp.dato : [];
-                // Sin filas = sin matriz propia = acceso total; solo se avisa si la consulta fue exitosa.
+                // Sin filas = sin permisos asignados = sin acceso; solo se avisa si la consulta fue exitosa.
                 $('#alertaSinMatriz').toggleClass('d-none', !(permisosResp.resultado && matriz.length === 0));
                 $('#tblGrillaPermisos tbody').html(pintarGrillaPermisos(modulos, matriz));
 
