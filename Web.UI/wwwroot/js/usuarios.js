@@ -36,7 +36,7 @@ $(function () {
 
     function abrirModal() {
         $('#Password, #ConfirmarPassword').val('');
-        new bootstrap.Modal('#modalFormulario').show();
+        bootstrap.Modal.getOrCreateInstance('#modalFormulario').show();
     }
 
     $('#btnNuevo').on('click', function () {
@@ -65,16 +65,23 @@ $(function () {
     $('#tblUsuarios').on('click', '.btn-eliminar', async function () {
         const usuario = tabla.row($(this).closest('tr')).data();
         if (!usuario) return;
+        const boton = $(this);
+        if (boton.prop('disabled')) return;
         const confirmado = await App.confirmarEliminar(`Se eliminará el usuario ${usuario.codigo}. No podrá iniciar sesión.`);
         if (!confirmado) return;
 
-        const respuesta = await App.enviarJson(`/Usuarios/Eliminar?id=${usuario.id}`, 'POST', {});
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
-            return;
+        boton.prop('disabled', true);
+        try {
+            const respuesta = await App.enviarJson(`/Usuarios/Eliminar?id=${usuario.id}`, 'POST', {});
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+            App.mostrarExito('Usuario eliminado correctamente.');
+            recargarTabla();
+        } finally {
+            boton.prop('disabled', false);
         }
-        App.mostrarExito('Usuario eliminado correctamente.');
-        recargarTabla();
     });
 
     $('#btnGuardar').on('click', async function () {
@@ -88,6 +95,8 @@ $(function () {
         if (!codigo) { App.mostrarError('El código es obligatorio.'); return; }
         if (!nombre) { App.mostrarError('El nombre es obligatorio.'); return; }
         if (!id && !password) { App.mostrarError('La contraseña es obligatoria para un usuario nuevo.'); return; }
+        if (password.length > 0 && password.trim().length === 0) { App.mostrarError('La contraseña no puede estar vacía ni contener solo espacios.'); return; }
+        if (!password && confirmacion) { App.mostrarError('Escribe la nueva contraseña o deja ambos campos vacíos.'); return; }
         if (password) {
             if (password.length < 8) { App.mostrarError('La contraseña debe tener al menos 8 caracteres.'); return; }
             if (password.toLowerCase() === codigo.toLowerCase()) { App.mostrarError('La contraseña no puede ser igual al código de usuario.'); return; }
@@ -104,13 +113,20 @@ $(function () {
         if (password) datos.Password = password;
 
         const url = id ? `/Usuarios/Editar?id=${id}` : '/Usuarios/Crear';
-        const respuesta = await App.enviarJson(url, 'POST', datos);
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
-            return;
+        const boton = $('#btnGuardar');
+        if (boton.prop('disabled')) return;
+        boton.prop('disabled', true);
+        try {
+            const respuesta = await App.enviarJson(url, 'POST', datos);
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+            bootstrap.Modal.getOrCreateInstance('#modalFormulario').hide();
+            App.mostrarExito(id ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.');
+            recargarTabla();
+        } finally {
+            boton.prop('disabled', false);
         }
-        bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito(id ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.');
-        recargarTabla();
     });
 });
