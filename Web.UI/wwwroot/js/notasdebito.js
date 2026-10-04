@@ -269,7 +269,18 @@ $(function () {
             return;
         }
 
-        const respuesta = await $.get('/NotasDebito/BuscarFacturasBase', { codigoSn });
+        let respuesta;
+        try {
+            respuesta = await $.get('/NotasDebito/BuscarFacturasBase', { codigoSn });
+        } catch (e) {
+            // Si el socio cambio mientras tanto, otra carga manda sobre el select.
+            if ($('#CodigoSn').val() !== codigoSn) return;
+            $sel.html('<option value="">-- Sin factura base --</option>').prop('disabled', false);
+            return;
+        }
+        // Respuesta vieja: el socio cambio mientras esperabamos.
+        if ($('#CodigoSn').val() !== codigoSn) return;
+
         const lista = (respuesta.resultado && respuesta.dato) ? respuesta.dato : [];
         $sel.html('<option value="">-- Sin factura base --</option>').prop('disabled', false);
         lista.forEach(f => {
@@ -568,7 +579,7 @@ $(function () {
 
         const existe = lineasLocales.some(l => l._id === lineaEnEdicionId);
         if (lineaEnEdicionId !== null && existe) {
-            lineasLocales =lineasLocales.map(l => l._id === lineaEnEdicionId ? { ...linea, _id: l._id } : l);
+            lineasLocales = lineasLocales.map(l => l._id === lineaEnEdicionId ? { ...linea, _id: l._id } : l);
         } else {
             lineasLocales.push({ ...linea, _id: proximoIdLocal++ });
         }

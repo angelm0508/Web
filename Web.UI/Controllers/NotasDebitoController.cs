@@ -205,7 +205,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("NotasDebito", Accion.Ver)]
+        [RequierePermiso("NotasDebito", Accion.Agregar)]
         public async Task<IActionResult> BuscarFacturasBase(string codigoSn)
         {
             var respuesta = await _notas.ObtenerFacturasBaseAsync(codigoSn ?? string.Empty);
@@ -213,7 +213,7 @@ namespace Web.UI.Controllers
         }
 
         [HttpGet]
-        [RequierePermiso("NotasDebito", Accion.Ver)]
+        [RequierePermiso("NotasDebito", Accion.Agregar)]
         public async Task<IActionResult> ObtenerFacturaBase(int entry)
         {
             var respuesta = await _notas.ObtenerFacturaBaseAsync(entry);
