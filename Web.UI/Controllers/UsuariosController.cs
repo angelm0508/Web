@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.Permiso;
+using Web.ApiClient.Dtos.Usuario;
 using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
@@ -32,6 +33,21 @@ namespace Web.UI.Controllers
             var respuesta = await _usuarios.ObtenerTodoAsync();
             return Json(respuesta);
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequierePermiso("Usuarios", Accion.Agregar)]
+        public async Task<IActionResult> Crear([FromBody] UsuarioCrearDTO dto) => Json(await _usuarios.InsertarAsync(dto));
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequierePermiso("Usuarios", Accion.Actualizar)]
+        public async Task<IActionResult> Editar(int id, [FromBody] UsuarioActualizarDTO dto) => Json(await _usuarios.ActualizarAsync(id, dto));
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequierePermiso("Usuarios", Accion.Eliminar)]
+        public async Task<IActionResult> Eliminar(int id) => Json(await _usuarios.EliminarAsync(id));
 
         [RequierePermiso("Usuarios", Accion.Ver)]
         public IActionResult Permisos(int usuarioId) => View();

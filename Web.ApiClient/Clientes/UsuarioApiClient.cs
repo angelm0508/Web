@@ -14,5 +14,14 @@ namespace Web.ApiClient.Clientes
 
         public Task<Respuesta<UsuarioDTO>> ObtenerAsync(int id) =>
             GetAsync<UsuarioDTO>($"{Recurso}/{id}");
+
+        public Task<Respuesta<int>> InsertarAsync(UsuarioCrearDTO dto) =>
+            PostAsync<int>(Recurso, dto);
+
+        public Task<Respuesta<bool>> ActualizarAsync(int id, UsuarioActualizarDTO dto) =>
+            PutAsync<bool>($"{Recurso}/{id}", dto);
+
+        public Task<Respuesta<bool>> EliminarAsync(int id) =>
+            DeleteAsync<bool>($"{Recurso}/{id}");
     }
 }
