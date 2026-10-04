@@ -249,6 +249,9 @@ $(function () {
     // Saldo acreditable de la factura base cargada (null = sin base); el servidor es quien rechaza si se excede.
     let baseDisponible = null;
 
+    const TEXTO_SIN_BASE = 'Sin factura de compra base: puedes crear la nota libremente.';
+    const TEXTO_SIN_SALDO = '(todas las facturas de este socio ya están acreditadas por completo)';
+
     function actualizarAlertaExceso() {
         const $a = $('#alertaExcedeBase');
         if ($a.length === 0) return;
@@ -268,7 +271,7 @@ $(function () {
         $('#baseEntry').val('');
         baseDisponible = null;
         actualizarAlertaExceso();
-        $('#textoFacturaBase').text('Sin factura de compra base: puedes crear la nota libremente.');
+        $('#textoFacturaBase').text(TEXTO_SIN_BASE);
         $('#btnQuitarFacturaBase').addClass('d-none');
         $('#selectFacturaBase').val('');
         $('#btnCargarFacturaBase').prop('disabled', true);
@@ -282,6 +285,7 @@ $(function () {
         actualizarAlertaExceso();
         const codigoSn = $('#CodigoSn').val();
         $('#btnCargarFacturaBase').prop('disabled', true);
+        if (!hayFacturaBase()) $('#textoFacturaBase').text(TEXTO_SIN_BASE);   // limpia el aviso de otro socio
         if (!codigoSn) {
             $sel.html('<option value="">-- Selecciona un socio para ver sus facturas --</option>').prop('disabled', true);
             return;
@@ -298,7 +302,9 @@ $(function () {
 
         $sel.html('<option value="">-- Sin factura base --</option>').prop('disabled', false);
         // Solo se ofrecen las facturas que todavia tienen saldo acreditable.
-        lista.filter(f => Number(f.disponible ?? 0) > 0).forEach(f => {
+        const conSaldo = lista.filter(f => Number(f.disponible ?? 0) > 0);
+        if (lista.length > 0 && conSaldo.length === 0 && !hayFacturaBase()) $('#textoFacturaBase').text(TEXTO_SIN_SALDO);
+        conSaldo.forEach(f => {
             const fecha = f.fechaDoc ? new Date(f.fechaDoc).toLocaleDateString() : '';
             const total = f.totalDoc != null ? Number(f.totalDoc).toFixed(2) : '';
             const disponible = Number(f.disponible).toFixed(2);
@@ -410,6 +416,9 @@ $(function () {
         pintarDetalle();
     }
 
+    // Redondeo a 2 decimales alejado de cero y a prueba de coma flotante: igual que Math.Round(..., 2, AwayFromZero) del servidor.
+    const r2 = x => Math.sign(x) * Math.round(Number((Math.abs(x) * 100).toPrecision(15))) / 100;
+
     function calcularTotalesDesdeLineas(lista) {
         let totalBruto = 0, totalDesc = 0, totalImp = 0, totalDoc = 0;
         lista.forEach(l => {
@@ -417,8 +426,9 @@ $(function () {
             const precio = Number(l.precio ?? l.Precio ?? 0);
             const prctjeDesc = Number(l.prctjeDesc ?? l.PrctjeDesc ?? 0);
             const impuesto = Number(l.impuesto ?? l.Impuesto ?? 0);
-            const bruto = cantidad * precio;
-            const desc = bruto * (prctjeDesc / 100);
+            // Igual que el servidor: bruto y descuento se redondean por linea; el impuesto es el de la linea (ya redondeado).
+            const bruto = r2(cantidad * precio);
+            const desc = r2(bruto * prctjeDesc / 100);
             totalBruto += bruto;
             totalDesc += desc;
             totalImp += impuesto;
@@ -438,10 +448,18 @@ $(function () {
 
         const lista = esEdicionDetalle() ? lineasRemotas : lineasLocales;
 
-        const totales = calcularTotalesDesdeLineas(lista);
-        $('#TotalBruto').val(totales.totalBruto);
-        $('#TotalImp').val(totales.totalImp);
-        $('#TotalDoc').val(totales.totalDoc);
+        if (esEdicionDetalle()) {
+            // Ver/editar: los totales del encabezado son los guardados (vienen del modelo); no se recalculan en el cliente.
+            ['#TotalBruto', '#TotalImp', '#TotalDoc'].forEach(id => {
+                const guardado = $(id).val();
+                if (guardado !== '' && !isNaN(Number(guardado))) $(id).val(Number(guardado).toFixed(2));
+            });
+        } else {
+            const totales = calcularTotalesDesdeLineas(lista);
+            $('#TotalBruto').val(totales.totalBruto);
+            $('#TotalImp').val(totales.totalImp);
+            $('#TotalDoc').val(totales.totalDoc);
+        }
         actualizarAlertaExceso();
 
         if (lista.length === 0) {
@@ -493,10 +511,10 @@ $(function () {
         const prctjeDesc = Number($('#detPrctjeDesc').val()) || 0;
         const tasa = tasaImpuestoSeleccionado || 0;
 
-        const bruto = cantidad * precio;
-        const desc = bruto * (prctjeDesc / 100);
+        const bruto = r2(cantidad * precio);
+        const desc = r2(bruto * prctjeDesc / 100);
         const subtotal = bruto - desc;
-        const impuesto = subtotal * (tasa / 100);
+        const impuesto = r2(subtotal * tasa / 100);
         const total = subtotal + impuesto;
 
         $('#detImpuestoMonto').val(impuesto.toFixed(2));

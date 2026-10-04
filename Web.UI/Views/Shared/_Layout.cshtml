@@ -203,7 +203,6 @@
                                     <i class="fa-solid fa-file-circle-plus"></i><span>Notas de débito</span>
                                 </a>
                             }
-
                             @if (Puede("NotasCredito"))
                             {
                                 <a class="nav-link nav-sublink @(EsActivo("NotasCredito") ? "active" : "")" asp-controller="NotasCredito" asp-action="Index">
@@ -244,7 +243,6 @@
                                     <i class="fa-solid fa-file-circle-plus"></i><span>Notas de débito de compra</span>
                                 </a>
                             }
-
                             @if (Puede("NotasCreditoCompra"))
                             {
                                 <a class="nav-link nav-sublink @(EsActivo("NotasCreditoCompra") ? "active" : "")" asp-controller="NotasCreditoCompra" asp-action="Index">
