@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
 using Web.ApiClient.Clientes;
+using Web.ApiClient.Dtos.DocumentoBase;
 using Web.ApiClient.Dtos.Pedido;
 using Web.ApiClient.Dtos.PedidoDetalle;
 using Web.UI.Authorization;
@@ -21,6 +22,10 @@ namespace Web.UI.Controllers
         private readonly IImpuestoApiClient _impuestos;
         private readonly INumeracionDocumentoDetApiClient _series;
         private readonly INumeracionDocumentoApiClient _numeracion;
+        private readonly IDocumentoBaseApiClient _documentoBase;
+
+        // Tipo de objeto de Pedido (destino de "Copiar a").
+        private const int TipoDestinoPedido = 4;
 
         // CodigoObj de NumeracionDocumento que identifica a "Pedidos" como tipo de objeto.
         private const string CodigoObjPedido = "4";
@@ -35,7 +40,8 @@ namespace Web.UI.Controllers
             IAlmacenApiClient almacenes,
             IImpuestoApiClient impuestos,
             INumeracionDocumentoDetApiClient series,
-            INumeracionDocumentoApiClient numeracion)
+            INumeracionDocumentoApiClient numeracion,
+            IDocumentoBaseApiClient documentoBase)
         {
             _pedidos = pedidos;
             _detalles = detalles;
@@ -46,6 +52,7 @@ namespace Web.UI.Controllers
             _impuestos = impuestos;
             _series = series;
             _numeracion = numeracion;
+            _documentoBase = documentoBase;
         }
 
         [RequierePermiso("Pedidos", Accion.Ver)]
@@ -61,8 +68,19 @@ namespace Web.UI.Controllers
 
         [HttpGet]
         [RequierePermiso("Pedidos", Accion.Agregar)]
-        public async Task<IActionResult> FormularioCrear()
+        public async Task<IActionResult> FormularioCrear(int? baseTipo = null, int? baseEntry = null)
         {
+            // "Copiar a": el borrador trae la cabecera y las líneas abiertas del documento origen.
+            DocumentoBaseBorradorDTO? borrador = null;
+            if (baseTipo.HasValue && baseEntry.HasValue)
+            {
+                var copia = await _documentoBase.ObtenerBorradorAsync(baseTipo.Value, baseEntry.Value, TipoDestinoPedido);
+                if (!copia.Resultado || copia.Dato is null)
+                    return BadRequest(copia.Mensaje);   // el JS lo muestra con App.mostrarError
+                borrador = copia.Dato;
+            }
+            ViewBag.Borrador = borrador;
+
             await CargarDropdownsAsync();
             var series = await _series.ObtenerPorDocumentoAsync(CodigoObjPedido);
             ViewBag.SeriesPedido = (series.Dato ?? []).Where(s => s.SubTipoDoc == SubTipoDocPedido);
@@ -74,7 +92,18 @@ namespace Web.UI.Controllers
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
 
             ViewBag.EsEdicion = false;
-            return PartialView("_Form", new PedidoCrearDTO { EstadoDoc = "A", TipoObjeto = "4" });
+            var dto = new PedidoCrearDTO { EstadoDoc = "A", TipoObjeto = "4" };
+            if (borrador is not null)
+            {
+                dto.CodigoSn = borrador.Cabecera.CodigoSn;
+                dto.NombreSn = borrador.Cabecera.NombreSn;
+                dto.Direccion = borrador.Cabecera.Direccion;
+                dto.MonedaDoc = borrador.Cabecera.MonedaDoc;
+                dto.PrctjeDesc = borrador.Cabecera.PrctjeDesc;
+                dto.PrctjeImpuesto = borrador.Cabecera.PrctjeImpuesto;
+                dto.Comentario = borrador.Cabecera.Comentario;
+            }
+            return PartialView("_Form", dto);
         }
 
         [HttpGet]

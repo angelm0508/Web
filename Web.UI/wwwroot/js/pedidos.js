@@ -158,6 +158,24 @@ $(function () {
         datos.TotalDoc = totales.totalDoc;
 
         if (!esEdicion) {
+            if (borradorCopia) {
+                if (lineasLocales.length === 0) {
+                    App.mostrarError('Agrega al menos una línea al documento.');
+                    return;
+                }
+                datos.Lineas = lineasLocales.map(App.sinCamposInternos);
+                const respuestaCopia = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
+                if (!respuestaCopia.resultado) {
+                    App.mostrarError(respuestaCopia.mensaje);
+                    return;
+                }
+                const sufijoCopia = respuestaCopia.numDoc != null ? ` No. documento: ${respuestaCopia.numDoc}.` : '';
+                await App.mostrarExito(`Pedido creado correctamente.${sufijoCopia}`);
+                bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+                recargarTabla();
+                return;
+            }
+
             const respuestaCabecera = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
             if (!respuestaCabecera.resultado) {
                 App.mostrarError(respuestaCabecera.mensaje);
@@ -220,6 +238,7 @@ $(function () {
     let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto;
     let sincronizandoArticulo = false;
     let listaPrecioSocio = null;
+    let borradorCopia = null;   // borrador de "Copiar a" cuando el formulario nace de otro documento
 
     function esEdicionDetalle() {
         const v = $('#tblDetallePedido').data('es-edicion');
@@ -278,6 +297,15 @@ $(function () {
                 recalcularLinea();
             }
         });
+
+        // "Copiar a": se cargan las líneas abiertas del documento origen y se bloquea la moneda.
+        borradorCopia = esEdicionDetalle() ? null : App.leerBorrador();
+        if (borradorCopia) {
+            const copia = App.lineasDesdeBorrador(borradorCopia, proximoIdLocal);
+            lineasLocales = copia.lineas;
+            proximoIdLocal = copia.proximoId;
+            $('#MonedaDoc').css('pointer-events', 'none').attr('tabindex', '-1');
+        }
 
         if (esEdicionDetalle()) {
             cargarDetalleRemoto();
@@ -379,7 +407,7 @@ $(function () {
             return `
                 <tr>
                     <td>${codArticulo ?? ''}</td>
-                    <td>${descripcion ?? ''}</td>
+                    <td>${descripcion ?? ''}${linea._baseTexto ? `<div class="small text-muted">${linea._baseTexto}</div>` : ''}</td>
                     <td>${cantidad ?? ''}</td>
                     <td>${precio != null ? Number(precio).toFixed(2) : ''}</td>
                     <td>${prctjeDesc ?? 0}</td>
@@ -574,13 +602,41 @@ $(function () {
             cargarDetalleRemoto();
         } else {
             if (noLineaOriginalEnEdicion !== null) {
-                lineasLocales = lineasLocales.map(l => l._id === noLineaOriginalEnEdicion ? { ...datosForm, _id: l._id } : l);
+                const actual = lineasLocales.find(l => l._id === noLineaOriginalEnEdicion);
+                if (actual && actual.BaseTipo != null && actual.BaseTipo > 0) {
+                    // línea copiada de otro documento: el artículo no cambia y la cantidad no pasa de lo abierto
+                    if (datosForm.CodArticulo !== actual.CodArticulo) {
+                        App.mostrarError('El artículo de una línea copiada no se puede cambiar.');
+                        return;
+                    }
+                    if (!(Number(datosForm.Cantidad) > 0)) {
+                        App.mostrarError('La cantidad debe ser mayor que cero.');
+                        return;
+                    }
+                    if (Number(datosForm.Cantidad) > actual._abierta) {
+                        App.mostrarError(`La cantidad no puede superar la cantidad abierta (${actual._abierta}).`);
+                        return;
+                    }
+                    lineasLocales = lineasLocales.map(l => l._id === actual._id ? { ...actual, ...datosForm, _id: actual._id } : l);
+                } else {
+                    lineasLocales = lineasLocales.map(l => l._id === noLineaOriginalEnEdicion ? { ...datosForm, _id: l._id } : l);
+                }
             } else {
                 lineasLocales.push({ ...datosForm, _id: proximoIdLocal++ });
             }
 
             $('#panelLineaDetalle').addClass('d-none');
             pintarDetalle();
+        }
+    });
+
+    // "Copiar a": llega desde otro listado con ?baseTipo=&baseEntry= y abre el formulario precargado.
+    App.abrirCopiaSiCorresponde(async (baseTipo, baseEntry) => {
+        try {
+            const html = await $.get('/Pedidos/FormularioCrear', { baseTipo, baseEntry });
+            abrirModal(html);
+        } catch (xhr) {
+            App.mostrarError((xhr && xhr.responseText) || 'No se pudo copiar el documento.');
         }
     });
 });
