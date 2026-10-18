@@ -96,6 +96,12 @@ $(function () {
             lineasLocales = [];
             lineaEnEdicionId = null;
             $('#panelLineaDetalle').addClass('d-none');
+            // Las líneas de la factura base eran del modo anterior: se descarta la referencia.
+            if (hayFacturaBase()) quitarFacturaBase();
+        } else {
+            // Sin líneas: lo que haya quedado a medias en el panel era del modo anterior.
+            limpiarPanelLinea();
+            $('#panelLineaDetalle').addClass('d-none');
         }
 
         aplicarModo();

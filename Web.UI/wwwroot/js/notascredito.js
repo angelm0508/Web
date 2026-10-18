@@ -249,8 +249,8 @@ $(function () {
     // Saldo acreditable de la factura base cargada (null = sin base); el servidor es quien rechaza si se excede.
     let baseDisponible = null;
 
-    const TEXTO_SIN_BASE = 'Sin factura base: puedes crear la nota libremente.';
-    const TEXTO_SIN_SALDO = '(todas las facturas de este socio ya están acreditadas por completo)';
+    const TEXTO_SIN_BASE = 'Sin factura o nota de débito base: puedes crear la nota libremente.';
+    const TEXTO_SIN_SALDO = '(todas las facturas y notas de débito de este socio ya están acreditadas por completo)';
 
     function actualizarAlertaExceso() {
         const $a = $('#alertaExcedeBase');
@@ -287,7 +287,7 @@ $(function () {
         $('#btnCargarFacturaBase').prop('disabled', true);
         if (!hayFacturaBase()) $('#textoFacturaBase').text(TEXTO_SIN_BASE);   // limpia el aviso de otro socio
         if (!codigoSn) {
-            $sel.html('<option value="">-- Selecciona un socio para ver sus facturas --</option>').prop('disabled', true);
+            $sel.html('<option value="">-- Selecciona un socio para ver sus facturas y notas de débito --</option>').prop('disabled', true);
             return;
         }
 
@@ -300,7 +300,7 @@ $(function () {
             if ($('#CodigoSn').val() !== codigoSn) return;
         }
 
-        $sel.html('<option value="">-- Sin factura base --</option>').prop('disabled', false);
+        $sel.html('<option value="">-- Sin factura ni nota de débito base --</option>').prop('disabled', false);
         // Solo se ofrecen las facturas que todavia tienen saldo acreditable.
         const conSaldo = lista.filter(f => Number(f.disponible ?? 0) > 0);
         if (lista.length > 0 && conSaldo.length === 0 && !hayFacturaBase()) $('#textoFacturaBase').text(TEXTO_SIN_SALDO);
@@ -325,7 +325,7 @@ $(function () {
             const ok = await Swal.fire({
                 icon: 'question',
                 title: '¿Reemplazar las líneas?',
-                text: 'Las líneas actuales se reemplazarán por las de la factura seleccionada.',
+                text: 'Las líneas actuales se reemplazarán por las de la factura o nota de débito seleccionada.',
                 showCancelButton: true,
                 confirmButtonText: 'Reemplazar',
                 cancelButtonText: 'Cancelar'
@@ -335,14 +335,14 @@ $(function () {
 
         const respuesta = await $.get('/NotasCredito/ObtenerFacturaBase', { entry });
         if (!respuesta.resultado || !respuesta.dato) {
-            App.mostrarError(respuesta.mensaje || 'No se pudo cargar la factura.');
+            App.mostrarError(respuesta.mensaje || 'No se pudo cargar la factura o nota de débito.');
             return;
         }
 
         const factura = respuesta.dato;
         $('#baseEntry').val(factura.entry);
         baseDisponible = Number(factura.disponible ?? 0);
-        $('#textoFacturaBase').text(`Basada en la factura #${factura.numDoc}. Disponible para acreditar: ${baseDisponible.toFixed(2)}. Puedes ajustar las líneas antes de guardar.`);
+        $('#textoFacturaBase').text(`Basada en la factura o nota de débito #${factura.numDoc}. Disponible para acreditar: ${baseDisponible.toFixed(2)}. Puedes ajustar las líneas antes de guardar.`);
         $('#btnQuitarFacturaBase').removeClass('d-none');
 
         const monedaExiste = $('#MonedaDoc option').filter((_, o) => o.value === factura.monedaDoc).length > 0;
