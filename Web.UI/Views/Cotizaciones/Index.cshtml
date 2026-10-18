@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Cotizaciones";
+    string PuedeCopiar(string modulo) => User.TienePermiso(modulo, Accion.Ver) && User.TienePermiso(modulo, Accion.Agregar) ? "true" : "false";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -42,7 +43,8 @@
 
 <script id="datosPermisosCotizaciones" type="application/json">
     { "actualizar": @(User.TienePermiso("Cotizaciones", Accion.Actualizar) ? "true" : "false"),
-      "eliminar": @(User.TienePermiso("Cotizaciones", Accion.Eliminar) ? "true" : "false") }
+      "eliminar": @(User.TienePermiso("Cotizaciones", Accion.Eliminar) ? "true" : "false"),
+      "copiarA": { "pedido": @PuedeCopiar("Pedidos"), "entrega": @PuedeCopiar("Entregas"), "factura": @PuedeCopiar("Facturas") } }
 </script>
 
 @section Scripts {
