@@ -190,6 +190,71 @@ const App = {
         } catch (e) { return null; }
     },
 
+    // ---- "Copiar a": líneas con documento base (compartido por pedidos.js, entregas.js y facturas.js) ----
+
+    /** Borrador del documento base que el servidor embebe en #datosBorrador; null si el formulario no viene de "Copiar a". */
+    leerBorrador: function () {
+        const el = document.getElementById('datosBorrador');
+        if (!el) return null;
+        try { return JSON.parse(el.textContent); } catch (e) { return null; }
+    },
+
+    /**
+     * Convierte las líneas abiertas del borrador en líneas locales del formulario (mismas propiedades que arma el panel
+     * de línea). Los campos con prefijo "_" son solo de la interfaz y se quitan antes de enviar (sinCamposInternos).
+     */
+    lineasDesdeBorrador: function (borrador, idInicial) {
+        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 6: 'Factura' };
+        let id = idInicial;
+        const lineas = (borrador.lineas || []).map(l => {
+            const cantidad = Number(l.cantidadAbierta);
+            const origen = Number(l.cantidadOrigen);
+            const proporcion = origen > 0 ? cantidad / origen : 1;
+            const impuesto = l.impuesto != null ? Number((Number(l.impuesto) * proporcion).toFixed(2)) : 0;
+            const precio = Number(l.precio ?? 0);
+            const prctjeDesc = Number(l.prctjeDesc ?? 0);
+            const bruto = cantidad * precio;
+            const total = Number((bruto - bruto * (prctjeDesc / 100) + impuesto).toFixed(2));
+            return {
+                _id: id++,
+                _abierta: cantidad,
+                _baseTexto: `${nombres[l.baseTipo] ?? 'Documento'} ${borrador.origenNumDoc} · abierto: ${cantidad}`,
+                BaseTipo: l.baseTipo, BaseEntry: l.baseEntry, BaseLinea: l.baseLinea,
+                CodArticulo: l.codArticulo, Descripcion: l.descripcion,
+                Cantidad: cantidad, Precio: l.precio, PrecioBruto: l.precioBruto, PrctjeDesc: l.prctjeDesc,
+                CodigoImpuesto: l.codigoImpuesto, CodAlmacen: l.codAlmacen,
+                Impuesto: impuesto, TotalLinea: total
+            };
+        });
+        return { lineas, proximoId: id };
+    },
+
+    /** Quita los campos internos (prefijo "_") antes de enviar una línea a la API. */
+    sinCamposInternos: function (linea) {
+        return Object.fromEntries(Object.entries(linea).filter(([clave]) => !clave.startsWith('_')));
+    },
+
+    /** Si la URL trae ?baseTipo=&baseEntry= (viene de "Copiar a"), limpia la URL y llama a abrir(baseTipo, baseEntry). */
+    abrirCopiaSiCorresponde: function (abrir) {
+        const q = new URLSearchParams(window.location.search);
+        const baseTipo = q.get('baseTipo');
+        const baseEntry = q.get('baseEntry');
+        if (!baseTipo || !baseEntry) return;
+        history.replaceState(null, '', window.location.pathname);
+        abrir(baseTipo, baseEntry);
+    },
+
+    /** Botón desplegable "Copiar a" de una fila de un listado. destinos: [{ nombre, url }]; '' si no hay destinos. */
+    botonCopiarA: function (tipoOrigen, entry, destinos) {
+        if (!destinos || destinos.length === 0) return '';
+        const items = destinos.map(d =>
+            `<li><a class="dropdown-item btn-copiar-a" href="#" data-url="${d.url}" data-tipo="${tipoOrigen}" data-entry="${entry}">${d.nombre}</a></li>`).join('');
+        return `<div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Copiar a"><i class="fa-solid fa-copy"></i></button>
+            <ul class="dropdown-menu dropdown-menu-end">${items}</ul>
+        </div>`;
+    },
+
     /**
      * Convierte un <input type="text"> en un buscador con autocompletado contra un endpoint de
      * la API. No depende de ninguna librería externa. Los elementos (texto visible, oculto con
@@ -372,3 +437,9 @@ const App = {
         };
     }
 };
+
+// "Copiar a": navega al listado del destino, que abre su formulario precargado (App.abrirCopiaSiCorresponde).
+$(document).on('click', '.btn-copiar-a', function (e) {
+    e.preventDefault();
+    window.location.href = `${$(this).data('url')}?baseTipo=${$(this).data('tipo')}&baseEntry=${$(this).data('entry')}`;
+});
