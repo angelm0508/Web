@@ -4,6 +4,8 @@ namespace Web.ApiClient.Dtos.NotaDebito
     {
         public int Entry { get; set; }
         public int NoLinea { get; set; }
+        public string? CodArticulo { get; set; }
+        public string? CodAlmacen { get; set; }
         public string? Descripcion { get; set; }
         public decimal? Cantidad { get; set; }
         public decimal? Precio { get; set; }
