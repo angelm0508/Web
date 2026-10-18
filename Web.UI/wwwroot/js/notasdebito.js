@@ -8,10 +8,22 @@ $(function () {
     const datosPermisosEl = document.getElementById('datosPermisosNotasDebito');
     const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
 
+    // Estado compartido del detalle (declarado arriba: lo usan funciones de varias secciones).
+    let lineasLocales = [];
+    let lineasRemotas = [];
+    let proximoIdLocal = 1;
+    let lineaEnEdicionId = null;
+    let tasaImpuestoSeleccionado = 0;
+    let buscadorImpuesto;
+    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen;
+    let sincronizandoArticulo = false;
+    let listaPrecioSocio = null;
+
     const tabla = $('#tblNotasDebito').DataTable({
         ajax: { url: '/NotasDebito/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'numDoc' },
+            { data: 'docType', render: d => d === 'I' ? 'Artículos' : 'Concepto' },
             { data: 'nombreSn', render: (d, t, row) => esc(d || row.codigoSn || '') },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
             {
@@ -41,12 +53,54 @@ $(function () {
         inicializarSerie();
         inicializarBuscadorSocio();
         inicializarDetalle();
+        aplicarModo();
         cargarFacturasBase();
     }
 
     function cerrarModal() {
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFormulario')).hide();
     }
+
+    // --- Tipo de nota: por artículos (I, mueve inventario) o por concepto (S) ---
+
+    function porArticulos() {
+        return $('#DocType').val() === 'I';
+    }
+
+    // Muestra u oculta lo propio de cada modo: columna y panel de artículo, aviso de inventario y etiqueta.
+    function aplicarModo() {
+        const art = porArticulos();
+        $('.col-articulo').toggleClass('d-none', !art);
+        $('#grupoArticulo').toggleClass('d-none', !art);
+        $('#avisoInventario').toggleClass('d-none', !art);
+        $('#lblDetDescripcion').text(art ? 'Descripción (opcional)' : 'Descripción del concepto');
+    }
+
+    $(document).on('change', '#DocType', async function () {
+        if (esEdicionDetalle()) return;
+        const nuevo = $('#DocType').val();
+
+        if (lineasLocales.length > 0) {
+            const ok = await Swal.fire({
+                icon: 'question',
+                title: '¿Cambiar el tipo de nota?',
+                text: 'Se quitarán las líneas ya cargadas.',
+                showCancelButton: true,
+                confirmButtonText: 'Cambiar',
+                cancelButtonText: 'Cancelar'
+            }).then(r => r.isConfirmed);
+            if (!ok) {
+                $('#DocType').val(nuevo === 'I' ? 'S' : 'I');
+                return;
+            }
+            lineasLocales = [];
+            lineaEnEdicionId = null;
+            $('#panelLineaDetalle').addClass('d-none');
+        }
+
+        aplicarModo();
+        pintarDetalle();
+    });
 
     // --- Socio de negocio ---
 
@@ -62,6 +116,8 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                // La lista de precio del socio se usa al elegir artículos (modo por artículos).
+                listaPrecioSocio = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 // La factura base pertenece al socio anterior: se descarta y se recarga la lista del nuevo.
                 if (hayFacturaBase()) quitarFacturaBase();
                 cargarFacturasBase();
@@ -98,7 +154,10 @@ $(function () {
 
     $(document).on('click', '#btnCancelarDocNotaDebito', async function () {
         const entry = $(this).data('entry');
-        const confirmado = await App.confirmarEliminar('Se cancelará este documento. Esta acción no se puede deshacer.');
+        const mensaje = porArticulos()
+            ? 'Se cancelará este documento y el inventario se revertirá. Esta acción no se puede deshacer.'
+            : 'Se cancelará este documento. Esta acción no se puede deshacer.';
+        const confirmado = await App.confirmarEliminar(mensaje);
         if (!confirmado) return;
 
         const $btn = $(this).prop('disabled', true);
@@ -199,6 +258,10 @@ $(function () {
             App.mostrarError('Debes seleccionar una serie.');
             return;
         }
+        if (!$('#DocType').val()) {
+            App.mostrarError('Selecciona el tipo de nota.');
+            return;
+        }
         if (!$('#CodigoSn').val()) {
             App.mostrarError('Selecciona un socio de negocio.');
             return;
@@ -211,10 +274,15 @@ $(function () {
             App.mostrarError('Agrega al menos una línea al documento.');
             return;
         }
+        if (porArticulos() && lineasLocales.some(l => !(l.CodArticulo && l.CodAlmacen))) {
+            App.mostrarError('Todas las líneas de una nota por artículos deben tener artículo y almacén.');
+            return;
+        }
 
         // El número de documento no se pide para series no manuales: el servidor lo calcula al registrar.
         const datos = App.recolectarFormulario('#formNotaDebito');
         datos.Serie = $('#selectSerieNotaDebito').val();
+        datos.DocType = $('#DocType').val();
 
         const baseEntry = Number($('#baseEntry').val()) || null;
         datos.BaseTipo = baseEntry ? TIPO_BASE : -1;
@@ -325,17 +393,22 @@ $(function () {
         if (factura.monedaDoc && monedaExiste) $('#MonedaDoc').val(factura.monedaDoc);
         if (factura.direccion) $('#Direccion').val(factura.direccion);
 
-        lineasLocales = (factura.lineas || []).map(l => ({
-            Descripcion: l.descripcion,
-            Cantidad: l.cantidad,
-            Precio: l.precio,
-            PrecioBruto: l.precioBruto,
-            PrctjeDesc: l.prctjeDesc ?? 0,
-            CodigoImpuesto: l.codigoImpuesto,
-            Impuesto: l.impuesto,
-            TotalLinea: l.totalLinea,
-            _id: proximoIdLocal++
-        }));
+        // Por artículos: las líneas conservan artículo y almacén de la factura. Por concepto: solo el texto y los importes.
+        const art = porArticulos();
+        lineasLocales = (factura.lineas || [])
+            .filter(l => !art || (l.codArticulo && l.codAlmacen))
+            .map(l => ({
+                ...(art ? { CodArticulo: l.codArticulo, CodAlmacen: l.codAlmacen } : {}),
+                Descripcion: l.descripcion,
+                Cantidad: l.cantidad,
+                Precio: l.precio,
+                PrecioBruto: l.precioBruto,
+                PrctjeDesc: l.prctjeDesc ?? 0,
+                CodigoImpuesto: l.codigoImpuesto,
+                Impuesto: l.impuesto,
+                TotalLinea: l.totalLinea,
+                _id: proximoIdLocal++
+            }));
         lineaEnEdicionId = null;
         $('#panelLineaDetalle').addClass('d-none');
         pintarDetalle();
@@ -344,13 +417,6 @@ $(function () {
     $(document).on('click', '#btnQuitarFacturaBase', quitarFacturaBase);
 
     // --- Detalle: en creación se administra localmente; en edición es de solo lectura ---
-
-    let lineasLocales = [];
-    let lineasRemotas = [];
-    let proximoIdLocal = 1;
-    let lineaEnEdicionId = null;
-    let tasaImpuestoSeleccionado = 0;
-    let buscadorImpuesto;
 
     function esEdicionDetalle() {
         const v = $('#tblDetalleNotaDebito').data('es-edicion');
@@ -363,8 +429,14 @@ $(function () {
         proximoIdLocal = 1;
         lineaEnEdicionId = null;
         tasaImpuestoSeleccionado = 0;
+        listaPrecioSocio = null;
 
         if ($('#tblDetalleNotaDebito').length === 0) return;
+
+        const codSnActual = $('#CodigoSn').val();
+        if (codSnActual) {
+            App.obtenerListaDeSocio(codSnActual).then(n => { listaPrecioSocio = n; });
+        }
 
         buscadorImpuesto = App.autocompletar({
             texto: $('#detCodigoImpuestoTexto'), oculto: $('#detCodigoImpuesto'),
@@ -378,6 +450,32 @@ $(function () {
                 recalcularLinea();
             }
         });
+
+        if ($('#detArtCodTexto').length > 0) {
+            buscadorArticuloCod = App.autocompletar({
+                texto: $('#detArtCodTexto'), oculto: $('#detCodArticulo'),
+                lista: $('#detArtCodResultados'), error: $('#detArtCodError'),
+                endpoint: '/NotasDebito/BuscarArticulosPorCodigo',
+                obtenerCodigo: a => a.codigo ?? a.Codigo,
+                obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
+                onSeleccion: a => aplicarArticuloSeleccionado(a, 'cod')
+            });
+            buscadorArticuloDesc = App.autocompletar({
+                texto: $('#detArtDescTexto'), oculto: $('#detCodArticulo'),
+                lista: $('#detArtDescResultados'), error: $('#detArtDescError'),
+                endpoint: '/NotasDebito/BuscarArticulos',
+                obtenerCodigo: a => a.codigo ?? a.Codigo,
+                obtenerEtiqueta: a => `${a.nombre ?? a.Nombre} (${a.codigo ?? a.Codigo})`,
+                onSeleccion: a => aplicarArticuloSeleccionado(a, 'desc')
+            });
+            buscadorAlmacen = App.autocompletar({
+                texto: $('#detCodAlmacenTexto'), oculto: $('#detCodAlmacen'),
+                lista: $('#detCodAlmacenResultados'), error: $('#detCodAlmacenError'),
+                endpoint: '/NotasDebito/BuscarAlmacenes',
+                obtenerCodigo: al => al.codigo ?? al.Codigo,
+                obtenerEtiqueta: al => `${al.codigo ?? al.Codigo} - ${al.nombre ?? al.Nombre}`
+            });
+        }
 
         if (esEdicionDetalle()) {
             cargarDetalleRemoto();
@@ -420,6 +518,7 @@ $(function () {
         if ($tbody.length === 0) return;
 
         const lista = esEdicionDetalle() ? lineasRemotas : lineasLocales;
+        const art = porArticulos();
 
         const totales = calcularTotalesDesdeLineas(lista);
         $('#TotalBruto').val(totales.totalBruto);
@@ -427,11 +526,13 @@ $(function () {
         $('#TotalDoc').val(totales.totalDoc);
 
         if (lista.length === 0) {
-            $tbody.html('<tr><td colspan="7" class="text-center text-muted">Sin líneas de detalle</td></tr>');
+            $tbody.html(`<tr><td colspan="${art ? 8 : 7}" class="text-center text-muted">Sin líneas de detalle</td></tr>`);
             return;
         }
 
         $tbody.html(lista.map(linea => {
+            const codArticulo = linea.codArticulo ?? linea.CodArticulo;
+            const codAlmacen = linea.codAlmacen ?? linea.CodAlmacen;
             const descripcion = linea.descripcion ?? linea.Descripcion;
             const cantidad = linea.cantidad ?? linea.Cantidad;
             const precio = linea.precio ?? linea.Precio;
@@ -442,8 +543,12 @@ $(function () {
             const acciones = esEdicionDetalle() ? '' : `
                         <button type="button" class="btn btn-sm btn-outline-primary btn-editar-linea" data-id="${linea._id}"><i class="fa-solid fa-pen"></i></button>
                         <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-linea" data-id="${linea._id}"><i class="fa-solid fa-trash"></i></button>`;
+            const celdaArticulo = art
+                ? `<td>${esc(codArticulo)}${codAlmacen ? ` <span class="text-muted small">(${esc(codAlmacen)})</span>` : ''}</td>`
+                : '';
             return `
                 <tr>
+                    ${celdaArticulo}
                     <td>${esc(descripcion)}</td>
                     <td>${cantidad ?? ''}</td>
                     <td>${precio != null ? Number(precio).toFixed(2) : ''}</td>
@@ -456,8 +561,61 @@ $(function () {
         }).join(''));
     }
 
+    // --- Artículo y almacén (modo por artículos) ---
+
+    // Sincroniza las dos cajas de artículo sin re-disparar onSeleccion (establecer() lo haría).
+    function setArticuloEnAmbasCajas(item) {
+        if (!buscadorArticuloCod) return;
+        sincronizandoArticulo = true;
+        try {
+            buscadorArticuloCod.establecer(item || null);
+            buscadorArticuloDesc.establecer(item || null);
+            $('#detCodArticulo').val(item ? (item.codigo ?? item.Codigo) : '');
+        } finally {
+            sincronizandoArticulo = false;
+        }
+    }
+
+    // Handler de selección del usuario en cualquiera de las dos cajas.
+    function aplicarArticuloSeleccionado(a, origen) {
+        if (sincronizandoArticulo) return; // corta la recursión de establecer()
+        sincronizandoArticulo = true;
+        try {
+            $('#detCodArticulo').val(a ? (a.codigo ?? a.Codigo) : '');
+            if (origen !== 'cod')  buscadorArticuloCod.establecer(a || null);
+            if (origen !== 'desc') buscadorArticuloDesc.establecer(a || null);
+        } finally {
+            sincronizandoArticulo = false;
+        }
+        if (!a) { buscadorAlmacen.establecer(null); return; }
+        $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
+        aplicarPrecioDeArticulo(a);
+        aplicarAlmacenDefectoDeArticulo(a);
+        recalcularLinea();
+    }
+
+    // Coloca en #detPrecio el precio de lista del socio, o el PrecioUnitario base si no hay lista.
+    async function aplicarPrecioDeArticulo(a) {
+        const base = a.precioUnitario ?? a.PrecioUnitario ?? 0;
+        const codArt = a.codigo ?? a.Codigo;
+        const pLista = await App.resolverPrecioLista(codArt, listaPrecioSocio);
+        $('#detPrecio').val(pLista != null ? pLista : base);
+        recalcularLinea();
+    }
+
+    async function aplicarAlmacenDefectoDeArticulo(a) {
+        const cod = a.almacenDefecto ?? a.AlmacenDefecto ?? '';
+        if (!cod) { buscadorAlmacen.establecer(null); return; }
+        const r = await $.get('/NotasDebito/ObtenerAlmacenPorCodigo', { codigo: cod });
+        buscadorAlmacen.establecer(r.resultado && r.dato ? r.dato : { codigo: cod, nombre: cod });
+    }
+
     function limpiarPanelLinea() {
         buscadorImpuesto.establecer(null);
+        if (buscadorArticuloCod) {
+            setArticuloEnAmbasCajas(null);
+            buscadorAlmacen.establecer(null);
+        }
         tasaImpuestoSeleccionado = 0;
         $('#detDescripcion').val('');
         $('#detCantidad').val('1');
@@ -504,6 +662,18 @@ $(function () {
         limpiarPanelLinea();
         lineaEnEdicionId = id;
 
+        if (porArticulos()) {
+            const codArticulo = linea.CodArticulo ?? linea.codArticulo ?? '';
+            const codAlmacen = linea.CodAlmacen ?? linea.codAlmacen ?? '';
+            setArticuloEnAmbasCajas(codArticulo ? { codigo: codArticulo, nombre: linea.Descripcion ?? linea.descripcion ?? '' } : null);
+            if (codAlmacen) {
+                const respuestaAlmacen = await $.get('/NotasDebito/ObtenerAlmacenPorCodigo', { codigo: codAlmacen });
+                buscadorAlmacen.establecer(respuestaAlmacen.resultado && respuestaAlmacen.dato ? respuestaAlmacen.dato : { codigo: codAlmacen, nombre: codAlmacen });
+            } else {
+                buscadorAlmacen.establecer(null);
+            }
+        }
+
         const codigoImpuesto = linea.CodigoImpuesto ?? linea.codigoImpuesto ?? '';
         if (codigoImpuesto) {
             const respuestaImpuesto = await $.get('/NotasDebito/ObtenerImpuestoPorCodigo', { codigo: codigoImpuesto });
@@ -537,13 +707,25 @@ $(function () {
     });
 
     $(document).on('click', '#btnGuardarLinea', function () {
+        const art = porArticulos();
         const descripcion = ($('#detDescripcion').val() || '').trim();
+        const codArticulo = $('#detCodArticulo').val() || '';
+        const codAlmacen = $('#detCodAlmacen').val() || '';
         const codigoImpuesto = $('#detCodigoImpuesto').val() || '';
         const cantidad = Number($('#detCantidad').val());
         const precioTexto = $('#detPrecio').val();
         const prctjeDesc = Number($('#detPrctjeDesc').val()) || 0;
 
-        if (!descripcion) {
+        if (art) {
+            if (!codArticulo) {
+                App.mostrarError('Selecciona un artículo.');
+                return;
+            }
+            if (!codAlmacen) {
+                App.mostrarError('Selecciona un almacén.');
+                return;
+            }
+        } else if (!descripcion) {
             App.mostrarError('Escribe la descripción del concepto.');
             return;
         }
@@ -567,6 +749,7 @@ $(function () {
         recalcularLinea();
         const precio = Number(precioTexto);
         const linea = {
+            ...(art ? { CodArticulo: codArticulo, CodAlmacen: codAlmacen } : {}),
             Descripcion: descripcion,
             Cantidad: cantidad,
             Precio: precio,
