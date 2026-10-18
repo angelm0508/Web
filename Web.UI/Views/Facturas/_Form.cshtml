@@ -1,12 +1,15 @@
 @using System.Text.Json
+@using Web.ApiClient.Dtos.DocumentoBase
 @model Web.ApiClient.Dtos.Factura.FacturaCrearDTO
 @{
     bool esEdicion = ViewBag.EsEdicion ?? false;
     var opcionesJson = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var borrador = ViewBag.Borrador as DocumentoBaseBorradorDTO;
+    bool conBase = borrador is not null;
 }
 
 <div class="modal-header">
-    <h5 class="modal-title">@(esEdicion ? "Editar factura" : "Nueva factura")</h5>
+    <h5 class="modal-title">@(esEdicion ? "Editar factura" : conBase ? $"Nueva factura (copia del documento {borrador!.OrigenNumDoc})" : "Nueva factura")</h5>
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
@@ -55,7 +58,9 @@
                 }
                 else
                 {
-                    <input type="text" id="CodigoSnTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off" />
+                    <input type="text" id="CodigoSnTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off"
+                           readonly="@conBase"
+                           value="@(conBase && !string.IsNullOrEmpty(Model.CodigoSn) ? $"{Model.CodigoSn} - {Model.NombreSn}" : "")" />
                     <input type="hidden" asp-for="CodigoSn" />
                     <div class="invalid-feedback" id="CodigoSnError">Selecciona una opción de la lista o borra el texto.</div>
                     <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="CodigoSnResultados"></ul>
@@ -63,7 +68,7 @@
             </div>
             <div class="col-md-4">
                 <label asp-for="NombreSn" class="form-label">Nombre</label>
-                <input asp-for="NombreSn" class="form-control" readonly="@esEdicion" />
+                <input asp-for="NombreSn" class="form-control" readonly="@(esEdicion || conBase)" />
             </div>
             <div class="col-md-4">
                 <label asp-for="MonedaDoc" class="form-label">Moneda</label>
@@ -74,7 +79,7 @@
 
             <div class="col-md-4">
                 <label asp-for="Direccion" class="form-label"></label>
-                <input asp-for="Direccion" class="form-control" readonly="@esEdicion" />
+                <input asp-for="Direccion" class="form-control" readonly="@(esEdicion || conBase)" />
             </div>
             <div class="col-md-4">
                 <label class="form-label">Fecha documento</label>
@@ -217,6 +222,12 @@
         <script id="datosSeriesFactura" type="application/json">
             @Html.Raw(JsonSerializer.Serialize(ViewBag.SeriesFactura, opcionesJson))
         </script>
+        @if (conBase)
+        {
+            <script id="datosBorrador" type="application/json">
+                @Html.Raw(JsonSerializer.Serialize(borrador, opcionesJson).Replace("</", "<\\/"))
+            </script>
+        }
     }
 </div>
 <div class="modal-footer">
