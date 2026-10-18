@@ -42,6 +42,13 @@
                     <option value="C">Cancelado</option>
                 </select>
             </div>
+            <div class="col-md-3">
+                <label asp-for="DocType" class="form-label">Tipo de nota</label>
+                <select asp-for="DocType" class="form-select" disabled="@esEdicion">
+                    <option value="S">Concepto</option>
+                    <option value="I">Artículos</option>
+                </select>
+            </div>
             <div class="col-md-3" hidden>
                 <label asp-for="TipoObjeto" class="form-label">Tipo</label>
                 <input asp-for="TipoObjeto" class="form-control" readonly="@esEdicion" />
@@ -152,11 +159,15 @@
     {
         <p class="text-muted small">El documento ya está registrado. Solo se puede modificar el comentario; las líneas son de solo lectura.</p>
     }
+    <p id="avisoInventario" class="small text-info d-none">
+        <i class="fa-solid fa-boxes-stacked me-1"></i>Nota por artículos: la cantidad de cada línea ingresa al inventario al guardar y se descuenta de nuevo si se cancela la nota.
+    </p>
 
     <div class="table-responsive">
         <table id="tblDetalleNotaDebitoCompra" class="table table-sm table-hover align-middle w-100" data-entry="@ViewBag.EntryActual" data-es-edicion="@esEdicion.ToString().ToLower()">
             <thead>
                 <tr>
+                    <th class="col-articulo d-none">Artículo</th>
                     <th>Descripción</th>
                     <th>Cantidad</th>
                     <th>Precio</th>
@@ -173,8 +184,33 @@
     <div id="panelLineaDetalle" class="border rounded p-3 mb-2 d-none">
         <form id="formLineaDetalle">
             <div class="row g-2">
+                <div id="grupoArticulo" class="col-12 d-none">
+                    <div class="row g-2">
+                        <div class="col-md-4 position-relative">
+                            <label class="form-label">Código de artículo</label>
+                            <input type="text" id="detArtCodTexto" class="form-control" placeholder="Buscar por código..." autocomplete="off" />
+                            <div class="invalid-feedback" id="detArtCodError">Selecciona una opción de la lista o borra el texto.</div>
+                            <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detArtCodResultados"></ul>
+                        </div>
+                        <div class="col-md-4 position-relative">
+                            <label class="form-label">Descripción de artículo</label>
+                            <input type="text" id="detArtDescTexto" class="form-control" placeholder="Buscar por descripción..." autocomplete="off" />
+                            <div class="invalid-feedback" id="detArtDescError">Selecciona una opción de la lista o borra el texto.</div>
+                            <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detArtDescResultados"></ul>
+                            <input type="hidden" id="detCodArticulo" />
+                        </div>
+                        <div class="col-md-4 position-relative">
+                            <label class="form-label">Almacén</label>
+                            <input type="text" id="detCodAlmacenTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off" />
+                            <input type="hidden" id="detCodAlmacen" />
+                            <div class="invalid-feedback" id="detCodAlmacenError">Selecciona una opción de la lista o borra el texto.</div>
+                            <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodAlmacenResultados"></ul>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-md-8">
-                    <label class="form-label">Descripción del concepto</label>
+                    <label class="form-label" id="lblDetDescripcion">Descripción del concepto</label>
                     <input id="detDescripcion" class="form-control" maxlength="200" />
                 </div>
                 <div class="col-md-4 position-relative">

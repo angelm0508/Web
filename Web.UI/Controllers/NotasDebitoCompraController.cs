@@ -14,14 +14,17 @@ namespace Web.UI.Controllers
         private readonly INotaDebitoCompraApiClient _notas;
         private readonly ISocioNegocioApiClient _socios;
         private readonly IMonedaApiClient _monedas;
+        private readonly IArticuloApiClient _articulos;
+        private readonly IAlmacenApiClient _almacenes;
         private readonly IImpuestoApiClient _impuestos;
         private readonly INumeracionDocumentoDetApiClient _series;
         private readonly INumeracionDocumentoApiClient _numeracion;
 
         // ---- Constantes propias del documento (en la nota de debito de proveedor cambian estas lineas) ----
-        // CodigoObj de NumeracionDocumento que identifica a "Notas de debito de proveedor" como tipo de objeto.
-        private const string CodigoObjNotaDebitoCompra = "14";
-        private const string SubTipoDocNotaDebitoCompra = "--";
+        // CodigoObj y SubTipoDoc de NumeracionDocumento que identifican a "Notas de debito de proveedor":
+        // la nota comparte objeto con la factura de compra (13) y se distingue por el subtipo DN.
+        private const string CodigoObjNotaDebitoCompra = "13";
+        private const string SubTipoDocNotaDebitoCompra = "DN";
         private const string TipoSocio = "P";
         // ---- fin de constantes ----
 
@@ -29,6 +32,8 @@ namespace Web.UI.Controllers
             INotaDebitoCompraApiClient notas,
             ISocioNegocioApiClient socios,
             IMonedaApiClient monedas,
+            IArticuloApiClient articulos,
+            IAlmacenApiClient almacenes,
             IImpuestoApiClient impuestos,
             INumeracionDocumentoDetApiClient series,
             INumeracionDocumentoApiClient numeracion)
@@ -36,6 +41,8 @@ namespace Web.UI.Controllers
             _notas = notas;
             _socios = socios;
             _monedas = monedas;
+            _articulos = articulos;
+            _almacenes = almacenes;
             _impuestos = impuestos;
             _series = series;
             _numeracion = numeracion;
@@ -72,6 +79,7 @@ namespace Web.UI.Controllers
             {
                 EstadoDoc = "A",
                 TipoObjeto = CodigoObjNotaDebitoCompra,
+                DocType = "S",
                 FechaDoc = hoy,
                 FechaEmision = hoy,
                 PrctjeDesc = 0,
@@ -101,6 +109,7 @@ namespace Web.UI.Controllers
                 Cancelado = respuesta.Dato.Cancelado,
                 EstadoDoc = respuesta.Dato.Cancelado == "S" ? "C" : respuesta.Dato.EstadoDoc,
                 TipoObjeto = respuesta.Dato.TipoObjeto,
+                DocType = respuesta.Dato.DocType,
                 FechaDoc = respuesta.Dato.FechaDoc,
                 FechaEmision = respuesta.Dato.FechaEmision,
                 CodigoSn = respuesta.Dato.CodigoSn,
@@ -188,6 +197,44 @@ namespace Web.UI.Controllers
 
         [HttpGet]
         [RequierePermiso("NotasDebitoCompra", Accion.Ver)]
+        public async Task<IActionResult> BuscarArticulos(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _articulos.ObtenerTodoAsync()
+                : await _articulos.ObtenerContenganNombreAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        [RequierePermiso("NotasDebitoCompra", Accion.Ver)]
+        public async Task<IActionResult> BuscarArticulosPorCodigo(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _articulos.ObtenerTodoAsync()
+                : await _articulos.ObtenerContenganCodigoAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        [RequierePermiso("NotasDebitoCompra", Accion.Ver)]
+        public async Task<IActionResult> BuscarAlmacenes(string texto)
+        {
+            var respuesta = string.IsNullOrEmpty(texto)
+                ? await _almacenes.ObtenerTodoAsync()
+                : await _almacenes.ObtenerContenganNombreAsync(texto);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        [RequierePermiso("NotasDebitoCompra", Accion.Ver)]
+        public async Task<IActionResult> ObtenerAlmacenPorCodigo(string codigo)
+        {
+            var respuesta = await _almacenes.ObtenerAsync(codigo);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        [RequierePermiso("NotasDebitoCompra", Accion.Ver)]
         public async Task<IActionResult> BuscarImpuestos(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)
@@ -222,8 +269,8 @@ namespace Web.UI.Controllers
 
         private async Task CargarDropdownsAsync()
         {
-            // Socio de negocio e Impuesto no se cargan como lista completa: el buscador con
-            // autocompletado los consulta bajo demanda. Moneda es un <select> normal.
+            // Socio de negocio, Articulo, Almacen e Impuesto no se cargan como lista completa: el buscador
+            // con autocompletado los consulta bajo demanda. Moneda es un <select> normal.
             var monedas = await _monedas.ObtenerTodoAsync();
             ViewBag.Monedas = new SelectList(monedas.Dato ?? [], "Codigo", "Nombre");
         }
