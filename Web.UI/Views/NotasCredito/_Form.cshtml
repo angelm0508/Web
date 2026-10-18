@@ -76,7 +76,7 @@
             @if (!esEdicion)
             {
                 <div class="col-12" id="bloqueFacturaBase">
-                    <label class="form-label">Basado en factura (opcional)</label>
+                    <label class="form-label">Basado en factura o nota de débito (opcional)</label>
                     <div class="input-group">
                         <select id="selectFacturaBase" class="form-select" disabled>
                             <option value="">-- Selecciona un socio para ver sus facturas --</option>
@@ -93,7 +93,7 @@
             {
                 <div class="col-12">
                     <label class="form-label">Documento base</label>
-                    <input class="form-control" value="Factura (entrada @Model.BaseEntry)" disabled />
+                    <input class="form-control" value="Factura o nota de débito (entrada @Model.BaseEntry)" disabled />
                 </div>
             }
 

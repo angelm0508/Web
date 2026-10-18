@@ -46,6 +46,8 @@ namespace Web.UI.Controllers
                 return new
                 {
                     codigoObj = c.CodigoObj,
+                    subTipoDoc = c.SubTipoDoc,
+                    clave = string.IsNullOrEmpty(c.SubTipoDoc) || c.SubTipoDoc == "--" ? c.CodigoObj : $"{c.CodigoObj}:{c.SubTipoDoc}",
                     docAlias = c.DocAlias,
                     nombreSerieDefecto = serieDefecto?.NombreSerie,
                     iniNumero = serieDefecto?.IniNumero,
@@ -66,10 +68,11 @@ namespace Web.UI.Controllers
                 return NotFound();
 
             ViewBag.EsEdicion = true;
+            ViewBag.ClaveNumeracion = codigo;
 
             var dto = new NumeracionDocumentoCrearDTO
             {
-                CodigoObj = codigo,
+                CodigoObj = respuesta.Dato.CodigoObj,
                 SerieDfct = respuesta.Dato.SerieDfct,
                 DocAlias = respuesta.Dato.DocAlias,
                 SubTipoDoc = respuesta.Dato.SubTipoDoc

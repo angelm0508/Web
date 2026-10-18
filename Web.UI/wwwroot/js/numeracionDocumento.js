@@ -10,7 +10,7 @@ $(function () {
             { data: 'sigNumero', render: d => d ?? '' },
             { data: 'finNumero', render: d => d ?? '' },
             {
-                data: 'codigoObj', orderable: false, className: 'text-end',
+                data: 'clave', orderable: false, className: 'text-end',
                 render: codigo => `
                     <button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
                 `

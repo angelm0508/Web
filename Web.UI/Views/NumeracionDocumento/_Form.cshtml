@@ -155,7 +155,7 @@
     }
     @if (puedeGuardar)
     {
-        <button type="button" class="btn btn-primary" id="btnGuardarNumeracionDocumento" data-edicion="@esEdicion.ToString().ToLower()" data-codigo="@Model.CodigoObj">
+        <button type="button" class="btn btn-primary" id="btnGuardarNumeracionDocumento" data-edicion="@esEdicion.ToString().ToLower()" data-codigo="@(ViewBag.ClaveNumeracion ?? Model.CodigoObj)">
             <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
         </button>
     }

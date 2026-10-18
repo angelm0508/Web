@@ -308,7 +308,8 @@ $(function () {
             const fecha = f.fechaDoc ? new Date(f.fechaDoc).toLocaleDateString() : '';
             const total = f.totalDoc != null ? Number(f.totalDoc).toFixed(2) : '';
             const disponible = Number(f.disponible).toFixed(2);
-            $sel.append($('<option>').val(f.entry).text(`#${f.numDoc} - ${fecha} - ${f.monedaDoc ?? ''} ${total} (disponible: ${disponible})`));
+            const tipoDoc = f.docSubType && f.docSubType !== '--' ? 'Nota de débito' : 'Factura';
+            $sel.append($('<option>').val(f.entry).text(`${tipoDoc} #${f.numDoc} - ${fecha} - ${f.monedaDoc ?? ''} ${total} (disponible: ${disponible})`));
         });
     }
 
