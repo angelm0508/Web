@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Web.ApiClient.Dtos.PedidoDetalle;
 
 namespace Web.ApiClient.Dtos.Pedido
 {
@@ -33,5 +34,8 @@ namespace Web.ApiClient.Dtos.Pedido
         public decimal? TotalBruto { get; set; }
         public decimal? TotalDoc { get; set; }
         public string? Comentario { get; set; }
+
+        /// <summary>Líneas del pedido (opcional): si vienen, la API guarda cabecera y líneas en una sola transacción ("Copiar a").</summary>
+        public List<PedidoDetalleCrearDTO> Lineas { get; set; } = new();
     }
 }
