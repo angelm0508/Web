@@ -14,7 +14,7 @@ $(function () {
             { data: 'estadoDoc', render: d => d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Abierto</span>' },
             { data: 'totalDoc', render: d => d != null ? Number(d).toFixed(2) : '' },
             {
-                data: 'entry', orderable: false, className: 'text-end',
+                data: 'entry', orderable: false, searchable: false, className: 'text-end',
                 render: (entry, t, row) => `
                     ${!row || row.estadoDoc === 'C' || row.cancelado === 'S' ? '' : App.botonCopiarA(4, entry, destinosCopia)}
                     <button class="btn btn-sm btn-outline-primary btn-editar" data-entry="${entry}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>

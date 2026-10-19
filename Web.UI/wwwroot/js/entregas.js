@@ -20,7 +20,7 @@ $(function () {
             },
             { data: 'totalDoc', render: d => d != null ? Number(d).toFixed(2) : '' },
             {
-                data: 'entry', orderable: false, className: 'text-end',
+                data: 'entry', orderable: false, searchable: false, className: 'text-end',
                 render: (entry, t, row) => `
                     ${!row || row.estadoDoc === 'C' || row.cancelado === 'S' ? '' : App.botonCopiarA(5, entry, destinosCopia)}
                     <button class="btn btn-sm btn-outline-primary btn-editar" data-entry="${entry}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
