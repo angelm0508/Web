@@ -204,28 +204,45 @@ $(function () {
 
             datos.Lineas = lineasLocales.map(App.sinCamposInternos);
 
-            const respuesta = await App.enviarJson('/Facturas/Crear', 'POST', datos);
+            // Guardar queda deshabilitado mientras dura la petición: un doble clic no debe crear dos documentos.
+            $boton.prop('disabled', true);
+            try {
+                const respuesta = await App.enviarJson('/Facturas/Crear', 'POST', datos);
+                if (!respuesta.resultado) {
+                    App.mostrarError(respuesta.mensaje);
+                    return;
+                }
+
+                let mensaje;
+                if (borradorCopia && respuesta.numDoc != null) {
+                    mensaje = `Factura ${respuesta.numDoc} creada desde ${App.etiquetaOrigen(borradorCopia)}`;
+                } else {
+                    const sufijoNumDoc = respuesta.numDoc != null ? ` No. documento: ${respuesta.numDoc}.` : '';
+                    mensaje = `Factura creada correctamente.${sufijoNumDoc}`;
+                }
+                await App.mostrarExito(mensaje);
+                bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+                recargarTabla();
+                return;
+            } finally {
+                $boton.prop('disabled', false);
+            }
+        }
+
+        $boton.prop('disabled', true);
+        try {
+            const respuesta = await App.enviarJson(`/Facturas/Editar?entry=${entry}`, 'POST', datos);
             if (!respuesta.resultado) {
                 App.mostrarError(respuesta.mensaje);
                 return;
             }
 
-            const sufijoNumDoc = respuesta.numDoc != null ? ` No. documento: ${respuesta.numDoc}.` : '';
-            await App.mostrarExito(`Factura creada correctamente.${sufijoNumDoc}`);
             bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+            App.mostrarExito('Factura actualizada correctamente.');
             recargarTabla();
-            return;
+        } finally {
+            $boton.prop('disabled', false);
         }
-
-        const respuesta = await App.enviarJson(`/Facturas/Editar?entry=${entry}`, 'POST', datos);
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
-            return;
-        }
-
-        bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito('Factura actualizada correctamente.');
-        recargarTabla();
     });
 
     // --- Detalle (grid anidado): en creación se administra localmente, en edición en vivo contra la API ---

@@ -199,6 +199,12 @@ const App = {
         try { return JSON.parse(el.textContent); } catch (e) { return null; }
     },
 
+    /** Etiqueta del documento origen de un borrador, p. ej. "Cotización 12" (para el mensaje de éxito de "Copiar a"). */
+    etiquetaOrigen: function (borrador) {
+        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega' };
+        return `${nombres[borrador.origenTipo] ?? 'Documento'} ${borrador.origenNumDoc}`;
+    },
+
     /**
      * Convierte las líneas abiertas del borrador en líneas locales del formulario (mismas propiedades que arma el panel
      * de línea). Los campos con prefijo "_" son solo de la interfaz y se quitan antes de enviar (sinCamposInternos).

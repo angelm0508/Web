@@ -169,68 +169,87 @@ $(function () {
                     return;
                 }
                 datos.Lineas = lineasLocales.map(App.sinCamposInternos);
-                const respuestaCopia = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
-                if (!respuestaCopia.resultado) {
-                    App.mostrarError(respuestaCopia.mensaje);
+
+                // Guardar queda deshabilitado mientras dura la petición: un doble clic no debe crear dos documentos.
+                $boton.prop('disabled', true);
+                try {
+                    const respuestaCopia = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
+                    if (!respuestaCopia.resultado) {
+                        App.mostrarError(respuestaCopia.mensaje);
+                        return;
+                    }
+                    const mensajeCopia = respuestaCopia.numDoc != null
+                        ? `Pedido ${respuestaCopia.numDoc} creado desde ${App.etiquetaOrigen(borradorCopia)}`
+                        : 'Pedido creado correctamente.';
+                    await App.mostrarExito(mensajeCopia);
+                    bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+                    recargarTabla();
+                    return;
+                } finally {
+                    $boton.prop('disabled', false);
+                }
+            }
+
+            $boton.prop('disabled', true);
+            try {
+                const respuestaCabecera = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
+                if (!respuestaCabecera.resultado) {
+                    App.mostrarError(respuestaCabecera.mensaje);
                     return;
                 }
-                const sufijoCopia = respuestaCopia.numDoc != null ? ` No. documento: ${respuestaCopia.numDoc}.` : '';
-                await App.mostrarExito(`Pedido creado correctamente.${sufijoCopia}`);
+
+                const entryCreado = respuestaCabecera.dato;
+
+                if (respuestaCabecera.numDoc != null) {
+                    $('#NumDoc').val(respuestaCabecera.numDoc).prop('disabled', false);
+                }
+
+                let exitosas = 0;
+                let fallidas = 0;
+
+                for (const linea of lineasLocales) {
+                    const { _id, ...lineaSinId } = linea;
+                    const respuestaLinea = await App.enviarJson('/Pedidos/CrearLinea', 'POST', {
+                        ...lineaSinId,
+                        Entry: entryCreado
+                    });
+
+                    if (respuestaLinea.resultado) {
+                        exitosas++;
+                    } else {
+                        fallidas++;
+                        App.mostrarError(respuestaLinea.mensaje);
+                    }
+                }
+
+                const sufijoNumDoc = respuestaCabecera.numDoc != null ? ` No. documento: ${respuestaCabecera.numDoc}.` : '';
+                if (fallidas > 0) {
+                    await App.mostrarExito(`Pedido creado correctamente. Líneas guardadas: ${exitosas} de ${exitosas + fallidas}.${sufijoNumDoc}`);
+                } else {
+                    await App.mostrarExito(`Pedido creado correctamente.${sufijoNumDoc}`);
+                }
                 bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
                 recargarTabla();
                 return;
+            } finally {
+                $boton.prop('disabled', false);
             }
+        }
 
-            const respuestaCabecera = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
-            if (!respuestaCabecera.resultado) {
-                App.mostrarError(respuestaCabecera.mensaje);
+        $boton.prop('disabled', true);
+        try {
+            const respuesta = await App.enviarJson(`/Pedidos/Editar?entry=${entry}`, 'POST', datos);
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
                 return;
             }
 
-            const entryCreado = respuestaCabecera.dato;
-
-            if (respuestaCabecera.numDoc != null) {
-                $('#NumDoc').val(respuestaCabecera.numDoc).prop('disabled', false);
-            }
-
-            let exitosas = 0;
-            let fallidas = 0;
-
-            for (const linea of lineasLocales) {
-                const { _id, ...lineaSinId } = linea;
-                const respuestaLinea = await App.enviarJson('/Pedidos/CrearLinea', 'POST', {
-                    ...lineaSinId,
-                    Entry: entryCreado
-                });
-
-                if (respuestaLinea.resultado) {
-                    exitosas++;
-                } else {
-                    fallidas++;
-                    App.mostrarError(respuestaLinea.mensaje);
-                }
-            }
-
-            const sufijoNumDoc = respuestaCabecera.numDoc != null ? ` No. documento: ${respuestaCabecera.numDoc}.` : '';
-            if (fallidas > 0) {
-                await App.mostrarExito(`Pedido creado correctamente. Líneas guardadas: ${exitosas} de ${exitosas + fallidas}.${sufijoNumDoc}`);
-            } else {
-                await App.mostrarExito(`Pedido creado correctamente.${sufijoNumDoc}`);
-            }
             bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+            App.mostrarExito('Pedido actualizado correctamente.');
             recargarTabla();
-            return;
+        } finally {
+            $boton.prop('disabled', false);
         }
-
-        const respuesta = await App.enviarJson(`/Pedidos/Editar?entry=${entry}`, 'POST', datos);
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
-            return;
-        }
-
-        bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito('Pedido actualizado correctamente.');
-        recargarTabla();
     });
 
     // --- Detalle (grid anidado): en creación se administra localmente, en edición en vivo contra la API ---
