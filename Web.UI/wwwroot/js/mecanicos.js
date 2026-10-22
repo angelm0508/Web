@@ -1,18 +1,23 @@
 $(function () {
     const datosPermisosEl = document.getElementById('datosPermisosMecanicos');
     const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
+    // Escapa texto de usuario para interpolarlo en HTML y en atributos entre comillas dobles.
+    const escapar = v => $('<div>').text(v ?? '').html().replace(/"/g, '&quot;');
+    // Escapa solo al pintar; para buscar y ordenar devuelve el texto plano.
+    const textoSeguro = (d, t) => t === 'display' ? escapar(d) : (d || '');
+
     const tabla = $('#tblMecanicos').DataTable({
         ajax: { url: '/Mecanicos/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
-            { data: 'codigo' },
-            { data: 'nombre' },
-            { data: 'telefono', render: d => d || '' },
+            { data: 'codigo', render: textoSeguro },
+            { data: 'nombre', render: textoSeguro },
+            { data: 'telefono', render: textoSeguro },
             { data: 'activo', render: d => d === 'S' ? '<span class="badge text-bg-success">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
             {
                 data: 'codigo', orderable: false, searchable: false, className: 'text-end',
                 render: (codigo, type, row) => `
-                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${codigo}"><i class="fa-solid fa-pen"></i></button>` : ''}
-                    ${permisos.eliminar && row.activo === 'S' ? `<button class="btn btn-sm btn-outline-danger btn-desactivar" data-codigo="${codigo}" title="Desactivar"><i class="fa-solid fa-user-slash"></i></button>` : ''}
+                    ${permisos.actualizar ? `<button class="btn btn-sm btn-outline-primary btn-editar" data-codigo="${escapar(codigo)}"><i class="fa-solid fa-pen"></i></button>` : ''}
+                    ${permisos.eliminar && row.activo === 'S' ? `<button class="btn btn-sm btn-outline-danger btn-desactivar" data-codigo="${escapar(codigo)}" title="Desactivar"><i class="fa-solid fa-user-slash"></i></button>` : ''}
                 `
             }
         ],

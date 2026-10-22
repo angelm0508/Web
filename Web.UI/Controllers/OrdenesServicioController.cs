@@ -103,7 +103,7 @@ namespace Web.UI.Controllers
                 return NotFound();
 
             var o = respuesta.Dato;
-            await CargarDropdownsAsync(o.CodMecanico);
+            await CargarDropdownsAsync(o.CodMecanico, o.NombreMecanico);
             ViewBag.EsEdicion = true;
             ViewBag.EntryActual = entry;
             ViewBag.NumDocActual = o.NumDoc;
@@ -118,7 +118,21 @@ namespace Web.UI.Controllers
 
             // Motos del cliente de la orden (la inactiva de la orden se conserva aunque ya no se ofrezca a otras).
             var motos = await _motos.BuscarAsync(o.CodigoSn, null);
-            ViewBag.MotosCliente = (motos.Dato ?? []).Where(m => m.Activo == "S" || m.Entry == o.MotoEntry).ToList();
+            var motosCliente = (motos.Dato ?? []).Where(m => m.Activo == "S" || m.Entry == o.MotoEntry).ToList();
+            // Sin permiso Ver en Motocicletas (o si el listado falla) la moto de la orden no vendría en la lista: se
+            // reconstruye con los datos que ya trae la orden para que guardar no mande MotoEntry vacío.
+            if (o.MotoEntry != 0 && !motosCliente.Any(m => m.Entry == o.MotoEntry))
+            {
+                motosCliente.Add(new MotocicletaDTO
+                {
+                    Entry = o.MotoEntry,
+                    CodigoSn = o.CodigoSn ?? "",
+                    Placa = o.Placa ?? $"#{o.MotoEntry}",
+                    Marca = o.MotoDescripcion,
+                    Activo = "S"
+                });
+            }
+            ViewBag.MotosCliente = motosCliente;
 
             var dto = new OrdenServicioCrearDTO
             {
@@ -127,7 +141,7 @@ namespace Web.UI.Controllers
                 FechaDoc = o.FechaDoc,
                 FechaIngreso = o.FechaIngreso,
                 FechaPromesa = o.FechaPromesa,
-                CodigoSn = o.CodigoSn,
+                CodigoSn = o.CodigoSn ?? "",
                 NombreSn = o.NombreSn,
                 Direccion = o.Direccion,
                 MonedaDoc = o.MonedaDoc,
@@ -329,7 +343,7 @@ namespace Web.UI.Controllers
             return new Respuesta<IEnumerable<ArticuloDTO>> { Resultado = true, Mensaje = origen.Mensaje, Dato = lista.ToList() };
         }
 
-        private async Task CargarDropdownsAsync(string? codMecanicoActual = null)
+        private async Task CargarDropdownsAsync(string? codMecanicoActual = null, string? nombreMecanicoActual = null)
         {
             // Socio, artículo, almacén e impuesto se consultan bajo demanda con el buscador (BuscarSocios,
             // BuscarArticulos, …). Moneda y mecánico son <select> normales.
@@ -340,7 +354,12 @@ namespace Web.UI.Controllers
             // Un mecánico dado de baja ya no se ofrece para nuevas asignaciones, pero el asignado a la orden se conserva.
             var opcionesMecanicos = (mecanicos.Dato ?? [])
                 .Where(m => m.Activo == "S" || m.Codigo == codMecanicoActual)
-                .Select(m => new { m.Codigo, Nombre = m.Activo == "S" ? m.Nombre : $"{m.Nombre} (inactivo)" });
+                .Select(m => new { m.Codigo, Nombre = m.Activo == "S" ? m.Nombre : $"{m.Nombre} (inactivo)" })
+                .ToList();
+            // Sin permiso Ver en Mecanicos el listado llega vacío: el mecánico de la orden se agrega con el nombre que
+            // ya trae la orden para que guardar no lo borre.
+            if (!string.IsNullOrEmpty(codMecanicoActual) && !opcionesMecanicos.Any(m => m.Codigo == codMecanicoActual))
+                opcionesMecanicos.Add(new { Codigo = codMecanicoActual, Nombre = nombreMecanicoActual ?? codMecanicoActual });
             ViewBag.Mecanicos = new SelectList(opcionesMecanicos, "Codigo", "Nombre");
         }
     }

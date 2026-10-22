@@ -102,6 +102,8 @@ namespace Web.UI.Controllers
                 dto.PrctjeDesc = borrador.Cabecera.PrctjeDesc;
                 dto.PrctjeImpuesto = borrador.Cabecera.PrctjeImpuesto;
                 dto.Comentario = borrador.Cabecera.Comentario;
+                dto.FechaDoc = DateTime.Today;
+                dto.FechaEmision = DateTime.Today;
             }
             return PartialView("_Form", dto);
         }

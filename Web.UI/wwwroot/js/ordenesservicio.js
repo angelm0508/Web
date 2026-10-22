@@ -27,7 +27,8 @@ $(function () {
         order: [[0, 'desc']],
         columns: [
             { data: 'numDoc' },
-            { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
+            // Display: fecha local; para ordenar/buscar se devuelve el valor ISO del servidor (ordena cronológicamente).
+            { data: 'fechaDoc', render: (d, t) => !d ? '' : (t === 'display' ? new Date(d).toLocaleDateString() : d) },
             { data: 'nombreSn', render: (d, t, row) => { const v = d || row.codigoSn || ''; return t === 'display' ? escapar(v) : v; } },
             {
                 data: 'placa',
@@ -303,6 +304,23 @@ $(function () {
             return;
         }
 
+        // Con la cabecera bloqueada (orden entregada) los selects van deshabilitados y solo viaja el comentario:
+        // no hay nada que validar. Con la cabecera editable se exige lo mismo que en el alta.
+        if (!$('#MotoEntry').prop('disabled')) {
+            if (!datos.CodigoSn) {
+                App.mostrarError('Selecciona el cliente.');
+                return;
+            }
+            if (!datos.MotoEntry) {
+                App.mostrarError('Selecciona la motocicleta del cliente.');
+                return;
+            }
+            if (!datos.MonedaDoc) {
+                App.mostrarError('Selecciona la moneda.');
+                return;
+            }
+        }
+
         $boton.prop('disabled', true);
         try {
             const respuesta = await App.enviarJson(`/OrdenesServicio/Editar?entry=${entry}`, 'POST', datos);
@@ -437,25 +455,42 @@ $(function () {
 
         if (esEdicionDetalle()) {
             cargarDetalleRemoto();
+            mostrarTotalesServidor().catch(() => { });   // los totales iniciales llegan crudos del ViewBag: se formatean con los del servidor
         } else {
             pintarDetalle();
         }
     }
 
     async function cargarDetalleRemoto() {
-        const respuesta = await $.get('/OrdenesServicio/ObtenerDetalle', { entry: entryActual() });
-        lineasRemotas = (respuesta.resultado && respuesta.dato) ? respuesta.dato : [];
+        let respuesta;
+        try {
+            respuesta = await $.get('/OrdenesServicio/ObtenerDetalle', { entry: entryActual() });
+        } catch (e) {
+            respuesta = { resultado: false, mensaje: 'No se pudo conectar con el servidor.' };
+        }
+        if (!respuesta || !respuesta.resultado) {
+            // No se muestra "Sin líneas": engañaría a quien cree que la orden está vacía.
+            lineasRemotas = [];
+            $('#tblDetalleOrden tbody').html('<tr><td colspan="10" class="text-center text-danger">No se pudieron cargar las líneas de la orden.</td></tr>');
+            App.mostrarError((respuesta && respuesta.mensaje) || 'No se pudieron cargar las líneas de la orden.');
+            return;
+        }
+        lineasRemotas = respuesta.dato || [];
         pintarDetalle();
     }
 
     // En la edición los totales de la cabecera son los del servidor (él redondea por línea).
-    async function refrescarTotalesServidor() {
+    async function mostrarTotalesServidor() {
         const r = await $.get('/OrdenesServicio/ObtenerUno', { entry: entryActual() });
         if (r.resultado && r.dato) {
             $('#TotalBruto').val(Number(r.dato.totalBruto ?? 0).toFixed(2));
             $('#TotalImp').val(Number(r.dato.totalImp ?? 0).toFixed(2));
             $('#TotalDoc').val(Number(r.dato.totalDoc ?? 0).toFixed(2));
         }
+    }
+
+    async function refrescarTotalesServidor() {
+        await mostrarTotalesServidor();
         recargarTabla();
     }
 

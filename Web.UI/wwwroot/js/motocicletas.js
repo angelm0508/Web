@@ -5,14 +5,17 @@ $(function () {
     // Escapa texto de usuario para interpolarlo en HTML y en atributos entre comillas dobles.
     const escapar = v => $('<div>').text(v ?? '').html().replace(/"/g, '&quot;');
 
+    // Escapa solo al pintar; para buscar y ordenar devuelve el texto plano.
+    const textoSeguro = (d, t) => t === 'display' ? escapar(d) : (d || '');
+
     const tabla = $('#tblMotocicletas').DataTable({
         ajax: { url: '/Motocicletas/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
-            { data: 'placa', render: d => escapar(d) },
-            { data: 'nombreSn', render: (d, t, row) => escapar(d || row.codigoSn || '') },
-            { data: 'marca', render: (d, t, row) => escapar([d, row.modelo].filter(Boolean).join(' ')) },
+            { data: 'placa', render: textoSeguro },
+            { data: 'nombreSn', render: (d, t, row) => textoSeguro(d || row.codigoSn || '', t) },
+            { data: 'marca', render: (d, t, row) => textoSeguro([d, row.modelo].filter(Boolean).join(' '), t) },
             { data: 'anio', render: d => d ?? '' },
-            { data: 'color', render: d => escapar(d || '') },
+            { data: 'color', render: textoSeguro },
             { data: 'activo', render: d => d === 'S' ? '<span class="badge text-bg-success">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
             {
                 data: 'entry', orderable: false, searchable: false, className: 'text-end',
