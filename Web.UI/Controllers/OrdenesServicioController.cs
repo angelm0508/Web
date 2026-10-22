@@ -103,7 +103,7 @@ namespace Web.UI.Controllers
                 return NotFound();
 
             var o = respuesta.Dato;
-            await CargarDropdownsAsync();
+            await CargarDropdownsAsync(o.CodMecanico);
             ViewBag.EsEdicion = true;
             ViewBag.EntryActual = entry;
             ViewBag.NumDocActual = o.NumDoc;
@@ -329,7 +329,7 @@ namespace Web.UI.Controllers
             return new Respuesta<IEnumerable<ArticuloDTO>> { Resultado = true, Mensaje = origen.Mensaje, Dato = lista.ToList() };
         }
 
-        private async Task CargarDropdownsAsync()
+        private async Task CargarDropdownsAsync(string? codMecanicoActual = null)
         {
             // Socio, artículo, almacén e impuesto se consultan bajo demanda con el buscador (BuscarSocios,
             // BuscarArticulos, …). Moneda y mecánico son <select> normales.
@@ -337,7 +337,11 @@ namespace Web.UI.Controllers
             ViewBag.Monedas = new SelectList(monedas.Dato ?? [], "Codigo", "Nombre");
 
             var mecanicos = await _mecanicos.ObtenerTodoAsync();
-            ViewBag.Mecanicos = new SelectList((mecanicos.Dato ?? []).Where(m => m.Activo == "S"), "Codigo", "Nombre");
+            // Un mecánico dado de baja ya no se ofrece para nuevas asignaciones, pero el asignado a la orden se conserva.
+            var opcionesMecanicos = (mecanicos.Dato ?? [])
+                .Where(m => m.Activo == "S" || m.Codigo == codMecanicoActual)
+                .Select(m => new { m.Codigo, Nombre = m.Activo == "S" ? m.Nombre : $"{m.Nombre} (inactivo)" });
+            ViewBag.Mecanicos = new SelectList(opcionesMecanicos, "Codigo", "Nombre");
         }
     }
 }
