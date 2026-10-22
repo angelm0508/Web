@@ -261,6 +261,12 @@
                             <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
                         </a>
                         <div class="collapse @(EsActivoTaller ? "show" : "")" id="submenuTaller">
+                            @if (Puede("OrdenesServicio"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("OrdenesServicio") ? "active" : "")" asp-controller="OrdenesServicio" asp-action="Index">
+                                    <i class="fa-solid fa-clipboard-list"></i><span>Órdenes de servicio</span>
+                                </a>
+                            }
                             @if (Puede("Mecanicos"))
                             {
                                 <a class="nav-link nav-sublink @(EsActivo("Mecanicos") ? "active" : "")" asp-controller="Mecanicos" asp-action="Index">
