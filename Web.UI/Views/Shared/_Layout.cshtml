@@ -9,11 +9,13 @@
     bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(EsActivo);
     bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito" }.Any(EsActivo);
     bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra" }.Any(EsActivo);
+    bool EsActivoTaller = new[] { "Mecanicos", "Motocicletas", "OrdenesServicio" }.Any(EsActivo);
     bool EsActivoAdministracion = new[] { "Usuarios", "Plantillas" }.Any(EsActivo);
     bool MuestraInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias", "EntradasMercancia", "SalidasMercancia" }.Any(Puede);
     bool MuestraSociosNegocio = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(Puede);
     bool MuestraVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito" }.Any(Puede);
     bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra" }.Any(Puede);
+    bool MuestraTaller = new[] { "Mecanicos", "Motocicletas", "OrdenesServicio" }.Any(Puede);
     bool MuestraAdministracion = Puede("Usuarios");
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
@@ -247,6 +249,22 @@
                             {
                                 <a class="nav-link nav-sublink @(EsActivo("NotasCreditoCompra") ? "active" : "")" asp-controller="NotasCreditoCompra" asp-action="Index">
                                     <i class="fa-solid fa-file-circle-minus"></i><span>Notas de crédito de compra</span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (MuestraTaller)
+                    {
+                        <a class="nav-link nav-link-toggle @(EsActivoTaller ? "active" : "")" data-bs-toggle="collapse" href="#submenuTaller" role="button" aria-expanded="@(EsActivoTaller ? "true" : "false")" aria-controls="submenuTaller">
+                            <i class="fa-solid fa-screwdriver-wrench"></i><span>Taller</span>
+                            <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                        </a>
+                        <div class="collapse @(EsActivoTaller ? "show" : "")" id="submenuTaller">
+                            @if (Puede("Mecanicos"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Mecanicos") ? "active" : "")" asp-controller="Mecanicos" asp-action="Index">
+                                    <i class="fa-solid fa-user-gear"></i><span>Mecánicos</span>
                                 </a>
                             }
                         </div>
