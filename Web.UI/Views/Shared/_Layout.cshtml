@@ -267,6 +267,12 @@
                                     <i class="fa-solid fa-user-gear"></i><span>Mecánicos</span>
                                 </a>
                             }
+                            @if (Puede("Motocicletas"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Motocicletas") ? "active" : "")" asp-controller="Motocicletas" asp-action="Index">
+                                    <i class="fa-solid fa-motorcycle"></i><span>Motocicletas</span>
+                                </a>
+                            }
                         </div>
                     }
 

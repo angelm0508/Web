@@ -1,0 +1,64 @@
+@model Web.ApiClient.Dtos.Motocicleta.MotocicletaCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar motocicleta" : "Nueva motocicleta")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formMotocicleta" novalidate>
+        <div class="row g-3">
+            <div class="col-md-8 position-relative">
+                <label class="form-label">Cliente</label>
+                <input type="text" id="CodigoSnTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off"
+                       value="@(!string.IsNullOrEmpty(Model.CodigoSn) ? $"{Model.CodigoSn} - {ViewBag.NombreCliente}" : "")" />
+                <input type="hidden" asp-for="CodigoSn" />
+                <div class="invalid-feedback" id="CodigoSnError">Selecciona una opción de la lista o borra el texto.</div>
+                <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="CodigoSnResultados"></ul>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Placa" class="form-label"></label>
+                <input asp-for="Placa" class="form-control text-uppercase" maxlength="15" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Marca" class="form-label"></label>
+                <input asp-for="Marca" class="form-control" maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Modelo" class="form-label"></label>
+                <input asp-for="Modelo" class="form-control" maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Anio" class="form-label">Año</label>
+                <input asp-for="Anio" type="number" min="1900" max="2100" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Color" class="form-label"></label>
+                <input asp-for="Color" class="form-control" maxlength="30" />
+            </div>
+            <div class="col-md-5">
+                <label asp-for="Vin" class="form-label">VIN / chasis</label>
+                <input asp-for="Vin" class="form-control" maxlength="30" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Activo" class="form-label"></label>
+                <select asp-for="Activo" class="form-select">
+                    <option value="S">Sí</option>
+                    <option value="N">No</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <label asp-for="Comentario" class="form-label"></label>
+                <textarea asp-for="Comentario" class="form-control" rows="2" maxlength="254"></textarea>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarMotocicleta" data-edicion="@esEdicion.ToString().ToLower()" data-entry="@ViewBag.EntryActual">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>
