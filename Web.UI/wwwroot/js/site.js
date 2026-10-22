@@ -201,7 +201,7 @@ const App = {
 
     /** Etiqueta del documento origen de un borrador, p. ej. "Cotización 12" (para el mensaje de éxito de "Copiar a"). */
     etiquetaOrigen: function (borrador) {
-        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega' };
+        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 70: 'Orden de servicio' };
         return `${nombres[borrador.origenTipo] ?? 'Documento'} ${borrador.origenNumDoc}`;
     },
 
@@ -210,7 +210,7 @@ const App = {
      * de línea). Los campos con prefijo "_" son solo de la interfaz y se quitan antes de enviar (sinCamposInternos).
      */
     lineasDesdeBorrador: function (borrador, idInicial) {
-        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 6: 'Factura' };
+        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 6: 'Factura', 70: 'Orden de servicio' };
         let id = idInicial;
         const lineas = (borrador.lineas || []).map(l => {
             const cantidad = Number(l.cantidadAbierta);
@@ -280,6 +280,8 @@ const App = {
      * @param {number} [opciones.minCaracteres=2]
      * @param {number} [opciones.debounceMs=300]
      * @param {number} [opciones.maxResultados=10]
+     * @param {() => object} [opciones.parametros] - parámetros extra que se envían en cada búsqueda además de `texto`
+     *        (p. ej. { tipo: 'I' }); se evalúa en cada petición, así que puede depender del estado del formulario.
      * @returns {{ establecer: (item: object|null) => void }} para precargar el campo (ej. al editar).
      */
     autocompletar: function (opciones) {
@@ -298,6 +300,7 @@ const App = {
         // devuelve el foco al input (correcto para campos obligatorios de un modal). requerido=false:
         // filtro opcional (p. ej. Existencias) -- se deja pasar el blur sin error ni trampa de foco.
         const requerido = opciones.requerido ?? true;
+        const parametros = opciones.parametros || (() => ({}));
 
         let resultados = [];
         let resuelto = true;
@@ -364,7 +367,7 @@ const App = {
         async function buscar(texto) {
             const idBusqueda = ++ultimaBusqueda;
             try {
-                const respuesta = await $.get(endpoint, { texto });
+                const respuesta = await $.get(endpoint, { texto, ...parametros() });
                 if (idBusqueda !== ultimaBusqueda) return; // ya hay una búsqueda más reciente en curso
                 resultados = (respuesta.resultado && respuesta.dato) ? respuesta.dato.slice(0, maxResultados) : [];
             } catch (e) {
