@@ -211,6 +211,12 @@
                                     <i class="fa-solid fa-file-circle-minus"></i><span>Notas de crédito</span>
                                 </a>
                             }
+                            @if (Puede("PagosRecibidos"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("PagosRecibidos") ? "active" : "")" asp-controller="PagosRecibidos" asp-action="Index">
+                                    <i class="fa-solid fa-hand-holding-dollar"></i><span>Pagos recibidos</span>
+                                </a>
+                            }
                             @if (Puede("FormasPago"))
                             {
                                 <a class="nav-link nav-sublink @(EsActivo("FormasPago") ? "active" : "")" asp-controller="FormasPago" asp-action="Index">
