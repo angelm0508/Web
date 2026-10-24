@@ -12,6 +12,14 @@ $(function () {
     const aplicado = new Map(); // facturaEntry -> monto a pagar
     let medioAuto = true;       // mientras haya una sola forma y no se edite, su monto sigue al total aplicado
     let cargaId = 0;            // descarta respuestas de una carga anterior si el cliente cambió
+    let cargando = false;       // hay una carga de documentos en curso
+    let errorCarga = false;     // la última carga de documentos falló
+    let guardado = false;       // el pago ya se registró: Guardar no se vuelve a habilitar (evita el doble envío)
+    const haySeries = $('#Serie option').length > 0;
+
+    // ---- avisos de configuración / permisos ----
+    $('#avisoSinSeries').toggleClass('d-none', haySeries);
+    $('#avisoSinFormas').toggleClass('d-none', formas.length > 0);
 
     // ---- serie ----
     function actualizarNumeroManual() {
@@ -34,15 +42,21 @@ $(function () {
         onSeleccion: s => cargarDocumentos(s ? (s.codigo ?? s.Codigo) : null)
     });
 
+    // Editar el texto del buscador vacía CodigoSn sin pasar por onSeleccion: se limpian documentos y montos.
+    $('#CodigoSn').on('change', function () {
+        if (!$(this).val()) cargarDocumentos(null);
+    });
+
     async function cargarDocumentos(codigoSn) {
         const id = ++cargaId;
         documentos = [];
         aplicado.clear();
-        if (!codigoSn) {
-            pintarDocumentos();
-            recalcular();
-            return;
-        }
+        errorCarga = false;
+        cargando = !!codigoSn;
+        // Repinta antes del await: no queda la tabla del cliente anterior ni Guardar habilitado mientras carga.
+        pintarDocumentos();
+        recalcular();
+        if (!codigoSn) return;
         let respuesta;
         try {
             respuesta = await $.get('/PagosRecibidos/DocumentosPorCobrar', { codigoSn });
@@ -50,8 +64,10 @@ $(function () {
             respuesta = { resultado: false, mensaje: 'No se pudieron cargar los documentos del cliente.' };
         }
         if (id !== cargaId) return;
+        cargando = false;
         if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
+            errorCarga = true;
+            App.mostrarError(respuesta.mensaje || 'No se pudieron cargar los documentos del cliente.');
         } else {
             documentos = respuesta.dato || [];
             if (facturaInicial != null) {
@@ -69,9 +85,12 @@ $(function () {
         const $tbody = $('#tblDocumentos tbody').empty();
         const hayCliente = !!$('#CodigoSn').val();
         if (documentos.length === 0) {
+            let texto = 'Elige un cliente para ver sus documentos con saldo.';
+            if (cargando) texto = 'Cargando documentos del cliente...';
+            else if (errorCarga) texto = 'No se pudieron cargar los documentos del cliente.';
+            else if (hayCliente) texto = 'El cliente no tiene facturas ni notas de débito con saldo.';
             $('#tblDocumentos').addClass('d-none');
-            $('#sinDocumentos').removeClass('d-none')
-                .text(hayCliente ? 'El cliente no tiene facturas ni notas de débito con saldo.' : 'Elige un cliente para ver sus documentos con saldo.');
+            $('#sinDocumentos').removeClass('d-none').text(texto);
             return;
         }
         $('#sinDocumentos').addClass('d-none');
@@ -151,7 +170,7 @@ $(function () {
 
     function agregarMedio() {
         if (formas.length === 0) {
-            App.mostrarError('No hay formas de pago activas. Crea una en "Formas de pago".');
+            $('#avisoSinFormas').removeClass('d-none');   // aviso persistente; Guardar sigue deshabilitado
             return;
         }
         if ($('#tblMedios tbody tr').length >= 1) medioAuto = false;
@@ -194,7 +213,8 @@ $(function () {
 
     function totalMedios() {
         let total = 0;
-        $('#tblMedios .inp-medio-monto').each(function () { total += parseFloat($(this).val()) || 0; });
+        // Igual que el payload: cada monto redondeado a 2 decimales y los <= 0 no cuentan.
+        $('#tblMedios .inp-medio-monto').each(function () { total += Math.max(0, r2(parseFloat($(this).val()) || 0)); });
         return r2(total);
     }
 
@@ -211,7 +231,8 @@ $(function () {
         $('#diferencia').text(dinero(diferencia))
             .toggleClass('text-success', diferencia === 0 && aplicadoTotal > 0)
             .toggleClass('text-danger', diferencia !== 0);
-        $('#btnGuardarPago').prop('disabled', !(aplicadoTotal > 0 && diferencia === 0 && $('#CodigoSn').val()));
+        const listo = haySeries && formas.length > 0 && aplicadoTotal > 0 && diferencia === 0 && !!$('#CodigoSn').val();
+        $('#btnGuardarPago').prop('disabled', guardado || !listo);
     }
 
     // ---- guardar ----
@@ -254,10 +275,11 @@ $(function () {
                 App.mostrarError(respuesta.mensaje);
                 return;
             }
+            guardado = true;
             await App.mostrarExito('Pago registrado correctamente.');
             window.location.href = '/PagosRecibidos';
         } finally {
-            recalcular();
+            if (!guardado) recalcular();
         }
     });
 
