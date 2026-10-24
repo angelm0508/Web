@@ -48,6 +48,7 @@ $(function () {
         new bootstrap.Modal('#modalFormulario').show();
         inicializarSerieFactura();
         inicializarBuscadorSocio();
+        FacturasPago.inicializar();   // antes del detalle: el detalle informa el total a la sección de pago
         inicializarDetalle();
     }
 
@@ -215,6 +216,13 @@ $(function () {
                 return;
             }
 
+            // Pago al facturar (opcional): se valida antes de crear la factura.
+            const errorPago = FacturasPago.validar();
+            if (errorPago) {
+                App.mostrarError(errorPago);
+                return;
+            }
+
             datos.Lineas = lineasLocales.map(App.sinCamposInternos);
 
             // Guardar queda deshabilitado mientras dura la petición: un doble clic no debe crear dos documentos.
@@ -233,9 +241,25 @@ $(function () {
                     const sufijoNumDoc = respuesta.numDoc != null ? ` No. documento: ${respuesta.numDoc}.` : '';
                     mensaje = `Factura creada correctamente.${sufijoNumDoc}`;
                 }
-                await App.mostrarExito(mensaje);
+                // Pago al facturar (opcional): si falla, la factura ya existe y se avisa cómo reintentarlo.
+                let pagoFallido = null;
+                if (FacturasPago.activo()) {
+                    const pago = await FacturasPago.registrar(respuesta.dato, datos);
+                    if (pago.resultado) mensaje += ' Pago registrado.';
+                    else pagoFallido = pago.mensaje || 'Error desconocido.';
+                }
+
                 bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
                 recargarTabla();
+                if (pagoFallido) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Factura creada, pago no registrado',
+                        text: `${mensaje} El pago no se registró: ${pagoFallido} Puedes registrarlo con el botón "Registrar pago" de la factura.`
+                    });
+                } else {
+                    await App.mostrarExito(mensaje);
+                }
                 return;
             } finally {
                 $boton.prop('disabled', false);
@@ -418,6 +442,7 @@ $(function () {
         $('#TotalBruto').val(totales.totalBruto);
         $('#TotalImp').val(totales.totalImp);
         $('#TotalDoc').val(totales.totalDoc);
+        FacturasPago.actualizarTotal(totales.totalDoc);
 
         if (lista.length === 0) {
             $tbody.html('<tr><td colspan="8" class="text-center text-muted">Sin líneas de detalle</td></tr>');

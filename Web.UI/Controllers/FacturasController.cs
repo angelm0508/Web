@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
+using System.Text.Json;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos.DocumentoBase;
 using Web.ApiClient.Dtos.Factura;
@@ -24,6 +25,7 @@ namespace Web.UI.Controllers
         private readonly INumeracionDocumentoApiClient _numeracion;
         private readonly IDocumentoBaseApiClient _documentoBase;
         private readonly ISaldoFacturaApiClient _saldos;
+        private readonly IFormaPagoApiClient _formasPago;
 
         // Tipo de objeto de Factura (destino de "Copiar a").
         private const int TipoDestinoFactura = 6;
@@ -31,6 +33,9 @@ namespace Web.UI.Controllers
         // CodigoObj de NumeracionDocumento que identifica a "Facturas" como tipo de objeto.
         private const string CodigoObjFactura = "6";
         private const string SubTipoDocFactura = "--";
+
+        // CodigoObj de NumeracionDocumento de "Pagos recibidos" (pago al facturar).
+        private const string CodigoObjPago = "24";
 
         public FacturasController(
             IFacturaApiClient facturas,
@@ -43,7 +48,8 @@ namespace Web.UI.Controllers
             INumeracionDocumentoDetApiClient series,
             INumeracionDocumentoApiClient numeracion,
             IDocumentoBaseApiClient documentoBase,
-            ISaldoFacturaApiClient saldos)
+            ISaldoFacturaApiClient saldos,
+            IFormaPagoApiClient formasPago)
         {
             _facturas = facturas;
             _detalles = detalles;
@@ -56,6 +62,7 @@ namespace Web.UI.Controllers
             _numeracion = numeracion;
             _documentoBase = documentoBase;
             _saldos = saldos;
+            _formasPago = formasPago;
         }
 
         [RequierePermiso("Facturas", Accion.Ver)]
@@ -111,6 +118,29 @@ namespace Web.UI.Controllers
             var numeraciones = await _numeracion.ObtenerTodoAsync();
             var numeracionActual = (numeraciones.Dato ?? []).FirstOrDefault(n => n.CodigoObj == CodigoObjFactura && n.SubTipoDoc == SubTipoDocFactura);
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
+
+            // Pago al facturar: formas de pago activas y serie de "Pagos recibidos" (la predeterminada si es automática;
+            // si no, la primera automática y no bloqueada). Sin serie o sin formas la sección de pago se muestra desactivada.
+            if (User.TienePermiso("PagosRecibidos", Accion.Agregar))
+            {
+                var formas = await _formasPago.ObtenerTodoAsync();
+                var formasActivas = (formas.Dato ?? [])
+                    .Where(f => f.Activo == "S")
+                    .OrderBy(f => f.Nombre)
+                    .Select(f => new { codigo = f.Codigo, nombre = f.Nombre, tipoDato = f.TipoDato })
+                    .ToList();
+
+                var seriesPago = await _series.ObtenerPorDocumentoAsync(CodigoObjPago);
+                var disponibles = (seriesPago.Dato ?? [])
+                    .Where(s => s.SubTipoDoc == SubTipoDocFactura && s.Bloqueado != "S" && s.Manual != "S")
+                    .ToList();
+                var defectoPago = (numeraciones.Dato ?? [])
+                    .FirstOrDefault(n => n.CodigoObj == CodigoObjPago && n.SubTipoDoc == SubTipoDocFactura)?.SerieDfct;
+                var seriePago = disponibles.FirstOrDefault(s => s.Serie == defectoPago)?.Serie ?? disponibles.FirstOrDefault()?.Serie;
+
+                ViewBag.PagoDatos = JsonSerializer.Serialize(new { formas = formasActivas, serie = seriePago }, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                    .Replace("</", "<\\/");
+            }
 
             ViewBag.EsEdicion = false;
             var dto = new FacturaCrearDTO { EstadoDoc = "A", TipoObjeto = "6" };
