@@ -27,5 +27,11 @@ namespace Web.ApiClient.Dtos.NotaDebito
         public decimal? TotalBruto { get; set; }
         public decimal? TotalDoc { get; set; }
         public string? Comentario { get; set; }
+        /// <summary>Suma de pagos activos aplicados. La llena el controlador de la Web (no viene del API de facturas).</summary>
+        public decimal? Pagado { get; set; }
+        /// <summary>Saldo por cobrar (total − notas de crédito − pagos).</summary>
+        public decimal? Saldo { get; set; }
+        /// <summary>Pendiente, Parcial o Pagada.</summary>
+        public string? EstadoPago { get; set; }
     }
 }
