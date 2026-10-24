@@ -1,11 +1,12 @@
 $(function () {
     const datosPermisosEl = document.getElementById('datosPermisosFacturas');
     const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true, pagar: false };
+    const esc = v => $('<div>').text(v ?? '').html();
     const tabla = $('#tblFacturas').DataTable({
         ajax: { url: '/Facturas/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'numDoc' },
-            { data: 'nombreSn', render: (d, t, row) => d || row.codigoSn || '' },
+            { data: 'nombreSn', render: (d, t, row) => esc(d || row.codigoSn || '') },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
             {
                 data: 'estadoDoc',
