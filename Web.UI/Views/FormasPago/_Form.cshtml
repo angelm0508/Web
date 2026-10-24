@@ -1,0 +1,49 @@
+@model Web.ApiClient.Dtos.FormaPago.FormaPagoCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar forma de pago" : "Nueva forma de pago")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formFormaPago" novalidate>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Codigo" class="form-label">Código</label>
+                <input asp-for="Codigo" class="form-control" readonly="@esEdicion" maxlength="10" />
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Nombre" class="form-label">Nombre</label>
+                <input asp-for="Nombre" class="form-control" maxlength="50" />
+            </div>
+            <div class="col-md-8">
+                <label asp-for="TipoDato" class="form-label">Dato adicional que se pide al cobrar</label>
+                <select asp-for="TipoDato" class="form-select">
+                    <option value="N">Ninguno (efectivo)</option>
+                    <option value="C">Cheque (número y banco)</option>
+                    <option value="T">Transferencia (referencia)</option>
+                    <option value="J">Tarjeta (autorización o últimos 4 dígitos)</option>
+                </select>
+                @if (esEdicion)
+                {
+                    <span class="form-text">No se puede cambiar si la forma de pago ya se usó en algún pago.</span>
+                }
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Activo" class="form-label">Activo</label>
+                <select asp-for="Activo" class="form-select">
+                    <option value="S">Sí</option>
+                    <option value="N">No</option>
+                </select>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarFormaPago" data-edicion="@esEdicion.ToString().ToLower()" data-codigo="@Model.Codigo">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>
