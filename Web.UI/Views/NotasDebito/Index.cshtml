@@ -24,6 +24,9 @@
                         <th>Fecha</th>
                         <th>Estado</th>
                         <th>Total</th>
+                        <th class="text-end">Pagado</th>
+                        <th class="text-end">Saldo</th>
+                        <th>Pago</th>
                         <th class="text-end">Acciones</th>
                     </tr>
                 </thead>
@@ -43,7 +46,8 @@
 
 <script id="datosPermisosNotasDebito" type="application/json">
     { "actualizar": @(User.TienePermiso("NotasDebito", Accion.Actualizar) ? "true" : "false"),
-      "eliminar": @(User.TienePermiso("NotasDebito", Accion.Eliminar) ? "true" : "false") }
+      "eliminar": @(User.TienePermiso("NotasDebito", Accion.Eliminar) ? "true" : "false"),
+      "pagar": @(User.TienePermiso("PagosRecibidos", Accion.Agregar) ? "true" : "false") }
 </script>
 
 @section Scripts {
