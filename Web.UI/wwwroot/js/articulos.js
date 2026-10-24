@@ -6,6 +6,7 @@ $(function () {
         columns: [
             { data: 'codigo' },
             { data: 'nombre' },
+            { data: 'articuloInventario', render: d => d === 'N' ? '<span class="badge text-bg-info">Servicio</span>' : 'Artículo' },
             { data: 'precioUnitario', render: d => d != null ? Number(d).toFixed(2) : '' },
             { data: 'cantDisponible', render: d => d != null ? Number(d).toFixed(2) : '' },
             { data: 'activo', render: d => d === 'S' ? '<span class="badge text-bg-success">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },

@@ -63,6 +63,14 @@
                                     <input asp-for="Nombre" class="form-control" />
                                 </div>
                                 <div class="col-md-4">
+                                    <label for="ArticuloInventario" class="form-label">Tipo</label>
+                                    <select asp-for="ArticuloInventario" class="form-select">
+                                        <option value="S">Artículo (con inventario)</option>
+                                        <option value="N">Servicio / mano de obra</option>
+                                    </select>
+                                    <span class="form-text">Un servicio no mueve inventario. Cambiar el tipo no ajusta las existencias ya registradas.</span>
+                                </div>
+                                <div class="col-md-4">
                                     <label asp-for="FabricanteEntry" class="form-label"></label>
                                     <select asp-for="FabricanteEntry" class="form-select" asp-items="ViewBag.Fabricantes">
                                         <option value="">-- Seleccione --</option>
@@ -188,4 +196,5 @@
 
 @section Scripts {
     <script src="~/js/articulos.js" asp-append-version="true"></script>
+    <script src="~/js/articulos-tipo.js" asp-append-version="true"></script>
 }

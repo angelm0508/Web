@@ -35,9 +35,17 @@
                 <label asp-for="Codigo" class="form-label"></label>
                 <input asp-for="Codigo" class="form-control" readonly />
             </div>
-            <div class="col-12">
+            <div class="col-md-8">
                 <label asp-for="Nombre" class="form-label"></label>
                 <input asp-for="Nombre" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label for="ArticuloInventario" class="form-label">Tipo</label>
+                <select asp-for="ArticuloInventario" class="form-select">
+                    <option value="S">Artículo (con inventario)</option>
+                    <option value="N">Servicio / mano de obra</option>
+                </select>
+                <span class="form-text">Un servicio no mueve inventario. Cambiar el tipo no ajusta las existencias ya registradas.</span>
             </div>
 
             <div class="col-md-6">
