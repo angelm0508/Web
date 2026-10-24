@@ -1,0 +1,128 @@
+@using Web.ApiClient.Dtos.NumeracionDocumentoDet
+@{
+    ViewData["Title"] = "Nuevo pago recibido";
+    var series = (IEnumerable<NumeracionDocumentoDetDTO>)ViewBag.Series;
+    int? serieDefecto = ViewBag.SerieDefecto;
+}
+
+<nav class="small text-muted mb-2">
+    <a asp-controller="PagosRecibidos" asp-action="Index">Pagos recibidos</a>
+    <i class="fa-solid fa-chevron-right mx-1" style="font-size:.65rem"></i>
+    <span>Nuevo pago</span>
+</nav>
+
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
+    <div>
+        <h1 class="h4 mb-1">Nuevo pago recibido</h1>
+        <p class="text-muted small mb-0">Elige el cliente, indica cuánto pagas a cada documento y con qué formas de pago. El total aplicado debe ser igual al total de las formas de pago.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="PagosRecibidos" asp-action="Index" class="btn btn-outline-secondary btn-sm">Cancelar</a>
+        <button type="button" class="btn btn-primary btn-sm" id="btnGuardarPago" disabled>
+            <i class="fa-solid fa-check me-1"></i>Guardar pago
+        </button>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Datos del pago</h2>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="Serie" class="form-label">Serie <span class="text-danger">*</span></label>
+                <select id="Serie" class="form-select">
+                    @foreach (var s in series)
+                    {
+                        <option value="@s.Serie" data-manual="@s.Manual" selected="@(serieDefecto == s.Serie)">@s.NombreSerie</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-none" id="grupoNumDoc">
+                <label for="NumDoc" class="form-label">No. de documento</label>
+                <input id="NumDoc" type="number" min="1" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label for="FechaDoc" class="form-label">Fecha</label>
+                <input id="FechaDoc" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-6 position-relative">
+                <label for="CodigoSnTexto" class="form-label">Cliente <span class="text-danger">*</span></label>
+                <input type="text" id="CodigoSnTexto" class="form-control" placeholder="Buscar cliente por nombre..." autocomplete="off" />
+                <input type="hidden" id="CodigoSn" />
+                <div class="invalid-feedback d-none" id="CodigoSnError">Selecciona una opción de la lista o borra el texto.</div>
+                <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="CodigoSnResultados"></ul>
+            </div>
+            <div class="col-12">
+                <label for="Comentario" class="form-label">Comentario</label>
+                <textarea id="Comentario" class="form-control" rows="2" maxlength="254"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="h6 mb-0">Documentos del cliente con saldo</h2>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnPagarTodo"><i class="fa-solid fa-list-check me-1"></i>Pagar todo</button>
+        </div>
+        <p class="text-muted small d-none" id="sinDocumentos"></p>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle d-none" id="tblDocumentos">
+                <thead>
+                    <tr>
+                        <th style="width:2.5rem"></th>
+                        <th>Documento</th>
+                        <th>Fecha</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Notas de crédito</th>
+                        <th class="text-end">Pagado</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-end">Monto a pagar</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="h6 mb-0">Formas de pago</h2>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAgregarMedio"><i class="fa-solid fa-plus me-1"></i>Agregar forma de pago</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="tblMedios">
+                <thead>
+                    <tr>
+                        <th>Forma</th>
+                        <th class="text-end">Monto</th>
+                        <th>Referencia</th>
+                        <th>Banco</th>
+                        <th>Fecha del cheque</th>
+                        <th style="width:2.5rem"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body d-flex flex-wrap gap-4 justify-content-end">
+        <div>Total aplicado: <strong id="totalAplicado">0.00</strong></div>
+        <div>Total formas de pago: <strong id="totalMedios">0.00</strong></div>
+        <div>Diferencia: <strong id="diferencia">0.00</strong></div>
+    </div>
+</div>
+
+<script id="datosPagoCrear" type="application/json">
+    @Html.Raw((string)ViewBag.DatosInicio)
+</script>
+
+@section Scripts {
+    <script src="~/js/pagosrecibidos-crear.js" asp-append-version="true"></script>
+}
