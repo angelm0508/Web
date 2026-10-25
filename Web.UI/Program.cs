@@ -124,6 +124,10 @@ builder.Services.AddHttpClient<IPagoRecibidoApiClient, PagoRecibidoApiClient>(c 
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<ISaldoFacturaApiClient, SaldoFacturaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IPagoEfectuadoApiClient, PagoEfectuadoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<ISaldoFacturaCompraApiClient, SaldoFacturaCompraApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IMovimientoInventarioApiClient, MovimientoInventarioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
