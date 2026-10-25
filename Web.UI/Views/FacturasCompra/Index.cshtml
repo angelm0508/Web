@@ -23,6 +23,9 @@
                         <th>Fecha</th>
                         <th>Estado</th>
                         <th>Total</th>
+                        <th class="text-end">Pagado</th>
+                        <th class="text-end">Saldo</th>
+                        <th>Pago</th>
                         <th class="text-end">Acciones</th>
                     </tr>
                 </thead>
@@ -42,7 +45,8 @@
 
 <script id="datosPermisosFacturasCompra" type="application/json">
     { "actualizar": @(User.TienePermiso("FacturasCompra", Accion.Actualizar) ? "true" : "false"),
-      "eliminar": @(User.TienePermiso("FacturasCompra", Accion.Eliminar) ? "true" : "false") }
+      "eliminar": @(User.TienePermiso("FacturasCompra", Accion.Eliminar) ? "true" : "false"),
+      "pagar": @(User.TienePermiso("PagosEfectuados", Accion.Agregar) ? "true" : "false") }
 </script>
 
 @section Scripts {

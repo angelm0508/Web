@@ -21,6 +21,7 @@ namespace Web.UI.Controllers
         private readonly IImpuestoApiClient _impuestos;
         private readonly INumeracionDocumentoDetApiClient _series;
         private readonly INumeracionDocumentoApiClient _numeracion;
+        private readonly ISaldoFacturaCompraApiClient _saldos;
 
         // CodigoObj de NumeracionDocumento que identifica a "Facturas de compra" como tipo de objeto.
         private const string CodigoObjFacturaCompra = "13";
@@ -35,7 +36,8 @@ namespace Web.UI.Controllers
             IAlmacenApiClient almacenes,
             IImpuestoApiClient impuestos,
             INumeracionDocumentoDetApiClient series,
-            INumeracionDocumentoApiClient numeracion)
+            INumeracionDocumentoApiClient numeracion,
+            ISaldoFacturaCompraApiClient saldos)
         {
             _facturasCompra = facturasCompra;
             _detalles = detalles;
@@ -46,6 +48,7 @@ namespace Web.UI.Controllers
             _impuestos = impuestos;
             _series = series;
             _numeracion = numeracion;
+            _saldos = saldos;
         }
 
         [RequierePermiso("FacturasCompra", Accion.Ver)]
@@ -56,6 +59,24 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> ObtenerTodos()
         {
             var respuesta = await _facturasCompra.ObtenerTodoAsync();
+            if (respuesta.Resultado && respuesta.Dato is not null)
+            {
+                // Saldo y estado de pago de todo el listado en una sola llamada; si falla, el listado sale sin esas columnas.
+                var lista = respuesta.Dato.ToList();
+                var saldos = await _saldos.ObtenerSaldosFacturasCompraAsync(lista.Select(f => f.Entry));
+                if (saldos.Resultado && saldos.Dato is not null)
+                {
+                    var porEntry = saldos.Dato.ToDictionary(s => s.FacturaCompraEntry);
+                    foreach (var f in lista)
+                    {
+                        if (!porEntry.TryGetValue(f.Entry, out var s)) continue;
+                        f.Pagado = s.Pagado;
+                        f.Saldo = s.Saldo;
+                        f.EstadoPago = s.Estado;
+                    }
+                }
+                respuesta.Dato = lista;
+            }
             return Json(respuesta);
         }
 

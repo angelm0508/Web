@@ -1,11 +1,12 @@
 $(function () {
     const datosPermisosEl = document.getElementById('datosPermisosFacturasCompra');
-    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true, pagar: false };
+    const esc = v => $('<div>').text(v ?? '').html();
     const tabla = $('#tblFacturasCompra').DataTable({
         ajax: { url: '/FacturasCompra/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'numDoc' },
-            { data: 'nombreSn', render: (d, t, row) => d || row.codigoSn || '' },
+            { data: 'nombreSn', render: (d, t, row) => t === 'display' ? esc(d || row.codigoSn || '') : (d || row.codigoSn || '') },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
             {
                 data: 'estadoDoc',
@@ -16,9 +17,21 @@ $(function () {
                     : (d === 'C' ? '<span class="badge text-bg-secondary">Cancelado</span>' : '<span class="badge text-bg-success">Abierto</span>')
             },
             { data: 'totalDoc', render: d => d != null ? Number(d).toFixed(2) : '' },
+            { data: 'pagado', className: 'text-end', render: (d, t, row) => (row.cancelado === 'S' || d == null) ? '' : Number(d).toFixed(2) },
+            { data: 'saldo', className: 'text-end', render: (d, t, row) => (row.cancelado === 'S' || d == null) ? '' : Number(d).toFixed(2) },
+            {
+                data: 'estadoPago',
+                render: (d, t, row) => {
+                    if (row.cancelado === 'S' || !d) return '';
+                    if (t !== 'display') return d;
+                    const clase = d === 'Pagada' ? 'success' : (d === 'Parcial' ? 'warning' : 'secondary');
+                    return `<span class="badge text-bg-${clase}">${d}</span>`;
+                }
+            },
             {
                 data: 'entry', orderable: false, className: 'text-end',
-                render: entry => `
+                render: (entry, type, row) => `
+                    ${permisos.pagar && row.cancelado !== 'S' && row.saldo > 0 ? `<a class="btn btn-sm btn-outline-success" href="/PagosEfectuados/Crear?codigoSn=${encodeURIComponent(row.codigoSn || '')}&facturaCompraEntry=${entry}" title="Registrar pago"><i class="fa-solid fa-hand-holding-dollar"></i></a>` : ''}
                     <button class="btn btn-sm btn-outline-primary btn-editar" data-entry="${entry}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
                     ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-entry="${entry}"><i class="fa-solid fa-trash"></i></button>` : ''}
                 `
