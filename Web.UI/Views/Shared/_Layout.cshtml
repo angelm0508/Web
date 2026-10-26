@@ -6,15 +6,15 @@
     bool EsActivoAccion(string controlador, string accion) => EsActivo(controlador) && string.Equals(accionActual, accion, StringComparison.OrdinalIgnoreCase);
     bool Puede(string codigoModulo) => User.TienePermiso(codigoModulo, Accion.Ver);
     bool EsActivoInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias", "EntradasMercancia", "SalidasMercancia" }.Any(EsActivo);
-    bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(EsActivo);
-    bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito", "PagosRecibidos", "FormasPago" }.Any(EsActivo);
-    bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra", "PagosEfectuados" }.Any(EsActivo);
+    bool EsActivoSociosNegocioGrupo = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio", "CondicionesPago", "EstadoCuenta" }.Any(EsActivo);
+    bool EsActivoVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito", "PagosRecibidos", "FormasPago" }.Any(EsActivo) || EsActivoAccion("Antiguedad", "Cobrar");
+    bool EsActivoCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra", "PagosEfectuados" }.Any(EsActivo) || EsActivoAccion("Antiguedad", "Pagar");
     bool EsActivoTaller = new[] { "Mecanicos", "Motocicletas", "OrdenesServicio" }.Any(EsActivo);
     bool EsActivoAdministracion = new[] { "Usuarios", "Plantillas" }.Any(EsActivo);
     bool MuestraInventario = new[] { "Articulos", "Fabricantes", "GruposArticulo", "UnidadesMedida", "GruposUnidadMedida", "Almacenes", "Existencias", "EntradasMercancia", "SalidasMercancia" }.Any(Puede);
-    bool MuestraSociosNegocio = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio" }.Any(Puede);
-    bool MuestraVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito", "PagosRecibidos", "FormasPago" }.Any(Puede);
-    bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra", "PagosEfectuados" }.Any(Puede);
+    bool MuestraSociosNegocio = new[] { "SociosNegocio", "GruposSn", "ListadosPrecio", "CondicionesPago", "EstadoCuenta" }.Any(Puede);
+    bool MuestraVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito", "PagosRecibidos", "FormasPago", "AntiguedadCobrar" }.Any(Puede);
+    bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra", "PagosEfectuados", "AntiguedadPagar" }.Any(Puede);
     bool MuestraTaller = new[] { "Mecanicos", "Motocicletas", "OrdenesServicio" }.Any(Puede);
     bool MuestraAdministracion = Puede("Usuarios");
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
@@ -157,6 +157,18 @@
                                     <i class="fa-solid fa-tags"></i><span>Listado de Precios</span>
                                 </a>
                             }
+                            @if (Puede("CondicionesPago"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("CondicionesPago") ? "active" : "")" asp-controller="CondicionesPago" asp-action="Index">
+                                    <i class="fa-solid fa-calendar-days"></i><span>Condiciones de pago</span>
+                                </a>
+                            }
+                            @if (Puede("EstadoCuenta"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("EstadoCuenta") ? "active" : "")" href="/EstadoCuenta">
+                                    <i class="fa-solid fa-file-invoice"></i><span>Estado de cuenta</span>
+                                </a>
+                            }
                         </div>
                     }
 
@@ -223,6 +235,12 @@
                                     <i class="fa-solid fa-credit-card"></i><span>Formas de pago</span>
                                 </a>
                             }
+                            @if (Puede("AntiguedadCobrar"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivoAccion("Antiguedad", "Cobrar") ? "active" : "")" href="/Antiguedad/Cobrar">
+                                    <i class="fa-solid fa-hourglass-half"></i><span>Antigüedad por cobrar</span>
+                                </a>
+                            }
                         </div>
                     }
 
@@ -267,6 +285,12 @@
                             {
                                 <a class="nav-link nav-sublink @(EsActivo("PagosEfectuados") ? "active" : "")" asp-controller="PagosEfectuados" asp-action="Index">
                                     <i class="fa-solid fa-money-bill-transfer"></i><span>Pagos efectuados</span>
+                                </a>
+                            }
+                            @if (Puede("AntiguedadPagar"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivoAccion("Antiguedad", "Pagar") ? "active" : "")" href="/Antiguedad/Pagar">
+                                    <i class="fa-solid fa-hourglass-half"></i><span>Antigüedad por pagar</span>
                                 </a>
                             }
                         </div>

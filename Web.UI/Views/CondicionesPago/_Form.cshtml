@@ -1,0 +1,52 @@
+@model Web.ApiClient.Dtos.CondicionPago.CondicionPagoCrearDTO
+@{
+    bool esEdicion = ViewBag.EsEdicion ?? false;
+    // CON (contado) es fija: 0 días y siempre activa.
+    bool esContado = esEdicion && string.Equals(Model.Codigo, "CON", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">@(esEdicion ? "Editar condición de pago" : "Nueva condición de pago")</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <form id="formCondicionPago" novalidate>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Codigo" class="form-label">Código</label>
+                <input asp-for="Codigo" class="form-control text-uppercase" readonly="@esEdicion" maxlength="10" />
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Nombre" class="form-label">Nombre</label>
+                <input asp-for="Nombre" class="form-control" maxlength="50" />
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Dias" class="form-label">Días de crédito</label>
+                <input asp-for="Dias" type="number" min="0" max="365" step="1" class="form-control" readonly="@esContado" />
+                <span class="form-text">
+                    @(esContado ? "El contado siempre tiene 0 días." : "De 0 a 365. El vencimiento de un documento nuevo es su fecha más estos días.")
+                </span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Activo" class="form-label">Activo</label>
+                <select asp-for="Activo" class="form-select">
+                    <option value="S">Sí</option>
+                    @if (!esContado)
+                    {
+                        <option value="N">No</option>
+                    }
+                </select>
+                @if (esContado)
+                {
+                    <span class="form-text">El contado no se puede desactivar.</span>
+                }
+            </div>
+        </div>
+    </form>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnGuardarCondicionPago" data-edicion="@esEdicion.ToString().ToLower()" data-codigo="@Model.Codigo">
+        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar
+    </button>
+</div>
