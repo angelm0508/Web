@@ -34,6 +34,10 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         [Display(Name = "Listado de precio")]
         public int? NumLstPrecio { get; set; }
 
+        /// <summary>Condición de pago por defecto del socio (código de CondicionPago); vacío = la API usa Contado.</summary>
+        [Display(Name = "Condición de pago")]
+        public string? CondicionPago { get; set; }
+
         [Display(Name = "Correo")]
         [EmailAddress(ErrorMessage = "El correo no es válido.")]
         public string? Email { get; set; }

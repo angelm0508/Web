@@ -1,6 +1,8 @@
 $(function () {
     const datosPermisosEl = document.getElementById('datosPermisosSociosNegocio');
-    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true, verSaldos: false };
+    // Saldo / Vencido: formato con 2 decimales al pintar; para ordenar/filtrar se usa el número.
+    const renderDinero = (d, tipo) => d == null ? '' : (tipo === 'display' ? Number(d).toFixed(2) : d);
     const tabla = $('#tblSociosNegocio').DataTable({
         ajax: { url: '/SociosNegocio/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
@@ -10,6 +12,8 @@ $(function () {
             { data: 'nit' },
             { data: 'tel1' },
             { data: 'activo', render: d => d === 'S' ? '<span class="badge text-bg-success">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
+            { data: 'saldo', className: 'text-end', visible: permisos.verSaldos, defaultContent: '', render: renderDinero },
+            { data: 'vencido', className: 'text-end', visible: permisos.verSaldos, defaultContent: '', render: renderDinero },
             {
                 data: 'codigo', orderable: false, className: 'text-end',
                 render: codigo => `
@@ -19,6 +23,13 @@ $(function () {
             }
         ],
         language: App.datatableEsEs
+    });
+
+    // Si el servidor no devolvió saldos (sin permiso o la llamada falló), las columnas no se muestran.
+    tabla.on('xhr.dt', function (e, settings, json) {
+        if (!permisos.verSaldos) return;
+        const hayDatos = !!(json && json.resultado && (json.dato || []).some(s => s.saldo != null));
+        tabla.columns([6, 7]).visible(hayDatos, false);
     });
 
     function recargarTabla() { tabla.ajax.reload(null, false); }

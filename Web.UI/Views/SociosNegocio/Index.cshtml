@@ -24,6 +24,8 @@
                         <th>NIT</th>
                         <th>Teléfono</th>
                         <th>Activo</th>
+                        <th class="text-end" title="Clientes: por cobrar. Proveedores: por pagar.">Saldo</th>
+                        <th class="text-end" title="Parte del saldo con vencimiento anterior a hoy.">Vencido</th>
                         <th class="text-end">Acciones</th>
                     </tr>
                 </thead>
@@ -43,7 +45,8 @@
 
 <script id="datosPermisosSociosNegocio" type="application/json">
     { "actualizar": @(User.TienePermiso("SociosNegocio", Accion.Actualizar) ? "true" : "false"),
-      "eliminar": @(User.TienePermiso("SociosNegocio", Accion.Eliminar) ? "true" : "false") }
+      "eliminar": @(User.TienePermiso("SociosNegocio", Accion.Eliminar) ? "true" : "false"),
+      "verSaldos": @(User.TienePermiso("EstadoCuenta", Accion.Ver) ? "true" : "false") }
 </script>
 
 @section Scripts {

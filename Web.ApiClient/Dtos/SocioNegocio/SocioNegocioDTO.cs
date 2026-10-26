@@ -13,8 +13,14 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         public string? Tel2 { get; set; }
         public decimal? Descuento { get; set; }
         public int? NumLstPrecio { get; set; }
+        /// <summary>Condición de pago por defecto del socio (código); null = Contado.</summary>
+        public string? CondicionPago { get; set; }
         public string? Email { get; set; }
         public string? Activo { get; set; }
         public int Serie { get; set; }
+        /// <summary>Saldo abierto del socio; solo se llena en el listado cuando el usuario puede ver Estado de cuenta.</summary>
+        public decimal? Saldo { get; set; }
+        /// <summary>Parte vencida del saldo; mismo origen que Saldo.</summary>
+        public decimal? Vencido { get; set; }
     }
 }
