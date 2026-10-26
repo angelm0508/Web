@@ -34,6 +34,8 @@ namespace Web.ApiClient.Dtos.NotaDebito
         public decimal? TotalBruto { get; set; }
         public decimal? TotalDoc { get; set; }
         public string? Comentario { get; set; }
+        /// <summary>Condición de pago; si se omite, la API usa la del socio de negocio o Contado.</summary>
+        public string? CondicionPago { get; set; }
 
         /// <summary>Lineas del documento (artículos o conceptos según DocType): se registran junto con el encabezado y no se pueden modificar despues.</summary>
         public List<NotaDebitoDetalleCrearDTO> Lineas { get; set; } = new();

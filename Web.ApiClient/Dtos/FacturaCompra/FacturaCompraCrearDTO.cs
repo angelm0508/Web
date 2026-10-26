@@ -34,6 +34,8 @@ namespace Web.ApiClient.Dtos.FacturaCompra
         public decimal? TotalBruto { get; set; }
         public decimal? TotalDoc { get; set; }
         public string? Comentario { get; set; }
+        /// <summary>Condición de pago; si se omite, la API usa la del socio de negocio o Contado.</summary>
+        public string? CondicionPago { get; set; }
         public List<FacturaCompraDetalleCrearDTO> Lineas { get; set; } = new();
     }
 }
