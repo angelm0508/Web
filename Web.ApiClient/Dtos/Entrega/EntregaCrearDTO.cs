@@ -35,5 +35,8 @@ namespace Web.ApiClient.Dtos.Entrega
         public decimal? TotalDoc { get; set; }
         public string? Comentario { get; set; }
         public List<EntregaDetalleCrearDTO> Lineas { get; set; } = new();
+
+        /// <summary>El usuario pide registrar la entrega aunque supere el límite de crédito del cliente (requiere el permiso AutorizarExcesoCredito).</summary>
+        public bool AutorizarExcesoCredito { get; set; }
     }
 }

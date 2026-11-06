@@ -15,6 +15,10 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         public int? NumLstPrecio { get; set; }
         /// <summary>Condición de pago por defecto del socio (código); null = Contado.</summary>
         public string? CondicionPago { get; set; }
+        /// <summary>Límite de crédito del cliente. null = sin límite; 0 = solo contado.</summary>
+        public decimal? LimiteCredito { get; set; }
+        /// <summary>"S" bloquea documentos nuevos si el cliente tiene saldo vencido; "N" no.</summary>
+        public string? BloquearSiVencido { get; set; }
         public string? Email { get; set; }
         public string? Activo { get; set; }
         public int Serie { get; set; }

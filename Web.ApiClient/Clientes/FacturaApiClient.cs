@@ -15,8 +15,8 @@ namespace Web.ApiClient.Clientes
         public Task<Respuesta<FacturaDTO>> ObtenerAsync(int entry) =>
             GetAsync<FacturaDTO>($"{Recurso}/{entry}");
 
-        public Task<Respuesta<int>> InsertarAsync(FacturaCrearDTO dto) =>
-            PostAsync<int>(Recurso, dto);
+        public Task<RespuestaCredito<int>> InsertarAsync(FacturaCrearDTO dto) =>
+            PostConCreditoAsync<int>(Recurso, dto);
 
         public Task<Respuesta<bool>> ActualizarAsync(int entry, FacturaActualizarDTO dto) =>
             PutAsync<bool>($"{Recurso}/{entry}", dto);

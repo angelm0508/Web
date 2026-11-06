@@ -15,11 +15,11 @@ namespace Web.ApiClient.Clientes
         public Task<Respuesta<PedidoDTO>> ObtenerAsync(int entry) =>
             GetAsync<PedidoDTO>($"{Recurso}/{entry}");
 
-        public Task<Respuesta<int>> InsertarAsync(PedidoCrearDTO dto) =>
-            PostAsync<int>(Recurso, dto);
+        public Task<RespuestaCredito<int>> InsertarAsync(PedidoCrearDTO dto) =>
+            PostConCreditoAsync<int>(Recurso, dto);
 
-        public Task<Respuesta<bool>> ActualizarAsync(int entry, PedidoActualizarDTO dto) =>
-            PutAsync<bool>($"{Recurso}/{entry}", dto);
+        public Task<RespuestaCredito<bool>> ActualizarAsync(int entry, PedidoActualizarDTO dto) =>
+            PutConCreditoAsync<bool>($"{Recurso}/{entry}", dto);
 
         public Task<Respuesta<bool>> EliminarAsync(int entry) =>
             DeleteAsync<bool>($"{Recurso}/{entry}");

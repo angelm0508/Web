@@ -37,5 +37,11 @@ namespace Web.ApiClient.Dtos.Factura
         /// <summary>Condición de pago; si se omite, la API usa la del socio de negocio o Contado.</summary>
         public string? CondicionPago { get; set; }
         public List<FacturaDetalleCrearDTO> Lineas { get; set; } = new();
+
+        /// <summary>El usuario pide registrar la factura aunque supere el límite de crédito del cliente (requiere el permiso AutorizarExcesoCredito).</summary>
+        public bool AutorizarExcesoCredito { get; set; }
+
+        /// <summary>Monto cobrado al momento de facturar; se descuenta de lo que el control de crédito suma a la exposición. No puede exceder el total del documento. Nulo equivale a 0.</summary>
+        public decimal? PagoInmediato { get; set; }
     }
 }

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Web.ApiClient.Dtos;
+using Web.ApiClient.Dtos.CreditoCliente;
 
 namespace Web.ApiClient
 {
@@ -33,7 +34,24 @@ namespace Web.ApiClient
         protected Task<Respuesta<T>> DeleteAsync<T>(string url) =>
             EnviarAsync<T>(() => Http.DeleteAsync(url));
 
-        private static async Task<Respuesta<T>> EnviarAsync<T>(Func<Task<HttpResponseMessage>> enviar)
+        /// <summary>
+        /// POST para las altas sujetas al control de crédito: igual que <see cref="PostAsync{T}"/>, pero si la API
+        /// responde 409 con el detalle en "credito" lo deja en <see cref="RespuestaCredito{T}.Credito"/>.
+        /// </summary>
+        protected Task<RespuestaCredito<T>> PostConCreditoAsync<T>(string url, object body) =>
+            EnviarCoreAsync<T, RespuestaCredito<T>>(() => Http.PostAsJsonAsync(url, body, JsonOptions));
+
+        /// <summary>PUT equivalente a <see cref="PostConCreditoAsync{T}"/> (reapertura de pedido).</summary>
+        protected Task<RespuestaCredito<T>> PutConCreditoAsync<T>(string url, object body) =>
+            EnviarCoreAsync<T, RespuestaCredito<T>>(() => Http.PutAsJsonAsync(url, body, JsonOptions));
+
+        private static Task<Respuesta<T>> EnviarAsync<T>(Func<Task<HttpResponseMessage>> enviar) =>
+            EnviarCoreAsync<T, Respuesta<T>>(enviar);
+
+        // Núcleo compartido: TRespuesta decide si además se lee la propiedad opcional "credito" del cuerpo
+        // (RespuestaCredito<T>) o se devuelve la Respuesta<T> de siempre.
+        private static async Task<TRespuesta> EnviarCoreAsync<T, TRespuesta>(Func<Task<HttpResponseMessage>> enviar)
+            where TRespuesta : Respuesta<T>, new()
         {
             try
             {
@@ -41,7 +59,7 @@ namespace Web.ApiClient
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
                 {
-                    return new Respuesta<T>
+                    return new TRespuesta
                     {
                         Resultado = false,
                         Mensaje = "Tu sesión expiró o no tienes permisos. Por favor inicia sesión nuevamente."
@@ -51,7 +69,7 @@ namespace Web.ApiClient
                 var contenido = await response.Content.ReadAsStringAsync();
                 if (string.IsNullOrWhiteSpace(contenido))
                 {
-                    return new Respuesta<T>
+                    return new TRespuesta
                     {
                         Resultado = false,
                         Mensaje = "La API devolvió una respuesta vacía o inesperada."
@@ -74,11 +92,26 @@ namespace Web.ApiClient
                     dato = datoEl.Deserialize<T>(JsonOptions);
                 }
 
-                return new Respuesta<T> { Dato = dato, Resultado = resultado, Mensaje = mensaje };
+                var respuesta = new TRespuesta { Dato = dato, Resultado = resultado, Mensaje = mensaje };
+
+                if (respuesta is RespuestaCredito<T> conCredito
+                    && raiz.TryGetProperty("credito", out var creditoEl) && creditoEl.ValueKind == JsonValueKind.Object)
+                {
+                    try
+                    {
+                        conCredito.Credito = creditoEl.Deserialize<CreditoExcedidoDTO>(JsonOptions);
+                    }
+                    catch (JsonException)
+                    {
+                        // Detalle de crédito ilegible: se conserva el mensaje de la API sin el detalle.
+                    }
+                }
+
+                return respuesta;
             }
             catch (Exception ex)
             {
-                return new Respuesta<T>
+                return new TRespuesta
                 {
                     Resultado = false,
                     Mensaje = $"No se pudo conectar con la API: {ex.Message}"

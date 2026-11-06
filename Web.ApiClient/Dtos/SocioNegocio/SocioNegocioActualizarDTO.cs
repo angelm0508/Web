@@ -38,6 +38,14 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         [Display(Name = "Condición de pago")]
         public string? CondicionPago { get; set; }
 
+        /// <summary>Límite de crédito (solo clientes). null lo quita (sin límite); 0 = solo contado.</summary>
+        [Display(Name = "Límite de crédito")]
+        public decimal? LimiteCredito { get; set; }
+
+        /// <summary>"S" o "N". Vacío = "N".</summary>
+        [Display(Name = "Bloquear si tiene vencido")]
+        public string? BloquearSiVencido { get; set; }
+
         [Display(Name = "Correo")]
         [EmailAddress(ErrorMessage = "El correo no es válido.")]
         public string? Email { get; set; }

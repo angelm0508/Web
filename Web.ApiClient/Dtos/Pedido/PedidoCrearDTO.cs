@@ -37,5 +37,8 @@ namespace Web.ApiClient.Dtos.Pedido
 
         /// <summary>Líneas del pedido (opcional): si vienen, la API guarda cabecera y líneas en una sola transacción ("Copiar a").</summary>
         public List<PedidoDetalleCrearDTO> Lineas { get; set; } = new();
+
+        /// <summary>El usuario pide registrar el pedido aunque supere el límite de crédito del cliente (requiere el permiso AutorizarExcesoCredito).</summary>
+        public bool AutorizarExcesoCredito { get; set; }
     }
 }
