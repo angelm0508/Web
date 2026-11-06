@@ -85,6 +85,26 @@
                 <input type="date" name="FechaEmision" id="FechaEmision" class="form-control" value="@Model.FechaEmision?.ToString("yyyy-MM-dd")" readonly="@esEdicion" />
             </div>
 
+            @{
+                var condicionesPago = ViewBag.CondicionesPago as IEnumerable<Web.ApiClient.Dtos.CondicionPago.CondicionPagoDTO> ?? [];
+                var condicionActual = string.IsNullOrWhiteSpace(Model.CondicionPago) ? "CON" : Model.CondicionPago;
+            }
+            <div class="col-md-4">
+                <label class="form-label">Condición de pago</label>
+                <select name="CondicionPago" id="CondicionPago" class="form-select" disabled="@esEdicion">
+                    @foreach (var c in condicionesPago)
+                    {
+                        <option value="@c.Codigo" data-dias="@c.Dias" selected="@(c.Codigo == condicionActual)">@c.Nombre (@c.Dias días)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Vencimiento</label>
+                <input type="date" id="FechaVencimiento" class="form-control" value="@((ViewBag.FechaVencimientoActual as DateTime?)?.ToString("yyyy-MM-dd"))" readonly />
+                <span class="form-text">Fecha del documento más los días de la condición; el servidor la calcula al guardar.</span>
+            </div>
+            <div class="w-100 m-0"></div>
+
             <div class="col-md-3">
                 <label asp-for="PrctjeDesc" class="form-label">% Descuento</label>
                 <input asp-for="PrctjeDesc" type="number" step="0.01" class="form-control" readonly="@esEdicion" />

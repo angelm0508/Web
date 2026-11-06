@@ -8,6 +8,7 @@ $(function () {
             { data: 'numDoc' },
             { data: 'nombreSn', render: (d, t, row) => t === 'display' ? esc(d || row.codigoSn || '') : (d || row.codigoSn || '') },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
+            { data: 'fechaVencimiento', render: CondicionPagoDoc.renderVence },
             {
                 data: 'estadoDoc',
                 // La cancelación pone Cancelado='S' + EstadoInv='C' pero deja EstadoDoc='A'
@@ -48,6 +49,7 @@ $(function () {
         new bootstrap.Modal('#modalFormulario').show();
         inicializarSerieFacturaCompra();
         inicializarBuscadorSocio();
+        CondicionPagoDoc.inicializar();
         inicializarDetalle();
     }
 
@@ -63,6 +65,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: async s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                CondicionPagoDoc.preseleccionar(s ? (s.condicionPago ?? s.CondicionPago ?? null) : null);
                 const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 if (nueva === listaPrecioSocio) return;
                 listaPrecioSocio = nueva;

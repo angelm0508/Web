@@ -26,6 +26,7 @@ $(function () {
             { data: 'docType', render: d => d === 'I' ? 'Artículos' : 'Concepto' },
             { data: 'nombreSn', render: (d, t, row) => esc(d || row.codigoSn || '') },
             { data: 'fechaDoc', render: d => d ? new Date(d).toLocaleDateString() : '' },
+            { data: 'fechaVencimiento', render: CondicionPagoDoc.renderVence },
             {
                 data: 'cancelado',
                 render: d => d === 'S'
@@ -64,6 +65,7 @@ $(function () {
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFormulario')).show();
         inicializarSerie();
         inicializarBuscadorSocio();
+        CondicionPagoDoc.inicializar();
         inicializarDetalle();
         aplicarModo();
         cargarFacturasBase();
@@ -134,6 +136,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                CondicionPagoDoc.preseleccionar(s ? (s.condicionPago ?? s.CondicionPago ?? null) : null);
                 // La lista de precio del socio se usa al elegir artículos (modo por artículos).
                 listaPrecioSocio = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 // La factura base pertenece al socio anterior: se descarta y se recarga la lista del nuevo.

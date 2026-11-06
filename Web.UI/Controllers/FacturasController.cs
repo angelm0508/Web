@@ -26,6 +26,7 @@ namespace Web.UI.Controllers
         private readonly IDocumentoBaseApiClient _documentoBase;
         private readonly ISaldoFacturaApiClient _saldos;
         private readonly IFormaPagoApiClient _formasPago;
+        private readonly ICondicionPagoApiClient _condiciones;
 
         // Tipo de objeto de Factura (destino de "Copiar a").
         private const int TipoDestinoFactura = 6;
@@ -49,7 +50,8 @@ namespace Web.UI.Controllers
             INumeracionDocumentoApiClient numeracion,
             IDocumentoBaseApiClient documentoBase,
             ISaldoFacturaApiClient saldos,
-            IFormaPagoApiClient formasPago)
+            IFormaPagoApiClient formasPago,
+            ICondicionPagoApiClient condiciones)
         {
             _facturas = facturas;
             _detalles = detalles;
@@ -63,6 +65,7 @@ namespace Web.UI.Controllers
             _documentoBase = documentoBase;
             _saldos = saldos;
             _formasPago = formasPago;
+            _condiciones = condiciones;
         }
 
         [RequierePermiso("Facturas", Accion.Ver)]
@@ -155,7 +158,16 @@ namespace Web.UI.Controllers
                 dto.Comentario = borrador.Cabecera.Comentario;
                 dto.FechaDoc = DateTime.Today;
                 dto.FechaEmision = DateTime.Today;
+
+                // "Copiar a": la condición de pago se precarga con la del socio, igual que al elegirlo en un alta normal
+                // (los documentos de origen no tienen condición). Sin socio o sin condición, el formulario usa Contado.
+                if (!string.IsNullOrEmpty(dto.CodigoSn))
+                {
+                    var socio = await _socios.ObtenerAsync(dto.CodigoSn);
+                    if (socio.Resultado) dto.CondicionPago = socio.Dato?.CondicionPago;
+                }
             }
+            ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, dto.CondicionPago);
             return PartialView("_Form", dto);
         }
 
@@ -193,8 +205,13 @@ namespace Web.UI.Controllers
                 TotalDesc = respuesta.Dato.TotalDesc,
                 TotalBruto = respuesta.Dato.TotalBruto,
                 TotalDoc = respuesta.Dato.TotalDoc,
-                Comentario = respuesta.Dato.Comentario
+                Comentario = respuesta.Dato.Comentario,
+                CondicionPago = respuesta.Dato.CondicionPago
             };
+
+            // En edición la condición y el vencimiento solo se muestran (los fijó el servidor al crear el documento).
+            ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, dto.CondicionPago);
+            ViewBag.FechaVencimientoActual = respuesta.Dato.FechaVencimiento ?? respuesta.Dato.FechaDoc;
 
             return PartialView("_Form", dto);
         }

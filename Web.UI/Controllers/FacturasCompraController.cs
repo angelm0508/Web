@@ -22,6 +22,7 @@ namespace Web.UI.Controllers
         private readonly INumeracionDocumentoDetApiClient _series;
         private readonly INumeracionDocumentoApiClient _numeracion;
         private readonly ISaldoFacturaCompraApiClient _saldos;
+        private readonly ICondicionPagoApiClient _condiciones;
 
         // CodigoObj de NumeracionDocumento que identifica a "Facturas de compra" como tipo de objeto.
         private const string CodigoObjFacturaCompra = "13";
@@ -37,7 +38,8 @@ namespace Web.UI.Controllers
             IImpuestoApiClient impuestos,
             INumeracionDocumentoDetApiClient series,
             INumeracionDocumentoApiClient numeracion,
-            ISaldoFacturaCompraApiClient saldos)
+            ISaldoFacturaCompraApiClient saldos,
+            ICondicionPagoApiClient condiciones)
         {
             _facturasCompra = facturasCompra;
             _detalles = detalles;
@@ -49,6 +51,7 @@ namespace Web.UI.Controllers
             _series = series;
             _numeracion = numeracion;
             _saldos = saldos;
+            _condiciones = condiciones;
         }
 
         [RequierePermiso("FacturasCompra", Accion.Ver)]
@@ -95,6 +98,7 @@ namespace Web.UI.Controllers
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
 
             ViewBag.EsEdicion = false;
+            ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, null);
             return PartialView("_Form", new FacturaCompraCrearDTO { EstadoDoc = "A", TipoObjeto = "13" });
         }
 
@@ -132,8 +136,13 @@ namespace Web.UI.Controllers
                 TotalDesc = respuesta.Dato.TotalDesc,
                 TotalBruto = respuesta.Dato.TotalBruto,
                 TotalDoc = respuesta.Dato.TotalDoc,
-                Comentario = respuesta.Dato.Comentario
+                Comentario = respuesta.Dato.Comentario,
+                CondicionPago = respuesta.Dato.CondicionPago
             };
+
+            // En edición la condición y el vencimiento solo se muestran (los fijó el servidor al crear el documento).
+            ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, dto.CondicionPago);
+            ViewBag.FechaVencimientoActual = respuesta.Dato.FechaVencimiento ?? respuesta.Dato.FechaDoc;
 
             return PartialView("_Form", dto);
         }
