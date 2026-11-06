@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
 using Web.ApiClient.Clientes;
+using Web.ApiClient.Dtos;
 using Web.ApiClient.Dtos.Articulo;
 using Web.UI.Authorization;
 
@@ -113,6 +114,26 @@ namespace Web.UI.Controllers
         [RequierePermiso("Articulos", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] ArticuloCrearDTO dto)
         {
+            if (!ModelState.IsValid)
+            {
+                var errores = ModelState
+                                .SelectMany(x => x.Value.Errors)
+                                .Select(e => new ErrorValidacion
+                                {
+                                    Campo = e.ErrorMessage,
+                                    Mensaje = e.ErrorMessage
+                                })
+                                .ToList();
+
+                return BadRequest(new Respuesta<string>
+                {
+                    Dato = errores.ToString(),
+                    Resultado= false,
+                    Mensaje = "Se encontraron errores de validación",
+                    Errores = errores
+                });
+            }
+
             var respuesta = await _articulos.InsertarAsync(dto);
             // "respuesta.Dato" ya es el código real (para series no manuales, el que calculó la
             // API al momento de registrar -- no el de la vista previa mostrada antes de guardar).

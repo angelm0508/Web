@@ -5,9 +5,11 @@ namespace Web.ApiClient.Dtos.Almacen
     public class AlmacenActualizarDTO
     {
         [Display(Name = "Nombre")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Nombre { get; set; }
 
         [Display(Name = "Activo")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Activo { get; set; }
 
         [Display(Name = "Calle")]

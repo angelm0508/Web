@@ -57,6 +57,9 @@ $(function () {
         const datos = App.recolectarFormulario('#formArticulo');
 
         const respuesta = await App.enviarJson(`/Articulos/Editar?codigo=${encodeURIComponent(codigo)}`, 'POST', datos);
+
+        console.log(`Respuesta: ${respuesta.mensaje}`);
+
         if (!respuesta.resultado) {
             App.mostrarError(respuesta.mensaje);
             return;

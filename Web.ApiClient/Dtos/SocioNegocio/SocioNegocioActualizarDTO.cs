@@ -8,9 +8,11 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         public string? Nombre { get; set; }
 
         [Display(Name = "Tipo")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? TipoSn { get; set; }
 
         [Display(Name = "Grupo")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public short? GrupoSn { get; set; }
 
         [Display(Name = "CUI")]

@@ -9,6 +9,7 @@ namespace Web.ApiClient.Dtos.Almacen
         public string Codigo { get; set; } = null!;
 
         [Display(Name = "Nombre")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Nombre { get; set; }
 
         [Required(ErrorMessage = "El campo Activo es requerido.")]

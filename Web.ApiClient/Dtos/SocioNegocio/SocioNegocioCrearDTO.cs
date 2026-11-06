@@ -5,15 +5,18 @@ namespace Web.ApiClient.Dtos.SocioNegocio
     public class SocioNegocioCrearDTO
     {
         [Display(Name = "Código")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Codigo { get; set; }
 
         [Display(Name = "Nombre")]
         public string? Nombre { get; set; }
 
         [Display(Name = "Tipo")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? TipoSn { get; set; }
 
         [Display(Name = "Grupo")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public short? GrupoSn { get; set; }
 
         [Display(Name = "CUI")]
@@ -56,8 +59,8 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         [Display(Name = "Activo")]
         public string? Activo { get; set; } = "S";
 
-        [Required(ErrorMessage = "La serie es requerida.")]
         [Display(Name = "Serie")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public int Serie { get; set; }
     }
 }

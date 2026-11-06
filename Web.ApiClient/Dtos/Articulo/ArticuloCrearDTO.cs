@@ -5,21 +5,27 @@ namespace Web.ApiClient.Dtos.Articulo
     public class ArticuloCrearDTO
     {
         [Display(Name = "Código")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Codigo { get; set; }
 
         [Display(Name = "Nombre")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Nombre { get; set; }
 
         [Display(Name = "Grupo")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public short? CodigoGrupo { get; set; }
 
         [Display(Name = "Grupo de unidad de medida")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public int? CodigoGrpUnidadMedida { get; set; }
 
         [Display(Name = "Fabricante")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public int? FabricanteEntry { get; set; }
 
         [Display(Name = "Activo")]
+        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Activo { get; set; } = "S";
 
         [Display(Name = "Artículo de compra")]
