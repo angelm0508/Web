@@ -1,0 +1,55 @@
+@{
+    ViewData["Title"] = "Antigüedad de saldos por cobrar";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Antigüedad de saldos por cobrar</h3>
+</div>
+
+<div class="card card-modulo">
+    <div class="card-body" id="antiguedad"
+         data-url-datos="/Antiguedad/ObtenerCobrar"
+         data-url-detalle="/Antiguedad/DetalleCobrar"
+         data-etiqueta-socio="Cliente">
+        <p class="text-muted small">Saldos abiertos al día de hoy, repartidos por días de vencido. Haz clic en un cliente para ver sus documentos.</p>
+        <div class="table-responsive">
+            <table id="tblAntiguedad" class="table table-hover align-middle w-100">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th class="text-end">Vigente</th>
+                        <th class="text-end">1-30</th>
+                        <th class="text-end">31-60</th>
+                        <th class="text-end">61-90</th>
+                        <th class="text-end">Más de 90</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                    <tr class="fw-semibold">
+                        <th>Totales</th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                        <th class="text-end"></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalFormulario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" id="contenidoModal">
+            <!-- se carga por AJAX -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/antiguedad.js" asp-append-version="true"></script>
+}

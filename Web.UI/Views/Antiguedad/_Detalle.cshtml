@@ -1,0 +1,68 @@
+@model List<Web.ApiClient.Dtos.Antiguedad.DocumentoAntiguedadDTO>
+@{
+    string codigoSn = ViewBag.CodigoSn ?? "";
+    string? nombreSn = ViewBag.NombreSn;
+}
+
+<div class="modal-header">
+    <h5 class="modal-title">Documentos abiertos de @codigoSn@(string.IsNullOrWhiteSpace(nombreSn) ? "" : " - " + nombreSn)</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted mb-0">El socio no tiene documentos abiertos.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Documento</th>
+                        <th>Fecha</th>
+                        <th>Vencimiento</th>
+                        <th class="text-end">Días de atraso</th>
+                        <th class="text-end">Saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model)
+                    {
+                        <tr>
+                            <td>@d.Tipo @d.NumDoc</td>
+                            <td>@d.FechaDoc.ToString("dd/MM/yyyy")</td>
+                            <td>@d.Vencimiento.ToString("dd/MM/yyyy")</td>
+                            <td class="text-end">
+                                @if (d.DiasVencido > 0)
+                                {
+                                    <span class="text-danger fw-semibold">@d.DiasVencido</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Vigente</span>
+                                }
+                            </td>
+                            <td class="text-end">@d.Saldo.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="fw-semibold">
+                        <td colspan="4" class="text-end">Total</td>
+                        <td class="text-end">@Model.Sum(d => d.Saldo).ToString("N2", System.Globalization.CultureInfo.InvariantCulture)</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
+<div class="modal-footer">
+    @if (User.TienePermiso("EstadoCuenta", Accion.Ver))
+    {
+        <a class="btn btn-outline-primary me-auto" href="/EstadoCuenta?codigoSn=@Uri.EscapeDataString(codigoSn)">
+            <i class="fa-solid fa-file-invoice-dollar me-1"></i>Ver estado de cuenta
+        </a>
+    }
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+</div>
