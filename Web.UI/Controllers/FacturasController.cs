@@ -146,6 +146,7 @@ namespace Web.UI.Controllers
             }
 
             ViewBag.EsEdicion = false;
+            ViewBag.CreditoDatos = CreditoDocumento.Datos(User);   // permisos de crédito (consultar posición / autorizar exceso)
             var dto = new FacturaCrearDTO { EstadoDoc = "A", TipoObjeto = "6" };
             if (borrador is not null)
             {
@@ -221,6 +222,12 @@ namespace Web.UI.Controllers
         [RequierePermiso("Facturas", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] FacturaCrearDTO dto)
         {
+            // Control de crédito: la autorización de exceso solo pasa si el usuario tiene el permiso, y el pago inmediato
+            // (lo que se cobra al facturar, Σ de las formas de pago) solo si puede registrar pagos; sin ellos viajan en falso/0.
+            // Un rechazo por crédito (409) vuelve en "respuesta" con su detalle "credito" para el diálogo del JS.
+            dto.AutorizarExcesoCredito = CreditoDocumento.Autoriza(User, dto.AutorizarExcesoCredito);
+            dto.PagoInmediato = User.TienePermiso("PagosRecibidos", Accion.Agregar) ? Math.Max(0m, dto.PagoInmediato ?? 0m) : 0m;
+
             var respuesta = await _facturas.InsertarAsync(dto);
             if (!respuesta.Resultado)
                 return Json(respuesta);

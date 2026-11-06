@@ -92,6 +92,7 @@ namespace Web.UI.Controllers
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
 
             ViewBag.EsEdicion = false;
+            ViewBag.CreditoDatos = CreditoDocumento.Datos(User);   // permisos de crédito (consultar posición / autorizar exceso)
             var dto = new PedidoCrearDTO { EstadoDoc = "A", TipoObjeto = "4" };
             if (borrador is not null)
             {
@@ -119,6 +120,7 @@ namespace Web.UI.Controllers
             await CargarDropdownsAsync();
             ViewBag.EsEdicion = true;
             ViewBag.EntryActual = entry;
+            ViewBag.CreditoDatos = CreditoDocumento.Datos(User);   // reabrir o cambiar de cliente también pasa por el control de crédito
 
             var serieInfo = await _series.ObtenerAsync(respuesta.Dato.Serie);
             ViewBag.NombreSerieActual = serieInfo.Resultado ? serieInfo.Dato?.NombreSerie : null;
@@ -152,6 +154,10 @@ namespace Web.UI.Controllers
         [RequierePermiso("Pedidos", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] PedidoCrearDTO dto)
         {
+            // Control de crédito: la autorización de exceso solo pasa si el usuario tiene el permiso. Un rechazo por
+            // crédito (409) vuelve en "respuesta" con su detalle "credito" para el diálogo del JS.
+            dto.AutorizarExcesoCredito = CreditoDocumento.Autoriza(User, dto.AutorizarExcesoCredito);
+
             var respuesta = await _pedidos.InsertarAsync(dto);
             if (!respuesta.Resultado)
                 return Json(respuesta);
@@ -187,7 +193,10 @@ namespace Web.UI.Controllers
                 TotalDesc = dto.TotalDesc,
                 TotalBruto = dto.TotalBruto,
                 TotalDoc = dto.TotalDoc,
-                Comentario = dto.Comentario
+                Comentario = dto.Comentario,
+                // Reabrir o cambiar de cliente se controla igual que el alta; la bandera solo viaja al reintentar desde el diálogo
+                // de autorización (con la bandera y sin el permiso la API responde 403 aun en una actualización normal).
+                AutorizarExcesoCredito = CreditoDocumento.Autoriza(User, dto.AutorizarExcesoCredito)
             };
 
             var respuesta = await _pedidos.ActualizarAsync(entry, actualizar);

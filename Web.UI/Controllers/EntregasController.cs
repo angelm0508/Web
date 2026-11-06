@@ -92,6 +92,7 @@ namespace Web.UI.Controllers
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
 
             ViewBag.EsEdicion = false;
+            ViewBag.CreditoDatos = CreditoDocumento.Datos(User);   // permisos de crédito (consultar posición / autorizar exceso)
             var dto = new EntregaCrearDTO { EstadoDoc = "A", TipoObjeto = "5" };
             if (borrador is not null)
             {
@@ -153,6 +154,10 @@ namespace Web.UI.Controllers
         [RequierePermiso("Entregas", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] EntregaCrearDTO dto)
         {
+            // Control de crédito: la autorización de exceso solo pasa si el usuario tiene el permiso. Un rechazo por
+            // crédito (409) vuelve en "respuesta" con su detalle "credito" para el diálogo del JS.
+            dto.AutorizarExcesoCredito = CreditoDocumento.Autoriza(User, dto.AutorizarExcesoCredito);
+
             var respuesta = await _entregas.InsertarAsync(dto);
             if (!respuesta.Resultado)
                 return Json(respuesta);

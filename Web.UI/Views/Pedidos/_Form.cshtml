@@ -57,6 +57,7 @@
                 <input type="hidden" asp-for="CodigoSn" />
                 <div class="invalid-feedback" id="CodigoSnError">Selecciona una opción de la lista o borra el texto.</div>
                 <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="CodigoSnResultados"></ul>
+                <div id="creditoDisponible" class="form-text" aria-live="polite"></div>
             </div>
             <div class="col-md-4">
                 <label asp-for="NombreSn" class="form-label">Nombre</label>
@@ -204,6 +205,13 @@
             </div>
         </form>
     </div>
+
+    @if (ViewBag.CreditoDatos is string creditoDatos)
+    {
+        <script id="datosCredito" type="application/json">
+            @Html.Raw(creditoDatos)
+        </script>
+    }
 
     @if (!esEdicion)
     {

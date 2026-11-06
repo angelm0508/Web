@@ -39,6 +39,7 @@ $(function () {
         new bootstrap.Modal('#modalFormulario').show();
         inicializarSerieEntrega();
         inicializarBuscadorSocio();
+        CreditoDoc.inicializar({ tipo: 'entrega' });   // antes del detalle: el detalle informa el total al aviso de crédito
         inicializarDetalle();
     }
 
@@ -54,6 +55,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: async s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                CreditoDoc.alElegirSocio(s ? (s.codigo ?? s.Codigo) : null);
                 const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 if (nueva === listaPrecioSocio) return;
                 listaPrecioSocio = nueva;
@@ -211,7 +213,10 @@ $(function () {
             // Guardar queda deshabilitado mientras dura la petición: un doble clic no debe crear dos documentos.
             $boton.prop('disabled', true);
             try {
-                const respuesta = await App.enviarJson('/Entregas/Crear', 'POST', datos);
+                // Si la API rechaza por crédito (409) el diálogo ofrece, a quien puede, «Autorizar y guardar» (reenvía este mismo documento).
+                const respuesta = await CreditoDoc.enviar(
+                    autorizar => App.enviarJson('/Entregas/Crear', 'POST', { ...datos, AutorizarExcesoCredito: autorizar }));
+                if (respuesta === null) return;   // rechazo por crédito ya informado en el diálogo
                 if (!respuesta.resultado) {
                     App.mostrarError(respuesta.mensaje);
                     return;
@@ -409,6 +414,7 @@ $(function () {
         $('#TotalBruto').val(totales.totalBruto);
         $('#TotalImp').val(totales.totalImp);
         $('#TotalDoc').val(totales.totalDoc);
+        CreditoDoc.avisarTotal(totales.totalDoc, CreditoDoc.valorLineasBase(lista));
 
         if (lista.length === 0) {
             $tbody.html('<tr><td colspan="8" class="text-center text-muted">Sin líneas de detalle</td></tr>');

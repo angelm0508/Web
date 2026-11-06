@@ -33,6 +33,8 @@ $(function () {
         new bootstrap.Modal('#modalFormulario').show();
         inicializarSeriePedido();
         inicializarBuscadorSocio();
+        // En edición el pedido ya está contado como comprometido: solo se informa el disponible (el control real es el de la API).
+        CreditoDoc.inicializar({ tipo: 'pedido', comparaTotal: !esEdicionDetalle() });
         inicializarDetalle();
     }
 
@@ -48,6 +50,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: async s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                CreditoDoc.alElegirSocio(s ? (s.codigo ?? s.Codigo) : null);
                 const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 if (nueva === listaPrecioSocio) return;
                 listaPrecioSocio = nueva;
@@ -163,7 +166,9 @@ $(function () {
         datos.TotalDoc = totales.totalDoc;
 
         if (!esEdicion) {
-            if (borradorCopia) {
+            // Con líneas ("Copiar a" o alta normal) el pedido se guarda de una vez, cabecera y líneas en una sola petición:
+            // es la única forma de alta que la API somete al control de crédito (sin líneas no compromete nada).
+            if (borradorCopia || lineasLocales.length > 0) {
                 if (lineasLocales.length === 0) {
                     App.mostrarError('Agrega al menos una línea al documento.');
                     return;
@@ -173,14 +178,18 @@ $(function () {
                 // Guardar queda deshabilitado mientras dura la petición: un doble clic no debe crear dos documentos.
                 $boton.prop('disabled', true);
                 try {
-                    const respuestaCopia = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
-                    if (!respuestaCopia.resultado) {
-                        App.mostrarError(respuestaCopia.mensaje);
+                    // Si la API rechaza por crédito (409) el diálogo ofrece, a quien puede, «Autorizar y guardar» (reenvía este mismo documento).
+                    const respuestaAlta = await CreditoDoc.enviar(
+                        autorizar => App.enviarJson('/Pedidos/Crear', 'POST', { ...datos, AutorizarExcesoCredito: autorizar }));
+                    if (respuestaAlta === null) return;   // rechazo por crédito ya informado en el diálogo
+                    if (!respuestaAlta.resultado) {
+                        App.mostrarError(respuestaAlta.mensaje);
                         return;
                     }
-                    const mensajeCopia = respuestaCopia.numDoc != null
-                        ? `Pedido ${respuestaCopia.numDoc} creado desde ${App.etiquetaOrigen(borradorCopia)}`
-                        : 'Pedido creado correctamente.';
+                    const sufijoNumDocAlta = respuestaAlta.numDoc != null ? ` No. documento: ${respuestaAlta.numDoc}.` : '';
+                    const mensajeCopia = borradorCopia && respuestaAlta.numDoc != null
+                        ? `Pedido ${respuestaAlta.numDoc} creado desde ${App.etiquetaOrigen(borradorCopia)}`
+                        : `Pedido creado correctamente.${borradorCopia ? '' : sufijoNumDocAlta}`;
                     await App.mostrarExito(mensajeCopia);
                     bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
                     recargarTabla();
@@ -192,42 +201,19 @@ $(function () {
 
             $boton.prop('disabled', true);
             try {
+                // Pedido sin líneas: solo la cabecera (la API no lo somete al control de crédito; no compromete nada).
                 const respuestaCabecera = await App.enviarJson('/Pedidos/Crear', 'POST', datos);
                 if (!respuestaCabecera.resultado) {
                     App.mostrarError(respuestaCabecera.mensaje);
                     return;
                 }
 
-                const entryCreado = respuestaCabecera.dato;
-
                 if (respuestaCabecera.numDoc != null) {
                     $('#NumDoc').val(respuestaCabecera.numDoc).prop('disabled', false);
                 }
 
-                let exitosas = 0;
-                let fallidas = 0;
-
-                for (const linea of lineasLocales) {
-                    const { _id, ...lineaSinId } = linea;
-                    const respuestaLinea = await App.enviarJson('/Pedidos/CrearLinea', 'POST', {
-                        ...lineaSinId,
-                        Entry: entryCreado
-                    });
-
-                    if (respuestaLinea.resultado) {
-                        exitosas++;
-                    } else {
-                        fallidas++;
-                        App.mostrarError(respuestaLinea.mensaje);
-                    }
-                }
-
                 const sufijoNumDoc = respuestaCabecera.numDoc != null ? ` No. documento: ${respuestaCabecera.numDoc}.` : '';
-                if (fallidas > 0) {
-                    await App.mostrarExito(`Pedido creado correctamente. Líneas guardadas: ${exitosas} de ${exitosas + fallidas}.${sufijoNumDoc}`);
-                } else {
-                    await App.mostrarExito(`Pedido creado correctamente.${sufijoNumDoc}`);
-                }
+                await App.mostrarExito(`Pedido creado correctamente.${sufijoNumDoc}`);
                 bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
                 recargarTabla();
                 return;
@@ -238,7 +224,11 @@ $(function () {
 
         $boton.prop('disabled', true);
         try {
-            const respuesta = await App.enviarJson(`/Pedidos/Editar?entry=${entry}`, 'POST', datos);
+            // Reabrir un pedido cancelado o cambiar su cliente también se controla en la API: un rechazo por crédito (409) abre el
+            // diálogo y, solo si el usuario autoriza, se reenvía la misma actualización con AutorizarExcesoCredito = true.
+            const respuesta = await CreditoDoc.enviar(
+                autorizar => App.enviarJson(`/Pedidos/Editar?entry=${entry}`, 'POST', { ...datos, AutorizarExcesoCredito: autorizar }));
+            if (respuesta === null) return;   // rechazo por crédito ya informado en el diálogo
             if (!respuesta.resultado) {
                 App.mostrarError(respuesta.mensaje);
                 return;
@@ -412,6 +402,7 @@ $(function () {
         $('#TotalBruto').val(totales.totalBruto);
         $('#TotalImp').val(totales.totalImp);
         $('#TotalDoc').val(totales.totalDoc);
+        CreditoDoc.avisarTotal(totales.totalDoc, CreditoDoc.valorLineasBase(lista));
 
         if (lista.length === 0) {
             $tbody.html('<tr><td colspan="8" class="text-center text-muted">Sin líneas de detalle</td></tr>');

@@ -50,6 +50,7 @@ $(function () {
         inicializarSerieFactura();
         inicializarBuscadorSocio();
         CondicionPagoDoc.inicializar();
+        CreditoDoc.inicializar({ tipo: 'factura' });   // antes del detalle: el detalle informa el total al aviso de crédito
         FacturasPago.inicializar();   // antes del detalle: el detalle informa el total a la sección de pago
         inicializarDetalle();
     }
@@ -67,6 +68,7 @@ $(function () {
             onSeleccion: async s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
                 CondicionPagoDoc.preseleccionar(s ? (s.condicionPago ?? s.CondicionPago ?? null) : null);
+                CreditoDoc.alElegirSocio(s ? (s.codigo ?? s.Codigo) : null);
                 const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 if (nueva === listaPrecioSocio) return;
                 listaPrecioSocio = nueva;
@@ -227,11 +229,18 @@ $(function () {
             }
 
             datos.Lineas = lineasLocales.map(App.sinCamposInternos);
+            // Lo que se cobra al facturar: el control de crédito lo descuenta del monto. Si el exceso se autoriza, el
+            // reenvío lleva el mismo documento y el mismo PagoInmediato.
+            datos.PagoInmediato = FacturasPago.pagoInmediato();
 
             // Guardar queda deshabilitado mientras dura la petición: un doble clic no debe crear dos documentos.
             $boton.prop('disabled', true);
             try {
-                const respuesta = await App.enviarJson('/Facturas/Crear', 'POST', datos);
+                // Si la API rechaza por crédito (409) el diálogo ofrece, a quien puede, «Autorizar y guardar» (reenvía este mismo documento).
+                const respuesta = await CreditoDoc.enviar(
+                    autorizar => App.enviarJson('/Facturas/Crear', 'POST', { ...datos, AutorizarExcesoCredito: autorizar }),
+                    { pagoInmediato: datos.PagoInmediato });
+                if (respuesta === null) return;   // rechazo por crédito ya informado en el diálogo
                 if (!respuesta.resultado) {
                     App.mostrarError(respuesta.mensaje);
                     return;
@@ -446,6 +455,7 @@ $(function () {
         $('#TotalImp').val(totales.totalImp);
         $('#TotalDoc').val(totales.totalDoc);
         FacturasPago.actualizarTotal(totales.totalDoc);
+        CreditoDoc.avisarTotal(totales.totalDoc, CreditoDoc.valorLineasBase(lista));
 
         if (lista.length === 0) {
             $tbody.html('<tr><td colspan="8" class="text-center text-muted">Sin líneas de detalle</td></tr>');

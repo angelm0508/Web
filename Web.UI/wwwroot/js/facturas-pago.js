@@ -88,6 +88,12 @@ window.FacturasPago = (function () {
         return r2(suma);
     }
 
+    // Lo que se cobra al facturar: Σ de los montos de las formas de pago (0 con la sección apagada o sin permiso).
+    // Viaja como PagoInmediato al crear la factura, para que el control de crédito lo descuente del monto.
+    function pagoInmediato() {
+        return activo() ? totalMedios() : 0;
+    }
+
     function recalcular() {
         if (!hayContexto()) return;
         const $filas = $('#tblMediosFactura tbody tr');
@@ -101,6 +107,7 @@ window.FacturasPago = (function () {
         $('#pagoPendiente').text(dinero(pendiente))
             .toggleClass('text-danger', pendiente < 0)
             .toggleClass('text-success', pendiente === 0 && pagado > 0);
+        if (window.CreditoDoc) CreditoDoc.avisarPago(pagoInmediato());   // el aviso de crédito descuenta lo que se cobra al facturar
     }
 
     function refrescarDisponibilidad() {
@@ -198,5 +205,5 @@ window.FacturasPago = (function () {
         recalcular();
     });
 
-    return { inicializar, actualizarTotal, validar, activo, registrar };
+    return { inicializar, actualizarTotal, validar, activo, registrar, pagoInmediato };
 })();
