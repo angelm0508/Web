@@ -26,5 +26,7 @@ namespace Web.ApiClient.Dtos.SocioNegocio
         public decimal? Saldo { get; set; }
         /// <summary>Parte vencida del saldo; mismo origen que Saldo.</summary>
         public decimal? Vencido { get; set; }
+        /// <summary>Saldo + comprometido en pedidos y entregas abiertos; solo se llena en el listado de clientes, con el mismo origen que Saldo.</summary>
+        public decimal? Exposicion { get; set; }
     }
 }

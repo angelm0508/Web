@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
+using Web.ApiClient.Dtos.CreditoCliente;
 using Web.ApiClient.Dtos.DireccionSocioNegocio;
 using Web.ApiClient.Dtos.EstadoCuenta;
 using Web.ApiClient.Dtos.SocioNegocio;
@@ -22,6 +23,7 @@ namespace Web.UI.Controllers
         private readonly INumeracionDocumentoDetApiClient _series;
         private readonly ICondicionPagoApiClient _condicionesPago;
         private readonly IEstadoCuentaApiClient _estadoCuenta;
+        private readonly ICreditoClienteApiClient _credito;
 
         // Máximo de socios que acepta la API por llamada a EstadoCuenta/Saldos.
         private const int MaximoSociosPorLlamadaSaldos = 500;
@@ -39,7 +41,8 @@ namespace Web.UI.Controllers
             IMunicipioApiClient municipios,
             INumeracionDocumentoDetApiClient series,
             ICondicionPagoApiClient condicionesPago,
-            IEstadoCuentaApiClient estadoCuenta)
+            IEstadoCuentaApiClient estadoCuenta,
+            ICreditoClienteApiClient credito)
         {
             _socios = socios;
             _grupos = grupos;
@@ -51,6 +54,7 @@ namespace Web.UI.Controllers
             _series = series;
             _condicionesPago = condicionesPago;
             _estadoCuenta = estadoCuenta;
+            _credito = credito;
         }
 
         [RequierePermiso("SociosNegocio", Accion.Ver)]
@@ -73,6 +77,16 @@ namespace Web.UI.Controllers
                     s.Saldo = saldo.Saldo;
                     s.Vencido = saldo.Vencido;
                 }
+
+                // Exposición (saldo + comprometido) de los clientes mostrados, en una sola llamada (la API
+                // admite 500 por petición y el cliente HTTP parte en bloques); sirve para marcar «Excedido».
+                // Si falla, el listado sale sin esa información. Proveedores y otros no tienen límite.
+                var posiciones = await ObtenerPosicionesAsync(lista.Where(s => s.TipoSn == "C").Select(s => s.Codigo));
+                foreach (var s in lista)
+                {
+                    if (posiciones.TryGetValue(s.Codigo, out var posicion))
+                        s.Exposicion = posicion.Exposicion;
+                }
                 respuesta.Dato = lista;
             }
             return Json(respuesta);
@@ -85,7 +99,7 @@ namespace Web.UI.Controllers
             await CargarDropdownsAsync();
             await CargarUbicacionesAsync();
             await CargarSeriesAsync();
-            return View(new SocioNegocioCrearDTO { Activo = "S" });
+            return View(new SocioNegocioCrearDTO { Activo = "S", BloquearSiVencido = "N" });
         }
 
         [HttpGet]
@@ -119,6 +133,9 @@ namespace Web.UI.Controllers
                 NumLstPrecio = respuesta.Dato.NumLstPrecio,
                 // Siempre se precarga la condición actual: la actualización de la API reemplaza todas las columnas.
                 CondicionPago = respuesta.Dato.CondicionPago,
+                // Igual que la condición de pago: se precargan los valores actuales porque la actualización los reemplaza.
+                LimiteCredito = respuesta.Dato.LimiteCredito,
+                BloquearSiVencido = respuesta.Dato.BloquearSiVencido == "S" ? "S" : "N",
                 Email = respuesta.Dato.Email,
                 Activo = respuesta.Dato.Activo,
                 Serie = respuesta.Dato.Serie
@@ -132,6 +149,14 @@ namespace Web.UI.Controllers
                 var saldos = await ObtenerSaldosAsync([codigo]);
                 if (saldos.TryGetValue(codigo, out var saldo))
                     ViewBag.SaldoSocio = saldo;
+
+                // Posición de crédito solo de clientes y con el mismo permiso; si la llamada falla, la ficha no muestra el bloque.
+                if (respuesta.Dato.TipoSn == "C")
+                {
+                    var credito = await _credito.ObtenerAsync(codigo);
+                    if (credito.Resultado && credito.Dato is not null)
+                        ViewBag.PosicionCredito = credito.Dato;
+                }
             }
 
             return PartialView("_Form", dto);
@@ -142,6 +167,7 @@ namespace Web.UI.Controllers
         [RequierePermiso("SociosNegocio", Accion.Agregar)]
         public async Task<IActionResult> Crear([FromBody] SocioNegocioCrearDTO dto)
         {
+            NormalizarCredito(dto);
             var respuesta = await _socios.InsertarAsync(dto);
             // "respuesta.Dato" ya es el código real (para series no manuales, el que calculó la
             // API al momento de registrar -- no el de la vista previa mostrada antes de guardar).
@@ -160,6 +186,7 @@ namespace Web.UI.Controllers
             if (!actual.Resultado || actual.Dato is null)
                 return NotFound(actual);
 
+            NormalizarCredito(dto);
             var actualizar = new SocioNegocioActualizarDTO
             {
                 Serie = actual.Dato.Serie,
@@ -174,6 +201,9 @@ namespace Web.UI.Controllers
                 Descuento = dto.Descuento,
                 NumLstPrecio = dto.NumLstPrecio,
                 CondicionPago = dto.CondicionPago,
+                // La actualización de la API reemplaza todas las columnas: siempre se envían el límite y el bloqueo.
+                LimiteCredito = dto.LimiteCredito,
+                BloquearSiVencido = dto.BloquearSiVencido,
                 Email = dto.Email,
                 Activo = dto.Activo
             };
@@ -262,6 +292,39 @@ namespace Web.UI.Controllers
                     resultado[s.CodigoSn] = s;
             }
             return resultado;
+        }
+
+        /// <summary>
+        /// Posiciones de crédito de los clientes pedidos en una sola llamada (el cliente HTTP las parte en bloques
+        /// de 500); si falla, queda vacío y el listado sale sin esos datos.
+        /// </summary>
+        private async Task<Dictionary<string, PosicionCreditoDTO>> ObtenerPosicionesAsync(IEnumerable<string> codigos)
+        {
+            var resultado = new Dictionary<string, PosicionCreditoDTO>(StringComparer.OrdinalIgnoreCase);
+            var lista = codigos.Distinct().ToList();
+            if (lista.Count == 0) return resultado;
+
+            var respuesta = await _credito.ObtenerPosicionesAsync(lista);
+            if (!respuesta.Resultado || respuesta.Dato is null) return resultado;
+            foreach (var p in respuesta.Dato)
+                resultado[p.CodigoSn] = p;
+            return resultado;
+        }
+
+        /// <summary>
+        /// El límite solo aplica a clientes: para otros tipos se envía sin límite y sin bloqueo. El bloqueo vacío se envía como "N".
+        /// </summary>
+        private static void NormalizarCredito(SocioNegocioCrearDTO dto)
+        {
+            if (dto.TipoSn != "C")
+            {
+                dto.LimiteCredito = null;
+                dto.BloquearSiVencido = "N";
+            }
+            else if (string.IsNullOrWhiteSpace(dto.BloquearSiVencido))
+            {
+                dto.BloquearSiVencido = "N";
+            }
         }
 
         private async Task CargarUbicacionesAsync()

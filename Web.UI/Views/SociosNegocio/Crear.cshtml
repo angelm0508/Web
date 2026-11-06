@@ -152,6 +152,19 @@
                                     </select>
                                     <span class="form-text">Define el vencimiento de las facturas nuevas de este socio.</span>
                                 </div>
+                                @* Solo clientes: el JS los muestra al elegir el tipo Cliente; para proveedores se envían vacíos. *@
+                                <div class="col-md-4 campo-credito-cliente d-none">
+                                    <label asp-for="LimiteCredito" class="form-label"></label>
+                                    <input asp-for="LimiteCredito" type="number" min="0" step="0.01" class="form-control" />
+                                    <span class="form-text">Vacío = sin límite; 0 = solo contado</span>
+                                </div>
+                                <div class="col-md-4 campo-credito-cliente d-none">
+                                    <label asp-for="BloquearSiVencido" class="form-label">Bloquear si tiene saldo vencido</label>
+                                    <select asp-for="BloquearSiVencido" class="form-select">
+                                        <option value="N">No</option>
+                                        <option value="S">Sí</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

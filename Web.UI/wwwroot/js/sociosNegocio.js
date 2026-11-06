@@ -1,8 +1,17 @@
 $(function () {
     const datosPermisosEl = document.getElementById('datosPermisosSociosNegocio');
     const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true, verSaldos: false };
-    // Saldo / Vencido: formato con 2 decimales al pintar; para ordenar/filtrar se usa el número.
-    const renderDinero = (d, tipo) => d == null ? '' : (tipo === 'display' ? Number(d).toFixed(2) : d);
+    // Importes: 2 decimales y separador de miles al pintar; para ordenar/filtrar se usa el número.
+    const formatoDinero = n => Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const renderDinero = (d, tipo) => d == null ? '' : (tipo === 'display' ? formatoDinero(d) : d);
+    // Límite de crédito (solo clientes): vacío = sin límite; «Excedido» cuando saldo + comprometido supera el límite.
+    const renderLimite = (d, tipo, fila) => {
+        if (tipo !== 'display') return d == null ? '' : d;
+        if (fila.tipoSn !== 'C') return '';
+        if (d == null) return '<span class="text-muted">Sin límite</span>';
+        const excedido = fila.exposicion != null && Number(fila.exposicion) > Number(d);
+        return formatoDinero(d) + (excedido ? ' <span class="badge text-bg-danger" title="El saldo más lo comprometido en pedidos y entregas abiertos supera el límite.">Excedido</span>' : '');
+    };
     const tabla = $('#tblSociosNegocio').DataTable({
         ajax: { url: '/SociosNegocio/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
@@ -14,6 +23,7 @@ $(function () {
             { data: 'activo', render: d => d === 'S' ? '<span class="badge text-bg-success">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
             { data: 'saldo', className: 'text-end', visible: permisos.verSaldos, defaultContent: '', render: renderDinero },
             { data: 'vencido', className: 'text-end', visible: permisos.verSaldos, defaultContent: '', render: renderDinero },
+            { data: 'limiteCredito', className: 'text-end', visible: permisos.verSaldos, defaultContent: '', render: renderLimite },
             {
                 data: 'codigo', orderable: false, className: 'text-end',
                 render: codigo => `
@@ -25,11 +35,13 @@ $(function () {
         language: App.datatableEsEs
     });
 
-    // Si el servidor no devolvió saldos (sin permiso o la llamada falló), las columnas no se muestran.
+    // Si el servidor no devolvió saldos (sin permiso o la llamada falló), las columnas no se muestran;
+    // lo mismo con el límite si no llegó la posición de crédito de ningún cliente.
     tabla.on('xhr.dt', function (e, settings, json) {
         if (!permisos.verSaldos) return;
-        const hayDatos = !!(json && json.resultado && (json.dato || []).some(s => s.saldo != null));
-        tabla.columns([6, 7]).visible(hayDatos, false);
+        const datos = (json && json.resultado && json.dato) || [];
+        tabla.columns([6, 7]).visible(datos.some(s => s.saldo != null), false);
+        tabla.columns([8]).visible(datos.some(s => s.exposicion != null), false);
     });
 
     function recargarTabla() { tabla.ajax.reload(null, false); }
@@ -39,6 +51,31 @@ $(function () {
         new bootstrap.Modal('#modalFormulario').show();
         inicializarDirecciones();
         inicializarGruposSocioNegocio();
+        actualizarCamposCredito();
+    }
+
+    // --- Límite de crédito y bloqueo por vencido: solo para clientes (TipoSn = 'C') ---
+
+    function actualizarCamposCredito() {
+        $('.campo-credito-cliente').toggleClass('d-none', $('#TipoSn').val() !== 'C');
+    }
+
+    /** Proveedores (u otros tipos) se envían sin límite y sin bloqueo; el límite vacío ya viaja como null. Devuelve false si es inválido. */
+    function aplicarCreditoSegunTipo(datos) {
+        if (datos.TipoSn !== 'C') {
+            datos.LimiteCredito = null;
+            datos.BloquearSiVencido = 'N';
+            return true;
+        }
+        if (!datos.BloquearSiVencido) datos.BloquearSiVencido = 'N';
+        if (datos.LimiteCredito != null) {
+            const limite = Number(datos.LimiteCredito);
+            if (!Number.isFinite(limite) || limite < 0) {
+                App.mostrarError('El límite de crédito no puede ser negativo.');
+                return false;
+            }
+        }
+        return true;
     }
 
     $('#tblSociosNegocio').on('click', '.btn-editar', async function () {
@@ -64,6 +101,8 @@ $(function () {
     $(document).on('click', '#btnGuardarSocioNegocio', async function () {
         const codigo = $(this).data('codigo');
         const datos = App.recolectarFormulario('#formSocioNegocio');
+        // Siempre se envían el límite y el bloqueo actuales: la actualización de la API reemplaza todas las columnas.
+        if (!aplicarCreditoSegunTipo(datos)) return;
 
         const respuesta = await App.enviarJson(`/SociosNegocio/Editar?codigo=${encodeURIComponent(codigo)}`, 'POST', datos);
         if (!respuesta.resultado) {
@@ -134,6 +173,7 @@ $(function () {
     $(document).on('change', '#TipoSn', function () {
         poblarSeriesSocioNegocio(this.value);
         poblarGruposSocioNegocio(this.value);
+        actualizarCamposCredito();
     });
 
     $(document).on('change', '#selectSerieSocioNegocio', function () {
@@ -141,6 +181,7 @@ $(function () {
     });
 
     inicializarSeriesSocioNegocio();
+    actualizarCamposCredito();
 
     // --- Grupo del socio: depende del tipo (Cliente/Proveedor) seleccionado ---
 
@@ -439,6 +480,7 @@ $(function () {
 
         const datos = App.recolectarFormulario('#formSocioNegocioCrear');
         datos.Serie = serieSeleccionada;
+        if (!aplicarCreditoSegunTipo(datos)) return;
 
         const respuesta = await App.enviarJson('/SociosNegocio/Crear', 'POST', datos);
         if (!respuesta.resultado) {
