@@ -253,7 +253,7 @@ namespace Web.UI.Controllers
         /// <summary>Saldos de los socios pedidos, en bloques de <see cref="MaximoSociosPorLlamadaSaldos"/> por llamada; los bloques que fallen quedan sin datos.</summary>
         private async Task<Dictionary<string, SaldoSocioDTO>> ObtenerSaldosAsync(IEnumerable<string> codigos)
         {
-            var resultado = new Dictionary<string, SaldoSocioDTO>();
+            var resultado = new Dictionary<string, SaldoSocioDTO>(StringComparer.OrdinalIgnoreCase);
             foreach (var bloque in codigos.Distinct().Chunk(MaximoSociosPorLlamadaSaldos))
             {
                 var respuesta = await _estadoCuenta.ObtenerSaldosAsync(bloque);

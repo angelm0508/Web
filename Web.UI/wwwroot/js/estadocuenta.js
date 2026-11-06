@@ -52,6 +52,9 @@ $(function () {
             return false;
         }
         if ($desde.val() && $hasta.val() && $desde.val() > $hasta.val()) {
+            // Un resultado anterior no debe quedar visible junto al error (ni reaparecer con una respuesta pendiente).
+            consultaId++;
+            $('#resultado').addClass('d-none');
             mostrarErrorFiltro('La fecha inicial no puede ser posterior a la final.');
             return false;
         }
@@ -74,8 +77,9 @@ $(function () {
         } catch (e) {
             respuesta = { resultado: false, mensaje: 'No se pudo cargar el estado de cuenta.' };
         }
-        if (id !== consultaId) return;
+        // Se rehabilita siempre, aunque la respuesta sea obsoleta (p. ej. se limpió el socio durante la consulta).
         $boton.prop('disabled', false);
+        if (id !== consultaId) return;
 
         if (!respuesta || !respuesta.resultado || !respuesta.dato) {
             $('#resultado').addClass('d-none');

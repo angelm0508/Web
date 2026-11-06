@@ -49,6 +49,8 @@ $(function () {
         footerCallback: function () {
             const api = this.api();
             const filas = api.rows({ search: 'applied' }).data().toArray();
+            // Con una búsqueda activa los totales son solo de las filas filtradas.
+            $(api.column(0).footer()).text(api.search() ? 'Totales (filtrados)' : 'Totales');
             importes.forEach((c, i) => {
                 const suma = r2(filas.reduce((acc, f) => acc + Number(f[c.campo] ?? 0), 0));
                 const $celda = $(api.column(i + 1).footer());

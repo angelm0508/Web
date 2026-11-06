@@ -49,6 +49,9 @@ namespace Web.UI.Controllers
         [RequierePermiso("EstadoCuenta", Accion.Ver)]
         public async Task<IActionResult> ObtenerEstadoCuenta(string codigoSn, DateTime? desde = null, DateTime? hasta = null)
         {
+            if (string.IsNullOrWhiteSpace(codigoSn))
+                return Json(new Web.ApiClient.Dtos.Respuesta<object> { Resultado = false, Mensaje = "El código del socio es requerido." });
+
             var respuesta = await _estadoCuenta.ObtenerAsync(codigoSn, desde, hasta);
             return Json(respuesta);
         }

@@ -46,6 +46,9 @@ namespace Web.UI.Controllers
         [RequierePermiso("AntiguedadCobrar", Accion.Ver)]
         public async Task<IActionResult> DetalleCobrar(string codigoSn, string? nombreSn = null)
         {
+            if (string.IsNullOrWhiteSpace(codigoSn))
+                return BadRequest("El código del socio es requerido.");
+
             var respuesta = await _antiguedad.ObtenerDetalleCobrarAsync(codigoSn);
             return DetalleParcial(respuesta, codigoSn, nombreSn);
         }
@@ -54,6 +57,9 @@ namespace Web.UI.Controllers
         [RequierePermiso("AntiguedadPagar", Accion.Ver)]
         public async Task<IActionResult> DetallePagar(string codigoSn, string? nombreSn = null)
         {
+            if (string.IsNullOrWhiteSpace(codigoSn))
+                return BadRequest("El código del socio es requerido.");
+
             var respuesta = await _antiguedad.ObtenerDetallePagarAsync(codigoSn);
             return DetalleParcial(respuesta, codigoSn, nombreSn);
         }
