@@ -160,7 +160,7 @@ namespace Web.UI.Controllers
 
             var respuesta = await _pedidos.InsertarAsync(dto);
             if (!respuesta.Resultado)
-                return Json(respuesta);
+                return Json(CreditoDocumento.Proteger(User, respuesta));
 
             var creado = await _pedidos.ObtenerAsync(respuesta.Dato);
             return Json(new { respuesta.Resultado, respuesta.Mensaje, dato = respuesta.Dato, numDoc = creado.Dato?.NumDoc });
@@ -200,7 +200,7 @@ namespace Web.UI.Controllers
             };
 
             var respuesta = await _pedidos.ActualizarAsync(entry, actualizar);
-            return Json(respuesta);
+            return Json(CreditoDocumento.Proteger(User, respuesta));
         }
 
         [HttpPost]

@@ -25,11 +25,11 @@
             {
                 <div>
                     <div class="small text-muted">Saldo</div>
-                    <div class="fw-semibold">@saldoSocio.Saldo.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</div>
+                    <div class="fw-semibold">@saldoSocio.Saldo.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)</div>
                 </div>
                 <div>
                     <div class="small text-muted">Vencido</div>
-                    <div class="fw-semibold @(saldoSocio.Vencido > 0 ? "text-danger" : "")">@saldoSocio.Vencido.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)</div>
+                    <div class="fw-semibold @(saldoSocio.Vencido > 0 ? "text-danger" : "")">@saldoSocio.Vencido.ToString("N2", System.Globalization.CultureInfo.InvariantCulture)</div>
                 </div>
             }
             <a class="ms-auto small" href="/EstadoCuenta?codigoSn=@Uri.EscapeDataString(Model.Codigo ?? "")">
@@ -40,8 +40,10 @@
     @{
         // Solo se carga (en el controlador) para clientes y con permiso de Ver en EstadoCuenta.
         var credito = ViewBag.PosicionCredito as Web.ApiClient.Dtos.CreditoCliente.PosicionCreditoDTO;
+        // El flag de ViewBag es dynamic: se pasa a un bool tipado para que el análisis de nulos de «credito» no se pierda.
+        var puedeVerCredito = ViewBag.PuedeVerEstadoCuenta is true;
     }
-    @if (ViewBag.PuedeVerEstadoCuenta == true && credito is not null)
+    @if (puedeVerCredito && credito is not null)
     {
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         var tieneLimite = credito.Limite.HasValue;

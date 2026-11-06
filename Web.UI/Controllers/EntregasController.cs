@@ -160,7 +160,7 @@ namespace Web.UI.Controllers
 
             var respuesta = await _entregas.InsertarAsync(dto);
             if (!respuesta.Resultado)
-                return Json(respuesta);
+                return Json(CreditoDocumento.Proteger(User, respuesta));
 
             var creado = await _entregas.ObtenerAsync(respuesta.Dato);
             return Json(new { respuesta.Resultado, respuesta.Mensaje, dato = respuesta.Dato, numDoc = creado.Dato?.NumDoc });

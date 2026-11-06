@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json;
+using Web.ApiClient.Dtos;
+using Web.ApiClient.Dtos.CreditoCliente;
 using Web.UI.Authorization;
 
 namespace Web.UI.Controllers
@@ -29,5 +31,23 @@ namespace Web.UI.Controllers
         /// </summary>
         public static bool Autoriza(ClaimsPrincipal user, bool solicitada) =>
             solicitada && user.TienePermiso("AutorizarExcesoCredito", Accion.Ver);
+
+        /// <summary>
+        /// Las cifras del rechazo (límite, saldo, comprometido, vencido) son las del estado de cuenta: sin EstadoCuenta / Ver
+        /// el rechazo conserva solo el código y un mensaje genérico (la API sí las envía, el Web no las reenvía al navegador).
+        /// Con el permiso, o si la respuesta no es un rechazo por crédito, la respuesta queda igual.
+        /// </summary>
+        public static RespuestaCredito<T> Proteger<T>(ClaimsPrincipal user, RespuestaCredito<T> respuesta)
+        {
+            if (respuesta.Credito is null || user.TienePermiso("EstadoCuenta", Accion.Ver))
+                return respuesta;
+
+            var codigo = respuesta.Credito.Codigo;
+            respuesta.Mensaje = codigo == "CLIENTE_CON_VENCIDO"
+                ? "El cliente tiene saldo vencido y está bloqueado para nuevos documentos."
+                : "El cliente excede su límite de crédito.";
+            respuesta.Credito = new CreditoExcedidoDTO { Codigo = codigo, Oculto = true };
+            return respuesta;
+        }
     }
 }

@@ -61,8 +61,12 @@ window.CreditoDoc = (function () {
         if (comparaTotal && p.limite != null) {
             const monto = montoEstimado(t, b, pg);
             const disponible = disponibleDe(p);
-            if (monto > 0 && monto > disponible)
-                avisos.push(`El documento (${dinero(monto)}) supera el disponible del cliente (${dinero(disponible)}). El sistema podría rechazarlo al guardar.`);
+            if (monto > 0 && monto > disponible) {
+                if (Number(p.limite) === 0)
+                    avisos.push(`Cliente solo de contado: el documento (${dinero(monto)}) requiere pago al facturar.`);
+                else
+                    avisos.push(`El documento (${dinero(monto)}) supera el disponible del cliente (${dinero(disponible)}). El sistema podría rechazarlo al guardar.`);
+            }
         }
         return avisos;
     }
@@ -83,12 +87,16 @@ window.CreditoDoc = (function () {
      * Configuración de SweetAlert2 para un rechazo por crédito. Con permiso para autorizar lleva «Autorizar y guardar»
      * (y Cancelar con el foco, para que Enter no autorice sin querer); sin permiso, solo «Cerrar».
      * contexto.pagoInmediato > 0 (facturas) agrega la nota de que el pago inmediato ya se descontó.
+     * Si c.oculto (el Web quitó las cifras porque el usuario no tiene EstadoCuenta/Ver) no se pinta la tabla de cifras.
      */
     function opcionesDialogo(respuesta, c, puedeAutorizar, contexto, tipo) {
         const fila = (etiqueta, valor, clase) => `<tr><th class="fw-normal text-start">${esc(etiqueta)}</th><td class="text-end ${clase || ''}">${esc(dinero(valor))}</td></tr>`;
         const esVencido = c.codigo === 'CLIENTE_CON_VENCIDO';
+        const oculto = c.oculto === true;
         let filas = '';
-        if (esVencido) {
+        if (oculto) {
+            // sin cifras: solo el mensaje genérico que manda el servidor
+        } else if (esVencido) {
             filas += fila('Saldo vencido', c.vencido, 'text-danger fw-semibold');
             filas += fila('Monto del documento', c.monto);
         } else {
@@ -99,12 +107,18 @@ window.CreditoDoc = (function () {
             filas += fila('Exceso', c.exceso, 'text-danger fw-semibold');
         }
         const mensaje = (respuesta && respuesta.mensaje)
-            || (esVencido ? `El cliente tiene saldo vencido de ${dinero(c.vencido)}.` : 'El documento excede el límite de crédito del cliente.');
-        let html = `<div class="text-start"><p>${esc(mensaje)}</p><table class="table table-sm mb-2"><tbody>${filas}</tbody></table>`;
+            || (oculto ? (esVencido ? 'El cliente tiene saldo vencido y está bloqueado para nuevos documentos.' : 'El cliente excede su límite de crédito.')
+                : esVencido ? `El cliente tiene saldo vencido de ${dinero(c.vencido)}.` : 'El documento excede el límite de crédito del cliente.');
+        let html = `<div class="text-start"><p>${esc(mensaje)}</p>`;
+        if (!oculto && c.limite != null && Number(c.limite) === 0)
+            html += '<p>Este cliente es solo de contado: no se le puede fiar.</p>';
+        if (filas)
+            html += `<table class="table table-sm mb-2"><tbody>${filas}</tbody></table>`;
         if (Number(contexto && contexto.pagoInmediato) > 0)
             html += '<p class="small text-muted mb-1">El pago inmediato ya se descontó del monto a controlar.</p>';
+        const articulo = { pedido: 'el pedido', entrega: 'la entrega', factura: 'la factura' }[tipo] || 'el documento';
         html += puedeAutorizar
-            ? `<p class="small text-muted mb-0">Si autorizas, ${esc(tipo ? 'el ' + tipo : 'el documento')} se guarda y la autorización queda registrada a tu nombre.</p>`
+            ? `<p class="small text-muted mb-0">Si autorizas, ${esc(articulo)} se guarda y la autorización queda registrada a tu nombre.</p>`
             : '<p class="small text-muted mb-0">No tienes permiso para autorizar excesos de crédito.</p>';
         html += '</div>';
 

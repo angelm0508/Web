@@ -13,5 +13,10 @@ namespace Web.ApiClient.Dtos.CreditoCliente
         public decimal Monto { get; set; }
         public decimal Exceso { get; set; }
         public decimal? Disponible { get; set; }
+        /// <summary>
+        /// Solo Web: true cuando las cifras se ocultaron porque el usuario no tiene EstadoCuenta / Ver; únicamente
+        /// <see cref="Codigo"/> es válido. La API nunca lo envía.
+        /// </summary>
+        public bool Oculto { get; set; }
     }
 }
