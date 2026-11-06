@@ -1,0 +1,84 @@
+@{
+    ViewData["Title"] = "Estado de cuenta";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Estado de cuenta</h3>
+</div>
+
+<div class="card card-modulo mb-3">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5 position-relative">
+                <label for="CodigoSnTexto" class="form-label">Socio de negocio <span class="text-danger">*</span></label>
+                <input type="text" id="CodigoSnTexto" class="form-control" placeholder="Buscar cliente o proveedor por nombre..." autocomplete="off" />
+                <input type="hidden" id="CodigoSn" />
+                <div class="invalid-feedback d-none" id="CodigoSnError">Selecciona una opción de la lista o borra el texto.</div>
+                <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="CodigoSnResultados"></ul>
+            </div>
+            <div class="col-md-2">
+                <label for="Desde" class="form-label">Desde</label>
+                <input type="date" id="Desde" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label for="Hasta" class="form-label">Hasta</label>
+                <input type="date" id="Hasta" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-primary" id="btnConsultar">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i>Consultar
+                </button>
+            </div>
+        </div>
+        <div class="text-danger small mt-2 d-none" id="errorFiltro" role="alert"></div>
+    </div>
+</div>
+
+<div class="alert alert-danger d-none" id="errorEstado" role="alert"></div>
+
+<div id="resultado" class="d-none">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+        <div>
+            <h4 class="h5 mb-0" id="tituloSocio"></h4>
+            <div class="text-muted small" id="subtituloSocio"></div>
+        </div>
+        <div class="d-flex gap-4">
+            <div class="text-end">
+                <div class="small text-muted">Saldo actual</div>
+                <div class="fs-5 fw-semibold" id="resumenSaldoActual">0.00</div>
+            </div>
+            <div class="text-end">
+                <div class="small text-muted">Vencido</div>
+                <div class="fs-5 fw-semibold" id="resumenVencido">0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-modulo">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tblEstadoCuenta" class="table table-hover align-middle w-100">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Documento</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Cargo</th>
+                            <th class="text-end">Abono</th>
+                            <th class="text-end">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script id="datosEstadoCuenta" type="application/json">
+    @Html.Raw((string)ViewBag.DatosInicio)
+</script>
+
+@section Scripts {
+    <script src="~/js/estadocuenta.js" asp-append-version="true"></script>
+}
