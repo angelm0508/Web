@@ -14,5 +14,8 @@ namespace Web.ApiClient.Clientes
         Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganNombreAsync(string nombre);
         Task<Respuesta<IEnumerable<ArticuloDTO>>> ObtenerContenganCodigoAsync(string codigo);
         Task<Respuesta<PrecioResueltoDTO>> ObtenerPrecioAsync(string codigo, int? listaPrecio);
+        Task<Respuesta<IEnumerable<ArticuloAlmacenDTO>>> ObtenerAlmacenesAsync(string codigo);
+        Task<Respuesta<bool>> GuardarAlmacenesAsync(string codigo, IEnumerable<ArticuloAlmacenGuardarDTO> filas);
+        Task<Respuesta<IEnumerable<AlmacenBajoMinimoDTO>>> ObtenerAlmacenesBajoMinimoAsync();
     }
 }

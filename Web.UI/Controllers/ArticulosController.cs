@@ -192,6 +192,54 @@ namespace Web.UI.Controllers
 
         [HttpGet]
         [RequierePermiso("Articulos", Accion.Ver)]
+        public async Task<IActionResult> Almacenes(string codigo)
+        {
+            var respuesta = await _articulos.ObtenerAlmacenesAsync(codigo);
+            return Json(respuesta);
+        }
+
+        // Filas de stock por almacén para un artículo nuevo (aún sin existencias ni configuración).
+        [HttpGet]
+        [RequierePermiso("Articulos", Accion.Agregar)]
+        public async Task<IActionResult> AlmacenesNuevo()
+        {
+            var almacenes = await _almacenes.ObtenerTodoAsync();
+            if (!almacenes.Resultado)
+                return Json(new Respuesta<IEnumerable<ArticuloAlmacenDTO>> { Resultado = false, Mensaje = almacenes.Mensaje });
+
+            var filas = (almacenes.Dato ?? [])
+                .Where(a => a.Activo == "S")
+                .OrderBy(a => a.Codigo, StringComparer.Ordinal)
+                .Select(a => new ArticuloAlmacenDTO
+                {
+                    CodAlmacen = a.Codigo,
+                    NombreAlmacen = a.Nombre ?? a.Codigo,
+                    Bloqueado = false,
+                    EnStock = 0,
+                    Comprometido = 0,
+                    Pedido = 0,
+                    Disponible = 0,
+                    Minimo = null,
+                    Maximo = null,
+                    NivelNecesario = null,
+                    Estado = "OK"
+                })
+                .ToList();
+
+            return Json(new Respuesta<IEnumerable<ArticuloAlmacenDTO>> { Dato = filas, Resultado = true, Mensaje = almacenes.Mensaje });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequierePermiso("Articulos", Accion.Actualizar)]
+        public async Task<IActionResult> GuardarAlmacenes(string codigo, [FromBody] List<ArticuloAlmacenGuardarDTO> filas)
+        {
+            var respuesta = await _articulos.GuardarAlmacenesAsync(codigo, filas ?? []);
+            return Json(respuesta);
+        }
+
+        [HttpGet]
+        [RequierePermiso("Articulos", Accion.Ver)]
         public async Task<IActionResult> BuscarAlmacenes(string texto)
         {
             var respuesta = string.IsNullOrEmpty(texto)

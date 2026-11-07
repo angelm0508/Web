@@ -37,5 +37,14 @@ namespace Web.ApiClient.Clientes
             if (listaPrecio.HasValue) ruta += $"?listaPrecio={listaPrecio.Value}";
             return GetAsync<PrecioResueltoDTO>(ruta);
         }
+
+        public Task<Respuesta<IEnumerable<ArticuloAlmacenDTO>>> ObtenerAlmacenesAsync(string codigo) =>
+            GetAsync<IEnumerable<ArticuloAlmacenDTO>>($"{Recurso}/{Uri.EscapeDataString(codigo)}/Almacenes");
+
+        public Task<Respuesta<bool>> GuardarAlmacenesAsync(string codigo, IEnumerable<ArticuloAlmacenGuardarDTO> filas) =>
+            PutAsync<bool>($"{Recurso}/{Uri.EscapeDataString(codigo)}/Almacenes", filas);
+
+        public Task<Respuesta<IEnumerable<AlmacenBajoMinimoDTO>>> ObtenerAlmacenesBajoMinimoAsync() =>
+            GetAsync<IEnumerable<AlmacenBajoMinimoDTO>>($"{Recurso}/Almacenes/BajoMinimo");
     }
 }

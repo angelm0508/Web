@@ -8,5 +8,11 @@ namespace Web.ApiClient.Dtos.Existencia
         public decimal Comprometido { get; set; }
         public decimal Pedido { get; set; }
         public DateTime FechaActualizacion { get; set; }
+        /// <summary>Configuración de stock por almacén (nulo = sin nivel).</summary>
+        public decimal? Minimo { get; set; }
+        public decimal? Maximo { get; set; }
+        public bool Bloqueado { get; set; }
+        /// <summary>OK, BAJO_MINIMO o SOBRE_MAXIMO.</summary>
+        public string Estado { get; set; } = "OK";
     }
 }
