@@ -12,6 +12,7 @@ namespace Web.UI.Models.Home
         public List<ArticuloTopViewModel> TopArticulosPorPrecio { get; set; } = new();
         public List<TransaccionRecienteViewModel> UltimasCotizaciones { get; set; } = new();
         public List<ArticuloStockBajoViewModel> ArticulosStockBajo { get; set; } = new();
+        public List<AlmacenBajoMinimoViewModel> AlmacenesBajoMinimo { get; set; } = new();
     }
 
     public class ArticuloTopViewModel
@@ -35,5 +36,16 @@ namespace Web.UI.Models.Home
         public string? Nombre { get; set; }
         public decimal? CantDisponible { get; set; }
         public decimal? Minimo { get; set; }
+    }
+
+    /// <summary>Artículo cuyo stock en un almacén concreto está por debajo del mínimo configurado para ese almacén.</summary>
+    public class AlmacenBajoMinimoViewModel
+    {
+        public string CodArticulo { get; set; } = string.Empty;
+        public string? NombreArticulo { get; set; }
+        public string CodAlmacen { get; set; } = string.Empty;
+        public string? NombreAlmacen { get; set; }
+        public decimal EnStock { get; set; }
+        public decimal Minimo { get; set; }
     }
 }

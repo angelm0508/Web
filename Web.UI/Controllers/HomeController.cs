@@ -45,6 +45,24 @@ namespace Web.UI.Controllers
                 })
                 .ToList();
 
+            // Stock bajo por almacén: la API ya filtra (artículos de inventario con mínimo > 0 y en stock < mínimo)
+            // y exige Articulos/Ver. El Home lo ve cualquier usuario autenticado, así que sin permiso (403), con la
+            // API caída o sin datos el cliente devuelve Resultado = false y aquí queda una lista vacía, sin error.
+            var almacenesBajoMinimo = await _articulos.ObtenerAlmacenesBajoMinimoAsync();
+            var listaAlmacenesBajoMinimo = (almacenesBajoMinimo.Resultado
+                    ? almacenesBajoMinimo.Dato ?? Enumerable.Empty<Web.ApiClient.Dtos.Articulo.AlmacenBajoMinimoDTO>()
+                    : Enumerable.Empty<Web.ApiClient.Dtos.Articulo.AlmacenBajoMinimoDTO>())
+                .Select(a => new AlmacenBajoMinimoViewModel
+                {
+                    CodArticulo = a.CodArticulo,
+                    NombreArticulo = a.NombreArticulo,
+                    CodAlmacen = a.CodAlmacen,
+                    NombreAlmacen = a.NombreAlmacen,
+                    EnStock = a.EnStock,
+                    Minimo = a.Minimo
+                })
+                .ToList();
+
             // Top artículos por precio unitario (sustituto real de "top productos del mes" -- no
             // hay historial de ventas todavía para calcular el original).
             var topPrecio = listaArticulos
@@ -80,10 +98,11 @@ namespace Web.UI.Controllers
                 TotalArticulos = listaArticulos.Count,
                 TotalSociosNegocio = sociosNegocio.Dato?.Count() ?? 0,
                 TotalCotizaciones = listaCotizaciones.Count,
-                TotalArticulosStockBajo = articulosStockBajo.Count,
+                TotalArticulosStockBajo = articulosStockBajo.Count + listaAlmacenesBajoMinimo.Count,
                 TopArticulosPorPrecio = topArticulos,
                 UltimasCotizaciones = ultimasCotizaciones,
-                ArticulosStockBajo = articulosStockBajo
+                ArticulosStockBajo = articulosStockBajo,
+                AlmacenesBajoMinimo = listaAlmacenesBajoMinimo
             };
 
             return View(modelo);

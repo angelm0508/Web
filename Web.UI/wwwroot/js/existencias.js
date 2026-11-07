@@ -1,5 +1,6 @@
 $(function () {
     const num = n => (n == null ? '' : Number(n).toFixed(6).replace(/\.?0+$/, '')) || '0';
+    const numNivel = n => (n == null ? '—' : num(n));   // mínimo/máximo: sin nivel configurado -> guion
     const fec = f => (f ? new Date(f).toLocaleDateString() : '');
     const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -11,12 +12,20 @@ $(function () {
             data: d => { if (articuloFiltro) d.articulo = articuloFiltro; },
             dataSrc: App.dataSrcTabla
         },
+        // Aviso visual: rojo bajo el mínimo del almacén, amarillo sobre el máximo (solo avisan, nunca bloquean).
+        createdRow: (fila, d) => {
+            if (d.estado === 'BAJO_MINIMO') $(fila).addClass('table-danger');
+            else if (d.estado === 'SOBRE_MAXIMO') $(fila).addClass('table-warning');
+        },
         columns: [
             { data: 'codArticulo' },
             { data: 'codAlmacen' },
             { data: 'disponible', className: 'text-end', render: num },
             { data: 'comprometido', className: 'text-end', render: num },
             { data: 'pedido', className: 'text-end', render: num },
+            { data: 'minimo', className: 'text-end', render: numNivel },
+            { data: 'maximo', className: 'text-end', render: numNivel },
+            { data: 'bloqueado', render: b => (b ? '<span class="badge bg-danger">Bloqueado</span>' : '') },
             { data: 'fechaActualizacion', render: fec },
             {
                 data: 'codArticulo', className: 'text-end', orderable: false,

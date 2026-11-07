@@ -180,9 +180,14 @@
             <div class="card-body">
                 <h2 class="h6 mb-3">Necesita tu atención</h2>
                 <div class="d-flex flex-column gap-2">
-                    @if (Model.ArticulosStockBajo.Count > 0)
+                    @{
+                        // Máximo 3 avisos de stock bajo en total: primero los del mínimo general y luego los de almacén.
+                        var avisosGenerales = Model.ArticulosStockBajo.Take(3).ToList();
+                        var avisosAlmacen = Model.AlmacenesBajoMinimo.Take(3 - avisosGenerales.Count).ToList();
+                    }
+                    @if (avisosGenerales.Count > 0)
                     {
-                        @foreach (var articulo in Model.ArticulosStockBajo.Take(3))
+                        @foreach (var articulo in avisosGenerales)
                         {
                             <div class="d-flex gap-2 p-2 rounded-3" style="background:var(--color-warning-soft-bg)">
                                 <i class="fa-solid fa-triangle-exclamation flex-shrink-0" style="color:var(--color-warning-soft-fg)"></i>
@@ -192,6 +197,15 @@
                                 </div>
                             </div>
                         }
+                    }
+                    @foreach (var fila in avisosAlmacen)
+                    {
+                        <div class="d-flex gap-2 p-2 rounded-3" style="background:var(--color-warning-soft-bg)">
+                            <i class="fa-solid fa-triangle-exclamation flex-shrink-0" style="color:var(--color-warning-soft-fg)"></i>
+                            <div>
+                                <div class="small fw-semibold mb-0">@(string.IsNullOrEmpty(fila.NombreArticulo) ? fila.CodArticulo : fila.NombreArticulo) &middot; Almacén @(string.IsNullOrEmpty(fila.NombreAlmacen) ? fila.CodAlmacen : fila.NombreAlmacen): en stock @fila.EnStock &middot; Mínimo @fila.Minimo</div>
+                            </div>
+                        </div>
                     }
                     <!-- TODO: los siguientes son ejemplos estáticos -- no existen todavía los módulos
                          de crédito/cuentas por cobrar, compras ni comisiones para calcularlos de verdad. -->
