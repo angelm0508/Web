@@ -185,6 +185,16 @@
             </div>
         </div>
     </div>
+
+    @* Datos de inventario por almacén: guardarlos exige permiso de Actualizar (además del de Agregar de la página). *@
+    @if (User.TienePermiso("Articulos", Accion.Actualizar))
+    {
+        <div class="card mt-3">
+            <div class="card-body pt-0">
+                <partial name="_InventarioAlmacenes" />
+            </div>
+        </div>
+    }
 </form>
 
 <script id="datosSeriesArticulo" type="application/json">
@@ -192,6 +202,7 @@
 </script>
 
 @section Scripts {
+    <script src="~/js/articulo-almacenes.js" asp-append-version="true"></script>
     <script src="~/js/articulos.js" asp-append-version="true"></script>
     <script src="~/js/articulos-tipo.js" asp-append-version="true"></script>
 }

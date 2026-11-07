@@ -1,0 +1,18 @@
+<style>
+    .inv-alm { font-size: .875rem; }
+    .inv-alm th { white-space: nowrap; }
+    .inv-alm .inv-alm-min, .inv-alm .inv-alm-max { min-width: 6.5rem; }
+    .inv-alm > tbody > tr > td.inv-alm-ro,
+    .inv-alm > tfoot > tr > td.inv-alm-ro { background-color: var(--color-surface-muted); }
+    .inv-alm > tbody > tr.inv-alm-bajo > td { background-color: var(--color-danger-soft-bg); color: var(--color-danger-soft-fg); }
+    .inv-alm > tbody > tr.inv-alm-sobre > td { background-color: var(--color-warning-soft-bg); color: var(--color-warning-soft-fg); }
+    .inv-alm-leyenda { display: inline-block; width: .9rem; height: .9rem; border-radius: .2rem; vertical-align: middle; border: 1px solid var(--color-border); }
+    .inv-alm-leyenda.inv-alm-bajo { background: var(--color-danger-soft-bg); }
+    .inv-alm-leyenda.inv-alm-sobre { background: var(--color-warning-soft-bg); }
+</style>
+
+<div class="mt-4">
+    <h2 class="h6 mb-1">Datos de inventario</h2>
+    <p class="small text-muted mb-3">Stock por almacén y niveles mínimo y máximo. Un almacén bloqueado no admite movimientos de este artículo.</p>
+    <div id="inventarioAlmacenes"><p class="small text-muted mb-0">Cargando almacenes...</p></div>
+</div>

@@ -25,17 +25,18 @@ $(function () {
 
     let buscadorAlmacenDefecto = null;
 
-    function abrirModal(html) {
+    function abrirModal(html, codigo) {
         $('#contenidoModal').html(html);
         $('#modalFormulario').off('.autocompletar'); // limpia los listeners de la apertura anterior antes de que el buscador registre los suyos
         new bootstrap.Modal('#modalFormulario').show();
         inicializarBuscadorAlmacenDefecto();
+        ArticuloAlmacenes.cargar('#inventarioAlmacenes', codigo); // sección "Datos de inventario"
     }
 
     $('#tblArticulos').on('click', '.btn-editar', async function () {
         const codigo = $(this).data('codigo');
         const html = await $.get('/Articulos/FormularioEditar', { codigo });
-        abrirModal(html);
+        abrirModal(html, codigo);
     });
 
     $('#tblArticulos').on('click', '.btn-eliminar', async function () {
@@ -56,18 +57,38 @@ $(function () {
         const codigo = $(this).data('codigo');
         const datos = App.recolectarFormulario('#formArticulo');
 
-        const respuesta = await App.enviarJson(`/Articulos/Editar?codigo=${encodeURIComponent(codigo)}`, 'POST', datos);
-
-        console.log(`Respuesta: ${respuesta.mensaje}`);
-
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
+        // Primero se validan las filas de inventario por almacén: si hay errores no se guarda nada.
+        if (!ArticuloAlmacenes.validar()) {
+            App.mostrarError('Revisa los datos de inventario por almacén: hay filas con errores.');
             return;
         }
 
-        bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
-        App.mostrarExito('Artículo actualizado correctamente.');
-        recargarTabla();
+        const $boton = $(this).prop('disabled', true);
+        try {
+            const respuesta = await App.enviarJson(`/Articulos/Editar?codigo=${encodeURIComponent(codigo)}`, 'POST', datos);
+
+            console.log(`Respuesta: ${respuesta.mensaje}`);
+
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+
+            // El artículo ya quedó guardado; ahora la configuración por almacén (se omite si no hay nada que guardar).
+            const respuestaAlmacenes = await ArticuloAlmacenes.guardar(codigo);
+            if (!respuestaAlmacenes.resultado) {
+                // No se cierra el modal ni se deshace el artículo: el usuario corrige y vuelve a guardar.
+                recargarTabla();
+                App.mostrarError(`El artículo se guardó, pero no se pudo guardar el inventario por almacén: ${respuestaAlmacenes.mensaje}`);
+                return;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalFormulario')).hide();
+            App.mostrarExito('Artículo actualizado correctamente.');
+            recargarTabla();
+        } finally {
+            $boton.prop('disabled', false);
+        }
     });
 
     // --- Serie de numeración para generar el código del artículo (solo en la página "Nuevo") ---
@@ -173,13 +194,41 @@ $(function () {
         const datos = App.recolectarFormulario('#formArticuloCrear');
         datos.Serie = serieSeleccionada;
 
-        const respuesta = await App.enviarJson('/Articulos/Crear', 'POST', datos);
-        if (!respuesta.resultado) {
-            App.mostrarError(respuesta.mensaje);
+        // Primero se validan las filas de inventario por almacén (la sección solo existe con permiso de Actualizar).
+        if (!ArticuloAlmacenes.validar()) {
+            App.mostrarError('Revisa los datos de inventario por almacén: hay filas con errores.');
             return;
         }
 
-        await App.mostrarExito(`Artículo "${respuesta.codigo}" creado correctamente.`);
-        window.location.href = '/Articulos';
+        const $boton = $(this).prop('disabled', true);
+        let redirigir = false;
+        try {
+            const respuesta = await App.enviarJson('/Articulos/Crear', 'POST', datos);
+            if (!respuesta.resultado) {
+                App.mostrarError(respuesta.mensaje);
+                return;
+            }
+
+            // Con el código real devuelto por la API se guarda la configuración por almacén (se omite si no se configuró nada).
+            const respuestaAlmacenes = await ArticuloAlmacenes.guardar(respuesta.codigo);
+            if (!respuestaAlmacenes.resultado) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Artículo creado',
+                    text: `El artículo "${respuesta.codigo}" se creó, pero no se pudo guardar el inventario por almacén (${respuestaAlmacenes.mensaje}). Vuelve a configurarlo desde «Editar».`
+                });
+            } else {
+                await App.mostrarExito(`Artículo "${respuesta.codigo}" creado correctamente.`);
+            }
+            redirigir = true; // el artículo ya existe: se sale de la página para no duplicarlo con un segundo guardado
+            window.location.href = '/Articulos';
+        } finally {
+            if (!redirigir) $boton.prop('disabled', false);
+        }
     });
+
+    // Sección "Datos de inventario" de la página "Nuevo": filas de los almacenes activos, sin existencias aún.
+    if ($('#inventarioAlmacenes').length > 0 && $('#formArticuloCrear').length > 0) {
+        ArticuloAlmacenes.cargar('#inventarioAlmacenes', '/Articulos/AlmacenesNuevo');
+    }
 });
