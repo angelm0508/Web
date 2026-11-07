@@ -234,7 +234,11 @@ namespace Web.UI.Controllers
         [RequierePermiso("Articulos", Accion.Actualizar)]
         public async Task<IActionResult> GuardarAlmacenes(string codigo, [FromBody] List<ArticuloAlmacenGuardarDTO> filas)
         {
-            var respuesta = await _articulos.GuardarAlmacenesAsync(codigo, filas ?? []);
+            // Un cuerpo ilegible (p. ej. un número fuera de rango) llega como null: no es «borrar todo». Solo [] limpia la configuración.
+            if (filas is null)
+                return Json(new Respuesta<bool> { Resultado = false, Mensaje = "Los datos de inventario por almacén no son válidos." });
+
+            var respuesta = await _articulos.GuardarAlmacenesAsync(codigo, filas);
             return Json(respuesta);
         }
 
