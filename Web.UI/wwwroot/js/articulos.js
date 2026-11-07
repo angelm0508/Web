@@ -147,6 +147,7 @@ $(function () {
             endpoint: '/Articulos/BuscarAlmacenes',
             obtenerCodigo: a => a.codigo ?? a.Codigo,
             obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
+            minCaracteres: 0, // al enfocar el campo vacío se sugieren los almacenes sin tener que escribir
             requerido: false
         });
         // En edición, el hidden ya trae el código: resolverlo para mostrar "código - nombre".
