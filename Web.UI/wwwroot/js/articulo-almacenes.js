@@ -18,6 +18,10 @@ const ArticuloAlmacenes = (function () {
     const URL_ALMACENES = '/Articulos/Almacenes?codigo=';
     const URL_GUARDAR = '/Articulos/GuardarAlmacenes?codigo=';
     const DECIMALES = 1e6; // 6 decimales, como decimal(19,6)
+    // Máximo de decimal(19,6): 13 enteros y 6 decimales. Como double 9999999999999.999999 es igual a 1e13 (no hay precisión
+    // para tanto), un valor de exactamente 1e13 pasa aquí y lo rechaza la API con su propio mensaje.
+    const LIMITE = 9999999999999.999999;
+    const SELECTOR_TIPO = '#ArticuloInventario';
 
     const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const num = n => (n == null ? '' : Number(n).toFixed(6).replace(/\.?0+$/, '')) || '0';
@@ -49,6 +53,11 @@ const ArticuloAlmacenes = (function () {
     function leerNumero($input) {
         const v = $input.val();
         return v === '' || v == null ? null : Number(v);
+    }
+
+    function esNumeroInvalido($input) {
+        const el = $input[0];
+        return !!(el && el.validity && el.validity.badInput);
     }
 
     function estaConfigurada(f) {
@@ -122,7 +131,8 @@ const ArticuloAlmacenes = (function () {
                 <span class="inv-alm-leyenda inv-alm-bajo"></span> Bajo el mínimo
                 <span class="inv-alm-leyenda inv-alm-sobre ms-3"></span> Sobre el máximo
                 &middot; Cero o vacío = sin nivel. Los avisos no bloquean ningún movimiento.
-            </p>`);
+            </p>
+            <p class="small text-muted mt-2 mb-0 inv-alm-servicio d-none">Un servicio no mueve inventario: la configuración por almacén no aplica.</p>`);
     }
 
     // Recalcula el nivel necesario y el color de una fila al editar su mínimo o máximo.
@@ -144,6 +154,17 @@ const ArticuloAlmacenes = (function () {
     function marcarError($fila, mensaje, campos) {
         $fila.find(campos).addClass('is-invalid');
         $fila.next('.inv-alm-msg').removeClass('d-none').children().last().text(mensaje);
+    }
+
+    // Un artículo de servicio (#ArticuloInventario = 'N') no mueve inventario: se deshabilita la configuración por almacén,
+    // pero los valores se conservan y recolectar() los sigue leyendo (los inputs deshabilitados no se serializan en un
+    // formulario, por eso se leen directamente).
+    function aplicarServicio() {
+        const $tipo = $(SELECTOR_TIPO);
+        const esServicio = $tipo.length > 0 && $tipo.val() === 'N';
+        $contenedor.find('.inv-alm-bloq, .inv-alm-min, .inv-alm-max').prop('disabled', esServicio);
+        $contenedor.find('.inv-alm-servicio').toggleClass('d-none', !esServicio);
+        if (esServicio) $contenedor.find('tr.inv-alm-fila').each(function () { limpiarError($(this)); });
     }
 
     // ---- API pública ----
@@ -177,6 +198,7 @@ const ArticuloAlmacenes = (function () {
         const datos = respuesta.dato || [];
         habiaConfiguracion = datos.some(estaConfigurada);
         pintar(datos);
+        aplicarServicio();
         cargado = true;
     }
 
@@ -204,15 +226,20 @@ const ArticuloAlmacenes = (function () {
 
             const $min = $fila.find('.inv-alm-min');
             const $max = $fila.find('.inv-alm-max');
+            // Un artículo de servicio deshabilita la sección: sus filas no se validan.
+            if ($min.prop('disabled') && $max.prop('disabled')) return;
             const minimo = leerNumero($min);
             const maximo = leerNumero($max);
 
             let mensaje = null;
             let campos = '.inv-alm-min, .inv-alm-max';
-            if (minimo != null && !Number.isFinite(minimo)) { mensaje = 'El stock mínimo no es un número válido.'; campos = '.inv-alm-min'; }
-            else if (maximo != null && !Number.isFinite(maximo)) { mensaje = 'El stock máximo no es un número válido.'; campos = '.inv-alm-max'; }
+            // Un texto que el navegador no puede convertir en número (p. ej. «1e999») queda con val() vacío y badInput.
+            if (esNumeroInvalido($min)) { mensaje = 'El valor no es un número válido.'; campos = '.inv-alm-min'; }
+            else if (esNumeroInvalido($max)) { mensaje = 'El valor no es un número válido.'; campos = '.inv-alm-max'; }
             else if (minimo != null && minimo < 0) { mensaje = 'El stock mínimo no puede ser negativo.'; campos = '.inv-alm-min'; }
             else if (maximo != null && maximo < 0) { mensaje = 'El stock máximo no puede ser negativo.'; campos = '.inv-alm-max'; }
+            else if (minimo != null && minimo > LIMITE) { mensaje = 'No puede superar 9,999,999,999,999.999999.'; campos = '.inv-alm-min'; }
+            else if (maximo != null && maximo > LIMITE) { mensaje = 'No puede superar 9,999,999,999,999.999999.'; campos = '.inv-alm-max'; }
             else if (minimo != null && redondear(minimo) !== minimo) { mensaje = 'El stock mínimo admite como máximo 6 decimales.'; campos = '.inv-alm-min'; }
             else if (maximo != null && redondear(maximo) !== maximo) { mensaje = 'El stock máximo admite como máximo 6 decimales.'; campos = '.inv-alm-max'; }
             // Cero es "sin valor": solo se compara cuando ambos niveles tienen valor.
@@ -248,6 +275,8 @@ const ArticuloAlmacenes = (function () {
         limpiarError($fila);
         recalcularFila($fila);
     });
+
+    $(document).on('change', SELECTOR_TIPO, aplicarServicio);
 
     return { cargar, recolectar, validar, guardar };
 })();
