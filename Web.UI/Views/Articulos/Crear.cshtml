@@ -156,6 +156,12 @@
                                     </select>
                                 </div>
                             </div>
+
+                            @* Datos de inventario por almacén: guardarlos exige permiso de Actualizar (además del de Agregar de la página). *@
+                            @if (User.TienePermiso("Articulos", Accion.Actualizar))
+                            {
+                                <partial name="_InventarioAlmacenes" />
+                            }
                         </div>
                     </div>
                 </div>
@@ -186,15 +192,6 @@
         </div>
     </div>
 
-    @* Datos de inventario por almacén: guardarlos exige permiso de Actualizar (además del de Agregar de la página). *@
-    @if (User.TienePermiso("Articulos", Accion.Actualizar))
-    {
-        <div class="card mt-3">
-            <div class="card-body pt-0">
-                <partial name="_InventarioAlmacenes" />
-            </div>
-        </div>
-    }
 </form>
 
 <script id="datosSeriesArticulo" type="application/json">

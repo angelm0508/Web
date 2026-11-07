@@ -196,6 +196,9 @@ $(function () {
 
         // Primero se validan las filas de inventario por almacén (la sección solo existe con permiso de Actualizar).
         if (!ArticuloAlmacenes.validar()) {
+            // La sección vive en la pestaña Inventario: se muestra para que se vean los errores por fila.
+            const pestanaInventario = document.querySelector('[data-bs-target="#tabInventario"]');
+            if (pestanaInventario) bootstrap.Tab.getOrCreateInstance(pestanaInventario).show();
             App.mostrarError('Revisa los datos de inventario por almacén: hay filas con errores.');
             return;
         }
