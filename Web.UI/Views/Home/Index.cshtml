@@ -193,7 +193,7 @@
                                 <i class="fa-solid fa-triangle-exclamation flex-shrink-0" style="color:var(--color-warning-soft-fg)"></i>
                                 <div>
                                     <div class="small fw-semibold mb-0">@(articulo.Nombre ?? articulo.Codigo) bajo mínimo</div>
-                                    <div class="small text-muted">Disponible: @(articulo.CantDisponible ?? 0) &middot; Mínimo: @(articulo.Minimo ?? 0)</div>
+                                    <div class="small text-muted">Disponible: @((articulo.CantDisponible ?? 0).ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)) &middot; Mínimo: @((articulo.Minimo ?? 0).ToString("0.######", System.Globalization.CultureInfo.InvariantCulture))</div>
                                 </div>
                             </div>
                         }
@@ -203,7 +203,7 @@
                         <div class="d-flex gap-2 p-2 rounded-3" style="background:var(--color-warning-soft-bg)">
                             <i class="fa-solid fa-triangle-exclamation flex-shrink-0" style="color:var(--color-warning-soft-fg)"></i>
                             <div>
-                                <div class="small fw-semibold mb-0">@(string.IsNullOrEmpty(fila.NombreArticulo) ? fila.CodArticulo : fila.NombreArticulo) &middot; Almacén @(string.IsNullOrEmpty(fila.NombreAlmacen) ? fila.CodAlmacen : fila.NombreAlmacen): en stock @fila.EnStock &middot; Mínimo @fila.Minimo</div>
+                                <div class="small fw-semibold mb-0">@(string.IsNullOrEmpty(fila.NombreArticulo) ? fila.CodArticulo : fila.NombreArticulo) &middot; @(string.IsNullOrEmpty(fila.NombreAlmacen) ? fila.CodAlmacen : $"{fila.NombreAlmacen} ({fila.CodAlmacen})"): en stock @(fila.EnStock.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture)) &middot; Mínimo @(fila.Minimo.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture))</div>
                             </div>
                         </div>
                     }

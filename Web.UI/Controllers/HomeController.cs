@@ -92,13 +92,19 @@ namespace Web.UI.Controllers
                 })
                 .ToList();
 
+            // El KPI cuenta artículos distintos: uno bajo el mínimo general y en un almacén, o en dos almacenes, cuenta una vez.
+            var totalArticulosStockBajo = articulosStockBajo.Select(a => a.Codigo)
+                .Concat(listaAlmacenesBajoMinimo.Select(a => a.CodArticulo))
+                .Distinct()
+                .Count();
+
             var modelo = new DashboardViewModel
             {
                 NombreUsuario = User.Identity?.Name ?? string.Empty,
                 TotalArticulos = listaArticulos.Count,
                 TotalSociosNegocio = sociosNegocio.Dato?.Count() ?? 0,
                 TotalCotizaciones = listaCotizaciones.Count,
-                TotalArticulosStockBajo = articulosStockBajo.Count + listaAlmacenesBajoMinimo.Count,
+                TotalArticulosStockBajo = totalArticulosStockBajo,
                 TopArticulosPorPrecio = topArticulos,
                 UltimasCotizaciones = ultimasCotizaciones,
                 ArticulosStockBajo = articulosStockBajo,
