@@ -352,6 +352,18 @@ table.dataTable {
   background-color: var(--color-surface-muted);
 }
 
+/* Filas con aviso (p. ej. Existencias: bajo mínimo / sobre máximo). Sin esto, la regla de "transparent" de
+   arriba anula el color de .table-danger y .table-warning de Bootstrap y la fila no se distingue. */
+.table > tbody > tr.table-danger > * {
+  background-color: var(--color-danger-soft-bg);
+  color: var(--color-danger-soft-fg);
+}
+
+.table > tbody > tr.table-warning > * {
+  background-color: var(--color-warning-soft-bg);
+  color: var(--color-warning-soft-fg);
+}
+
 .kpi-card {
   border-radius: 10px;
   border: 1px solid var(--color-border);
