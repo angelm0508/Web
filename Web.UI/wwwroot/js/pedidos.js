@@ -249,7 +249,7 @@ $(function () {
     let proximoIdLocal = 1;
     let noLineaOriginalEnEdicion = null;
     let tasaImpuestoSeleccionado = 0;
-    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto;
+    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto, selectorUnidad;
     let sincronizandoArticulo = false;
     let listaPrecioSocio = null;
     let borradorCopia = null;   // borrador de "Copiar a" cuando el formulario nace de otro documento
@@ -310,6 +310,14 @@ $(function () {
                 tasaImpuestoSeleccionado = i ? Number(i.tasa ?? i.Tasa ?? 0) : 0;
                 recalcularLinea();
             }
+        });
+
+        selectorUnidad = App.unidadesLinea({
+            select: $('#detUomEntry'),
+            textoBase: $('#detCantidadBaseTexto'),
+            inputCantidad: $('#detCantidad'),
+            inputPrecio: $('#detPrecio'),
+            onCambio: recalcularLinea
         });
 
         // "Copiar a": se cargan las líneas abiertas del documento origen y se bloquea la moneda.
@@ -374,8 +382,10 @@ $(function () {
 
         for (const l of lineasLocales) {
             const cod = l.codArticulo ?? l.CodArticulo ?? l.codigo ?? l.Codigo;
-            const nuevo = await App.resolverPrecioLista(cod, listaPrecioSocio);
-            if (nuevo == null) continue;
+            const nuevoBase = await App.resolverPrecioLista(cod, listaPrecioSocio);
+            if (nuevoBase == null) continue;
+            const factorUom = Number(l._factorUom ?? l.factorUom ?? l.FactorUom ?? 1) || 1;
+            const nuevo = Number((nuevoBase * factorUom).toFixed(2));
             // impuesto y total de línea escalan linealmente con el precio (mismo %desc, misma tasa)
             const viejo = Number(l.precio ?? l.Precio ?? 0);
             if (!viejo) continue;   // sin precio previo no se puede reescalar el impuesto en proporción
@@ -405,7 +415,7 @@ $(function () {
         CreditoDoc.avisarTotal(totales.totalDoc, CreditoDoc.valorLineasBase(lista));
 
         if (lista.length === 0) {
-            $tbody.html('<tr><td colspan="8" class="text-center text-muted">Sin líneas de detalle</td></tr>');
+            $tbody.html('<tr><td colspan="9" class="text-center text-muted">Sin líneas de detalle</td></tr>');
             return;
         }
 
@@ -423,6 +433,7 @@ $(function () {
                 <tr>
                     <td>${codArticulo ?? ''}</td>
                     <td>${descripcion ?? ''}${linea._baseTexto ? `<div class="small text-muted">${linea._baseTexto}</div>` : ''}</td>
+                    <td>${App.celdaUnidadLinea(linea)}</td>
                     <td>${cantidad ?? ''}</td>
                     <td>${precio != null ? Number(precio).toFixed(2) : ''}</td>
                     <td>${prctjeDesc ?? 0}</td>
@@ -460,7 +471,7 @@ $(function () {
         } finally {
             sincronizandoArticulo = false;
         }
-        if (!a) { buscadorAlmacen.establecer(null); return; }
+        if (!a) { buscadorAlmacen.establecer(null); if (selectorUnidad) selectorUnidad.limpiar(); return; }
         $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
         aplicarPrecioDeArticulo(a);
         aplicarAlmacenDefectoDeArticulo(a);
@@ -472,7 +483,11 @@ $(function () {
         const base = a.precioUnitario ?? a.PrecioUnitario ?? 0;
         const codArt = a.codigo ?? a.Codigo;
         const pLista = await App.resolverPrecioLista(codArt, listaPrecioSocio);
-        $('#detPrecio').val(pLista != null ? pLista : base);
+        const precioBase = pLista != null ? pLista : base;
+        $('#detPrecio').val(precioBase);
+        if (selectorUnidad) {
+            await selectorUnidad.cargarParaArticulo(codArt, { precioUnitarioBase: precioBase });
+        }
         recalcularLinea();
     }
 
@@ -486,6 +501,7 @@ $(function () {
     function limpiarPanelLinea() {
         $('#detNoLineaOriginal').val('');
         setArticuloEnAmbasCajas(null);
+        if (selectorUnidad) selectorUnidad.limpiar();
         buscadorAlmacen.establecer(null);
         buscadorImpuesto.establecer(null);
         $('#detDescripcion').val('');
@@ -563,6 +579,18 @@ $(function () {
         $('#detPrecio').val(linea.precio ?? linea.Precio ?? '');
         $('#detPrctjeDesc').val(linea.prctjeDesc ?? linea.PrctjeDesc ?? 0);
 
+        if (selectorUnidad && codArticulo) {
+            const factorLinea = Number(linea._factorUom ?? linea.factorUom ?? linea.FactorUom ?? 1) || 1;
+            const precioLinea = Number(linea.precio ?? linea.Precio ?? 0);
+            const esCopiada = (linea.BaseEntry ?? linea.baseEntry) != null;
+            await selectorUnidad.cargarParaArticulo(codArticulo, {
+                uomEntryInicial: linea.UomEntry ?? linea.uomEntry,
+                precioUnitarioBase: factorLinea > 0 ? precioLinea / factorLinea : precioLinea,
+                recalcularPrecio: false,
+                bloqueado: esCopiada
+            });
+        }
+
         recalcularLinea();
         $('#panelLineaDetalle').removeClass('d-none');
     });
@@ -592,6 +620,7 @@ $(function () {
         const datosForm = App.recolectarFormulario('#formLineaDetalle');
         datosForm.CodArticulo = $('#detCodArticulo').val() || null;
         datosForm.CodigoImpuesto = $('#detCodigoImpuesto').val() || null;
+        if (selectorUnidad) Object.assign(datosForm, selectorUnidad.leer());
 
         if (!datosForm.CodArticulo) {
             App.mostrarError('Selecciona un artículo.');

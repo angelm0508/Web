@@ -35,5 +35,9 @@ namespace Web.ApiClient.Dtos.DocumentoBase
         public string? CodigoImpuesto { get; set; }
         public decimal? Impuesto { get; set; }
         public string? CodAlmacen { get; set; }
+        public int? UomEntry { get; set; }
+        public string? UomCodigo { get; set; }
+        public decimal FactorUom { get; set; } = 1m;
+        public decimal? CantidadBase { get; set; }
     }
 }

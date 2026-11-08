@@ -190,6 +190,175 @@ const App = {
         } catch (e) { return null; }
     },
 
+    /**
+     * Consulta las unidades de medida activas del grupo de un artículo (la base primero).
+     * Devuelve un arreglo [{ uomEntry, codigo, nombre, factor, esBase }]; vacío si no tiene grupo.
+     */
+    obtenerUnidadesArticulo: async function (codigo) {
+        if (!codigo) return [];
+        try {
+            const r = await $.get('/Precios/Unidades', { codigo });
+            if (r && r.resultado && r.dato && Array.isArray(r.dato.unidades)) {
+                return r.dato.unidades.map(u => ({
+                    uomEntry: Number(u.uomEntry ?? u.UomEntry),
+                    codigo: String(u.codigo ?? u.Codigo ?? ''),
+                    nombre: u.nombre ?? u.Nombre ?? '',
+                    factor: Number(u.factor ?? u.Factor ?? 1),
+                    esBase: Boolean(u.esBase ?? u.EsBase)
+                }));
+            }
+        } catch (e) { /* cae a vacío */ }
+        return [];
+    },
+
+    /** Celda HTML de la columna «UM» en la tabla de líneas de un documento (escapa texto dinámico). */
+    celdaUnidadLinea: function (linea) {
+        const cod = linea.uomCodigo ?? linea.UomCodigo ?? linea._uomCodigo ?? '';
+        const factor = Number(linea.factorUom ?? linea.FactorUom ?? linea._factorUom ?? 1);
+        const cant = Number(linea.cantidad ?? linea.Cantidad ?? 0);
+        const base = linea.cantidadBase ?? linea.CantidadBase ?? linea._cantidadBase ?? Number((cant * factor).toFixed(6));
+        const esc = v => $('<div>').text(v ?? '').html();
+        if (!cod) return '<span class="text-muted">—</span>';
+        if (factor !== 1 && factor > 0) {
+            return `${esc(cod)}<div class="small text-muted">Base: ${base} (×${factor})</div>`;
+        }
+        return esc(cod);
+    },
+
+    /**
+     * Conecta el <select> de unidad de medida de un panel de línea con la cantidad y el precio:
+     * al elegir artículo carga sus unidades (base por defecto); al cambiar de unidad recalcula
+     * precio = precioBase × factor (editable por el usuario) y muestra la cantidad en unidad base.
+     */
+    unidadesLinea: function (opciones) {
+        const $select = opciones.select;
+        const $textoBase = opciones.textoBase;
+        const $inputCantidad = opciones.inputCantidad;
+        const $inputPrecio = opciones.inputPrecio;
+        const onCambio = opciones.onCambio || function () {};
+        const esc = v => $('<div>').text(v ?? '').html();
+
+        let unidades = [];
+        let codigoBase = '';
+        let precioBase = null;
+        let idCarga = 0;
+
+        function factorActual() {
+            const f = Number($select.find('option:selected').data('factor'));
+            return f > 0 ? f : 1;
+        }
+
+        function codigoActual() {
+            return String($select.find('option:selected').data('codigo') ?? '');
+        }
+
+        function actualizarTextoBase() {
+            if (!$textoBase || $textoBase.length === 0) return;
+            const factor = factorActual();
+            const cant = Number($inputCantidad ? $inputCantidad.val() : 0) || 0;
+            if (unidades.length > 0 && factor !== 1) {
+                const totalBase = Number((cant * factor).toFixed(6));
+                $textoBase.text(`Cant. base: ${totalBase} ${codigoBase} (×${factor})`);
+            } else {
+                $textoBase.text('');
+            }
+        }
+
+        $select.on('change', function () {
+            const factor = factorActual();
+            if (precioBase != null && $inputPrecio && $inputPrecio.length) {
+                $inputPrecio.val(Number((precioBase * factor).toFixed(2)));
+            }
+            actualizarTextoBase();
+            onCambio();
+        });
+
+        if ($inputPrecio && $inputPrecio.length) {
+            $inputPrecio.on('input', function () {
+                const p = Number($inputPrecio.val());
+                if (!Number.isNaN(p) && $inputPrecio.val() !== '') {
+                    precioBase = p / factorActual();
+                }
+            });
+        }
+
+        if ($inputCantidad && $inputCantidad.length) {
+            $inputCantidad.on('input change', actualizarTextoBase);
+        }
+
+        function limpiar() {
+            idCarga++;
+            unidades = [];
+            codigoBase = '';
+            precioBase = null;
+            $select.html('<option value="" data-factor="1" data-codigo="">—</option>').prop('disabled', true);
+            if ($textoBase && $textoBase.length) $textoBase.text('');
+        }
+
+        limpiar();
+
+        return {
+            limpiar,
+            factorActual,
+            fijarPrecioBase: function (nuevoPrecioBase, actualizarInput = true) {
+                precioBase = nuevoPrecioBase != null && nuevoPrecioBase !== '' ? Number(nuevoPrecioBase) : null;
+                if (actualizarInput && precioBase != null && $inputPrecio && $inputPrecio.length) {
+                    $inputPrecio.val(Number((precioBase * factorActual()).toFixed(2)));
+                }
+                actualizarTextoBase();
+            },
+            cargarParaArticulo: async function (codArticulo, cfg = {}) {
+                const esteId = ++idCarga;
+                if (!codArticulo) {
+                    limpiar();
+                    return;
+                }
+                const lista = await App.obtenerUnidadesArticulo(codArticulo);
+                if (esteId !== idCarga) return;
+                unidades = lista;
+                const base = lista.find(u => u.esBase) || lista[0];
+                codigoBase = base ? base.codigo : '';
+
+                if (lista.length === 0) {
+                    $select.html('<option value="" data-factor="1" data-codigo="">Sin unidad</option>').prop('disabled', true);
+                } else {
+                    $select.html(lista.map(u => {
+                        const sufijo = u.factor !== 1 ? ` (×${u.factor})` : '';
+                        const nom = u.nombre && u.nombre !== u.codigo ? ` - ${esc(u.nombre)}` : '';
+                        return `<option value="${u.uomEntry}" data-factor="${u.factor}" data-codigo="${esc(u.codigo)}">${esc(u.codigo)}${nom}${sufijo}</option>`;
+                    }).join(''));
+                    const inicial = cfg.uomEntryInicial != null ? String(cfg.uomEntryInicial) : (base ? String(base.uomEntry) : '');
+                    if (inicial && $select.find(`option[value="${inicial}"]`).length > 0) {
+                        $select.val(inicial);
+                    } else if (base) {
+                        $select.val(String(base.uomEntry));
+                    }
+                    $select.prop('disabled', Boolean(cfg.bloqueado));
+                }
+
+                if (cfg.precioUnitarioBase !== undefined) {
+                    precioBase = cfg.precioUnitarioBase != null ? Number(cfg.precioUnitarioBase) : null;
+                    if (cfg.recalcularPrecio !== false && precioBase != null && $inputPrecio && $inputPrecio.length) {
+                        $inputPrecio.val(Number((precioBase * factorActual()).toFixed(2)));
+                    }
+                }
+                actualizarTextoBase();
+                onCambio();
+            },
+            leer: function () {
+                const val = $select.val();
+                const factor = factorActual();
+                const cant = Number($inputCantidad ? $inputCantidad.val() : 0) || 0;
+                return {
+                    UomEntry: val ? Number(val) : null,
+                    _uomCodigo: codigoActual(),
+                    _factorUom: factor,
+                    _cantidadBase: Number((cant * factor).toFixed(6))
+                };
+            }
+        };
+    },
+
     // ---- "Copiar a": líneas con documento base (compartido por pedidos.js, entregas.js y facturas.js) ----
 
     /** Borrador del documento base que el servidor embebe en #datosBorrador; null si el formulario no viene de "Copiar a". */
@@ -221,12 +390,17 @@ const App = {
             const prctjeDesc = Number(l.prctjeDesc ?? 0);
             const bruto = cantidad * precio;
             const total = Number((bruto - bruto * (prctjeDesc / 100) + impuesto).toFixed(2));
+            const factorUom = Number(l.factorUom ?? 1) || 1;
             return {
                 _id: id++,
                 _abierta: cantidad,
                 _baseTexto: `${nombres[l.baseTipo] ?? 'Documento'} ${borrador.origenNumDoc} · abierto: ${cantidad}`,
+                _uomCodigo: l.uomCodigo ?? '',
+                _factorUom: factorUom,
+                _cantidadBase: Number((cantidad * factorUom).toFixed(6)),
                 BaseTipo: l.baseTipo, BaseEntry: l.baseEntry, BaseLinea: l.baseLinea,
                 CodArticulo: l.codArticulo, Descripcion: l.descripcion,
+                UomEntry: l.uomEntry ?? null,
                 Cantidad: cantidad, Precio: l.precio, PrecioBruto: l.precioBruto, PrctjeDesc: l.prctjeDesc,
                 CodigoImpuesto: l.codigoImpuesto, CodAlmacen: l.codAlmacen,
                 Impuesto: impuesto, TotalLinea: total
@@ -234,7 +408,6 @@ const App = {
         });
         return { lineas, proximoId: id };
     },
-
     /** Quita los campos internos (prefijo "_") antes de enviar una línea a la API. */
     sinCamposInternos: function (linea) {
         return Object.fromEntries(Object.entries(linea).filter(([clave]) => !clave.startsWith('_')));

@@ -193,7 +193,7 @@ $(function () {
                 if (!seguir) return;
             }
 
-            datos.Lineas = lineasLocales.map(({ _id, ...linea }) => linea);
+            datos.Lineas = lineasLocales.map(App.sinCamposInternos);
 
             const respuesta = await App.enviarJson('/EntradasMercancia/Crear', 'POST', datos);
             if (!respuesta.resultado) {
@@ -225,7 +225,7 @@ $(function () {
     let lineasRemotas = [];
     let proximoIdLocal = 1;
     let noLineaOriginalEnEdicion = null;
-    let buscadorArticulo, buscadorAlmacen;
+    let buscadorArticulo, buscadorAlmacen, selectorUnidad;
 
     function esEdicionDetalle() {
         const v = $('#tblDetalleEntradaMercancia').data('es-edicion');
@@ -248,7 +248,7 @@ $(function () {
             obtenerCodigo: a => a.codigo ?? a.Codigo,
             obtenerEtiqueta: a => `${a.codigo ?? a.Codigo} - ${a.nombre ?? a.Nombre}`,
             onSeleccion: async a => {
-                if (!a) return;
+                if (!a) { if (selectorUnidad) selectorUnidad.limpiar(); return; }
                 $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
                 // Costo unitario sugerido = costo promedio del artículo (ArticuloDTO ya lo
                 // expone). Para un artículo nuevo el costo es 0: el campo es editable y el guard
@@ -274,6 +274,14 @@ $(function () {
             endpoint: '/EntradasMercancia/BuscarAlmacenes',
             obtenerCodigo: al => al.codigo ?? al.Codigo,
             obtenerEtiqueta: al => `${al.codigo ?? al.Codigo} - ${al.nombre ?? al.Nombre}`
+        });
+
+        selectorUnidad = App.unidadesLinea({
+            select: $('#detUomEntry'),
+            textoBase: $('#detCantidadBaseTexto'),
+            inputCantidad: $('#detCantidad'),
+            inputPrecio: $('#detCostoUnitario'),
+            onCambio: recalcularLinea
         });
 
         if (esEdicionDetalle()) {
@@ -310,7 +318,7 @@ $(function () {
         $('#TotalDoc').val(totales.totalDoc);
 
         if (lista.length === 0) {
-            $tbody.html('<tr><td colspan="6" class="text-center text-muted">Sin líneas de detalle</td></tr>');
+            $tbody.html('<tr><td colspan="7" class="text-center text-muted">Sin líneas de detalle</td></tr>');
             return;
         }
 
@@ -333,6 +341,7 @@ $(function () {
                 <tr>
                     <td>${codArticulo ?? ''}</td>
                     <td>${descripcion ?? ''}</td>
+                    <td>${App.celdaUnidadLinea(linea)}</td>
                     <td>${cantidad ?? ''}</td>
                     <td>${costoUnitario != null ? Number(costoUnitario).toFixed(2) : ''}</td>
                     <td>${totalLinea != null ? Number(totalLinea).toFixed(2) : ''}</td>
@@ -345,6 +354,7 @@ $(function () {
     function limpiarPanelLinea() {
         $('#detNoLineaOriginal').val('');
         buscadorArticulo.establecer(null);
+        if (selectorUnidad) selectorUnidad.limpiar();
         buscadorAlmacen.establecer(null);
         $('#detDescripcion').val('');
         $('#detCantidad').val('1');
@@ -371,7 +381,7 @@ $(function () {
         $('#panelLineaDetalle').addClass('d-none');
     });
 
-    $(document).on('click', '.btn-editar-linea', function () {
+    $(document).on('click', '.btn-editar-linea', async function () {
         const clave = $(this).data('clave');
         const linea = lineasLocales.find(l => l._id === clave);
         if (!linea) return;
@@ -396,6 +406,16 @@ $(function () {
         $('#detCantidad').val(linea.Cantidad ?? linea.cantidad ?? 1);
         $('#detCostoUnitario').val(linea.CostoUnitario ?? linea.costoUnitario ?? '');
 
+        if (selectorUnidad && codArticulo) {
+            const factorLinea = Number(linea._factorUom ?? linea.factorUom ?? linea.FactorUom ?? 1) || 1;
+            const costoLinea = Number(linea.CostoUnitario ?? linea.costoUnitario ?? 0);
+            await selectorUnidad.cargarParaArticulo(codArticulo, {
+                uomEntryInicial: linea.UomEntry ?? linea.uomEntry,
+                precioUnitarioBase: factorLinea > 0 ? costoLinea / factorLinea : costoLinea,
+                recalcularPrecio: false
+            });
+        }
+
         recalcularLinea();
         $('#panelLineaDetalle').removeClass('d-none');
     });
@@ -413,6 +433,7 @@ $(function () {
     $(document).on('click', '#btnGuardarLinea', function () {
         const datosForm = App.recolectarFormulario('#formLineaDetalle');
         datosForm.CodArticulo = $('#detCodArticulo').val() || null;
+        if (selectorUnidad) Object.assign(datosForm, selectorUnidad.leer());
 
         if (!datosForm.CodArticulo) {
             App.mostrarError('Selecciona un artículo.');

@@ -373,7 +373,7 @@ $(function () {
     let proximoIdLocal = 1;
     let noLineaOriginalEnEdicion = null;
     let tasaImpuestoSeleccionado = 0;
-    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto;
+    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, buscadorImpuesto, selectorUnidad;
     let sincronizandoArticulo = false;
     let listaPrecioSocio = null;
     let tipoLineaActual = 'I';   // 'I' = insumo (inventario), 'S' = servicio: decide qué artículos ofrece el buscador y si pide almacén
@@ -451,6 +451,13 @@ $(function () {
                     recalcularLinea();
                 }
             });
+            selectorUnidad = App.unidadesLinea({
+                select: $('#detUomEntry'),
+                textoBase: $('#detCantidadBaseTexto'),
+                inputCantidad: $('#detCantidad'),
+                inputPrecio: $('#detPrecio'),
+                onCambio: recalcularLinea
+            });
         }
 
         if (esEdicionDetalle()) {
@@ -471,7 +478,7 @@ $(function () {
         if (!respuesta || !respuesta.resultado) {
             // No se muestra "Sin líneas": engañaría a quien cree que la orden está vacía.
             lineasRemotas = [];
-            $('#tblDetalleOrden tbody').html('<tr><td colspan="10" class="text-center text-danger">No se pudieron cargar las líneas de la orden.</td></tr>');
+            $('#tblDetalleOrden tbody').html('<tr><td colspan="11" class="text-center text-danger">No se pudieron cargar las líneas de la orden.</td></tr>');
             App.mostrarError((respuesta && respuesta.mensaje) || 'No se pudieron cargar las líneas de la orden.');
             return;
         }
@@ -526,8 +533,10 @@ $(function () {
         if (!ok) return;
 
         for (const l of lineasLocales) {
-            const nuevo = await App.resolverPrecioLista(l.CodArticulo, listaPrecioSocio);
-            if (nuevo == null) continue;
+            const nuevoBase = await App.resolverPrecioLista(l.CodArticulo, listaPrecioSocio);
+            if (nuevoBase == null) continue;
+            const factorUom = Number(l._factorUom ?? l.factorUom ?? l.FactorUom ?? 1) || 1;
+            const nuevo = Number((nuevoBase * factorUom).toFixed(2));
             const viejo = Number(l.Precio ?? 0);
             if (!viejo) continue;   // sin precio previo no se puede reescalar el impuesto en proporción
             const cant = Number(l.Cantidad ?? 0);
@@ -557,7 +566,7 @@ $(function () {
         }
 
         if (lista.length === 0) {
-            $tbody.html('<tr><td colspan="10" class="text-center text-muted">Sin líneas</td></tr>');
+            $tbody.html('<tr><td colspan="11" class="text-center text-muted">Sin líneas</td></tr>');
             return;
         }
 
@@ -576,6 +585,7 @@ $(function () {
                 .append($('<td>').text(linea.codArticulo ?? linea.CodArticulo ?? ''))
                 .append($('<td>').text(linea.descripcion ?? linea.Descripcion ?? ''))
                 .append($('<td>').text(linea.codAlmacen ?? linea.CodAlmacen ?? ''))
+                .append($('<td>').html(App.celdaUnidadLinea(linea)))
                 .append($('<td>').text(linea.cantidad ?? linea.Cantidad ?? ''))
                 .append($('<td>').text(precio != null ? Number(precio).toFixed(2) : ''))
                 .append($('<td>').text(linea.prctjeDesc ?? linea.PrctjeDesc ?? 0))
@@ -615,7 +625,7 @@ $(function () {
         } finally {
             sincronizandoArticulo = false;
         }
-        if (!a) { buscadorAlmacen.establecer(null); return; }
+        if (!a) { buscadorAlmacen.establecer(null); if (selectorUnidad) selectorUnidad.limpiar(); return; }
         $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
         aplicarPrecioDeArticulo(a);
         if (tipoLineaActual === 'I') aplicarAlmacenDefectoDeArticulo(a);
@@ -625,8 +635,13 @@ $(function () {
     // Coloca en #detPrecio el precio de lista del cliente, o el PrecioUnitario base si no hay lista.
     async function aplicarPrecioDeArticulo(a) {
         const base = a.precioUnitario ?? a.PrecioUnitario ?? 0;
-        const pLista = await App.resolverPrecioLista(a.codigo ?? a.Codigo, listaPrecioSocio);
-        $('#detPrecio').val(pLista != null ? pLista : base);
+        const codArt = a.codigo ?? a.Codigo;
+        const pLista = await App.resolverPrecioLista(codArt, listaPrecioSocio);
+        const precioBase = pLista != null ? pLista : base;
+        $('#detPrecio').val(precioBase);
+        if (selectorUnidad) {
+            await selectorUnidad.cargarParaArticulo(codArt, { precioUnitarioBase: precioBase });
+        }
         recalcularLinea();
     }
 
@@ -640,6 +655,7 @@ $(function () {
     function limpiarPanelLinea() {
         $('#detNoLineaOriginal').val('');
         setArticuloEnAmbasCajas(null);
+        if (selectorUnidad) selectorUnidad.limpiar();
         buscadorAlmacen.establecer(null);
         buscadorImpuesto.establecer(null);
         tasaImpuestoSeleccionado = 0;
@@ -729,6 +745,16 @@ $(function () {
         $('#detPrecio').val(linea.precio ?? linea.Precio ?? '');
         $('#detPrctjeDesc').val(linea.prctjeDesc ?? linea.PrctjeDesc ?? 0);
 
+        if (selectorUnidad && codArticulo) {
+            const factorLinea = Number(linea._factorUom ?? linea.factorUom ?? linea.FactorUom ?? 1) || 1;
+            const precioLinea = Number(linea.precio ?? linea.Precio ?? 0);
+            await selectorUnidad.cargarParaArticulo(codArticulo, {
+                uomEntryInicial: linea.UomEntry ?? linea.uomEntry,
+                precioUnitarioBase: factorLinea > 0 ? precioLinea / factorLinea : precioLinea,
+                recalcularPrecio: false
+            });
+        }
+
         recalcularLinea();
         mostrarPanelLinea();
     });
@@ -761,6 +787,7 @@ $(function () {
         const datosForm = App.recolectarFormulario('#formLineaDetalle');
         datosForm.CodArticulo = $('#detCodArticulo').val() || null;
         datosForm.CodigoImpuesto = $('#detCodigoImpuesto').val() || null;
+        if (selectorUnidad) Object.assign(datosForm, selectorUnidad.leer());
 
         if (!datosForm.CodArticulo) {
             App.mostrarError('Selecciona un artículo.');
@@ -795,6 +822,7 @@ $(function () {
                 CodArticulo: datosForm.CodArticulo,
                 Descripcion: datosForm.Descripcion,
                 CodAlmacen: datosForm.CodAlmacen,
+                UomEntry: datosForm.UomEntry,
                 Cantidad: Number(datosForm.Cantidad),
                 Precio: Number(datosForm.Precio),
                 PrctjeDesc: Number(datosForm.PrctjeDesc) || 0,

@@ -46,5 +46,8 @@ namespace Web.ApiClient.Clientes
 
         public Task<Respuesta<IEnumerable<AlmacenBajoMinimoDTO>>> ObtenerAlmacenesBajoMinimoAsync() =>
             GetAsync<IEnumerable<AlmacenBajoMinimoDTO>>($"{Recurso}/Almacenes/BajoMinimo");
+
+        public Task<Respuesta<UnidadesArticuloDTO>> ObtenerUnidadesAsync(string codigo) =>
+            GetAsync<UnidadesArticuloDTO>($"{Recurso}/{Uri.EscapeDataString(codigo)}/Unidades");
     }
 }

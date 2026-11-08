@@ -14,5 +14,6 @@ namespace Web.ApiClient.Dtos.NotaDebitoCompra
         public string? CodigoImpuesto { get; set; }
         public decimal? Impuesto { get; set; }
         public decimal? TotalLinea { get; set; }
+        public int? UomEntry { get; set; }
     }
 }

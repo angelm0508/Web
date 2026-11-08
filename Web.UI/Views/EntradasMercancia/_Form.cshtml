@@ -85,6 +85,7 @@
                 <tr>
                     <th>Artículo</th>
                     <th>Descripción</th>
+                    <th>UM</th>
                     <th>Cantidad</th>
                     <th>Costo unitario</th>
                     <th>Total línea</th>
@@ -114,9 +115,16 @@
                     <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodAlmacenResultados"></ul>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Descripción</label>
                     <input name="Descripcion" id="detDescripcion" class="form-control" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Unidad de medida</label>
+                    <select name="UomEntry" id="detUomEntry" class="form-select" disabled>
+                        <option value="">—</option>
+                    </select>
+                    <div id="detCantidadBaseTexto" class="form-text"></div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Cantidad</label>

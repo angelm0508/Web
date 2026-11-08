@@ -189,6 +189,7 @@
                 <tr>
                     <th class="col-articulo d-none">Artículo</th>
                     <th>Descripción</th>
+                    <th class="col-articulo d-none">UM</th>
                     <th>Cantidad</th>
                     <th>Precio</th>
                     <th>% Desc.</th>
@@ -206,25 +207,32 @@
             <div class="row g-2">
                 <div id="grupoArticulo" class="col-12 d-none">
                     <div class="row g-2">
-                        <div class="col-md-4 position-relative">
+                        <div class="col-md-3 position-relative">
                             <label class="form-label">Código de artículo</label>
                             <input type="text" id="detArtCodTexto" class="form-control" placeholder="Buscar por código..." autocomplete="off" />
                             <div class="invalid-feedback" id="detArtCodError">Selecciona una opción de la lista o borra el texto.</div>
                             <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detArtCodResultados"></ul>
                         </div>
-                        <div class="col-md-4 position-relative">
+                        <div class="col-md-3 position-relative">
                             <label class="form-label">Descripción de artículo</label>
                             <input type="text" id="detArtDescTexto" class="form-control" placeholder="Buscar por descripción..." autocomplete="off" />
                             <div class="invalid-feedback" id="detArtDescError">Selecciona una opción de la lista o borra el texto.</div>
                             <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detArtDescResultados"></ul>
                             <input type="hidden" id="detCodArticulo" />
                         </div>
-                        <div class="col-md-4 position-relative">
+                        <div class="col-md-3 position-relative">
                             <label class="form-label">Almacén</label>
                             <input type="text" id="detCodAlmacenTexto" class="form-control" placeholder="Buscar por código o nombre..." autocomplete="off" />
                             <input type="hidden" id="detCodAlmacen" />
                             <div class="invalid-feedback" id="detCodAlmacenError">Selecciona una opción de la lista o borra el texto.</div>
                             <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodAlmacenResultados"></ul>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Unidad de medida</label>
+                            <select name="UomEntry" id="detUomEntry" class="form-select" disabled>
+                                <option value="">—</option>
+                            </select>
+                            <div id="detCantidadBaseTexto" class="form-text"></div>
                         </div>
                     </div>
                 </div>

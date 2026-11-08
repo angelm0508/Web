@@ -23,5 +23,9 @@ namespace Web.UI.Controllers
         [HttpGet]
         public async Task<IActionResult> ListaDeSocio(string codigo)
             => Json(await _socios.ObtenerAsync(codigo));
+
+        [HttpGet]
+        public async Task<IActionResult> Unidades(string codigo)
+            => Json(await _articulos.ObtenerUnidadesAsync(codigo));
     }
 }

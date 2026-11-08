@@ -17,5 +17,6 @@ namespace Web.ApiClient.Clientes
         Task<Respuesta<IEnumerable<ArticuloAlmacenDTO>>> ObtenerAlmacenesAsync(string codigo);
         Task<Respuesta<bool>> GuardarAlmacenesAsync(string codigo, IEnumerable<ArticuloAlmacenGuardarDTO> filas);
         Task<Respuesta<IEnumerable<AlmacenBajoMinimoDTO>>> ObtenerAlmacenesBajoMinimoAsync();
+        Task<Respuesta<UnidadesArticuloDTO>> ObtenerUnidadesAsync(string codigo);
     }
 }

@@ -129,6 +129,7 @@
                 <tr>
                     <th>Artículo</th>
                     <th>Descripción</th>
+                    <th>UM</th>
                     <th>Cantidad</th>
                     <th>Precio</th>
                     <th>% Desc.</th>
@@ -173,9 +174,16 @@
                     <ul class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1055; max-height: 220px; overflow-y: auto;" id="detCodigoImpuestoResultados"></ul>
                 </div>
 
-                <div class="col-md-8">
+                <div class="col-md-5">
                     <label class="form-label">Descripción</label>
                     <input name="Descripcion" id="detDescripcion" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Unidad de medida</label>
+                    <select name="UomEntry" id="detUomEntry" class="form-select" disabled>
+                        <option value="">—</option>
+                    </select>
+                    <div id="detCantidadBaseTexto" class="form-text"></div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Cantidad</label>

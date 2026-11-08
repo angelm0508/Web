@@ -15,7 +15,7 @@ $(function () {
     let lineaEnEdicionId = null;
     let tasaImpuestoSeleccionado = 0;
     let buscadorImpuesto;
-    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen;
+    let buscadorArticuloCod, buscadorArticuloDesc, buscadorAlmacen, selectorUnidad;
     let sincronizandoArticulo = false;
     let listaPrecioSocio = null;
 
@@ -314,7 +314,7 @@ $(function () {
         datos.TotalDesc = totales.totalDesc;
         datos.TotalImp = totales.totalImp;
         datos.TotalDoc = totales.totalDoc;
-        datos.Lineas = lineasLocales.map(({ _id, ...linea }) => linea);
+        datos.Lineas = lineasLocales.map(App.sinCamposInternos);
 
         $boton.prop('disabled', true);
         try {
@@ -419,7 +419,7 @@ $(function () {
         lineasLocales = (factura.lineas || [])
             .filter(l => !art || (l.codArticulo && l.codAlmacen))
             .map(l => ({
-                ...(art ? { CodArticulo: l.codArticulo, CodAlmacen: l.codAlmacen } : {}),
+                ...(art ? { CodArticulo: l.codArticulo, CodAlmacen: l.codAlmacen, UomEntry: l.uomEntry, _uomCodigo: l.uomCodigo, _factorUom: l.factorUom ?? 1, _cantidadBase: l.cantidadBase ?? l.cantidad } : {}),
                 Descripcion: l.descripcion,
                 Cantidad: l.cantidad,
                 Precio: l.precio,
@@ -489,6 +489,13 @@ $(function () {
                 obtenerEtiqueta: a => `${a.nombre ?? a.Nombre} (${a.codigo ?? a.Codigo})`,
                 onSeleccion: a => aplicarArticuloSeleccionado(a, 'desc')
             });
+            selectorUnidad = App.unidadesLinea({
+                select: $('#detUomEntry'),
+                textoBase: $('#detCantidadBaseTexto'),
+                inputCantidad: $('#detCantidad'),
+                inputPrecio: $('#detPrecio'),
+                onCambio: recalcularLinea
+            });
             buscadorAlmacen = App.autocompletar({
                 texto: $('#detCodAlmacenTexto'), oculto: $('#detCodAlmacen'),
                 lista: $('#detCodAlmacenResultados'), error: $('#detCodAlmacenError'),
@@ -547,7 +554,7 @@ $(function () {
         $('#TotalDoc').val(totales.totalDoc);
 
         if (lista.length === 0) {
-            $tbody.html(`<tr><td colspan="${art ? 8 : 7}" class="text-center text-muted">Sin líneas de detalle</td></tr>`);
+            $tbody.html(`<tr><td colspan="${art ? 9 : 7}" class="text-center text-muted">Sin líneas de detalle</td></tr>`);
             return;
         }
 
@@ -608,7 +615,7 @@ $(function () {
         } finally {
             sincronizandoArticulo = false;
         }
-        if (!a) { buscadorAlmacen.establecer(null); return; }
+        if (!a) { buscadorAlmacen.establecer(null); if (selectorUnidad) selectorUnidad.limpiar(); return; }
         $('#detDescripcion').val(a.nombre ?? a.Nombre ?? '');
         aplicarPrecioDeArticulo(a);
         aplicarAlmacenDefectoDeArticulo(a);
@@ -620,7 +627,11 @@ $(function () {
         const base = a.precioUnitario ?? a.PrecioUnitario ?? 0;
         const codArt = a.codigo ?? a.Codigo;
         const pLista = await App.resolverPrecioLista(codArt, listaPrecioSocio);
-        $('#detPrecio').val(pLista != null ? pLista : base);
+        const precioBase = pLista != null ? pLista : base;
+        $('#detPrecio').val(precioBase);
+        if (selectorUnidad) {
+            await selectorUnidad.cargarParaArticulo(codArt, { precioUnitarioBase: precioBase });
+        }
         recalcularLinea();
     }
 
@@ -636,6 +647,7 @@ $(function () {
         if (buscadorArticuloCod) {
             setArticuloEnAmbasCajas(null);
             buscadorAlmacen.establecer(null);
+            if (selectorUnidad) selectorUnidad.limpiar();
         }
         tasaImpuestoSeleccionado = 0;
         $('#detDescripcion').val('');
@@ -711,6 +723,19 @@ $(function () {
         $('#detPrecio').val(linea.Precio ?? linea.precio ?? '');
         $('#detPrctjeDesc').val(linea.PrctjeDesc ?? linea.prctjeDesc ?? 0);
 
+        if (porArticulos() && selectorUnidad) {
+            const codArt = linea.CodArticulo ?? linea.codArticulo ?? '';
+            if (codArt) {
+                const factorLinea = Number(linea._factorUom ?? linea.factorUom ?? linea.FactorUom ?? 1) || 1;
+                const precioLinea = Number(linea.Precio ?? linea.precio ?? 0);
+                await selectorUnidad.cargarParaArticulo(codArt, {
+                    uomEntryInicial: linea.UomEntry ?? linea.uomEntry,
+                    precioUnitarioBase: factorLinea > 0 ? precioLinea / factorLinea : precioLinea,
+                    recalcularPrecio: false
+                });
+            }
+        }
+
         recalcularLinea();
         $('#panelLineaDetalle').removeClass('d-none');
     });
@@ -770,7 +795,7 @@ $(function () {
         recalcularLinea();
         const precio = Number(precioTexto);
         const linea = {
-            ...(art ? { CodArticulo: codArticulo, CodAlmacen: codAlmacen } : {}),
+            ...(art ? { CodArticulo: codArticulo, CodAlmacen: codAlmacen, ...(selectorUnidad ? selectorUnidad.leer() : {}) } : {}),
             Descripcion: descripcion,
             Cantidad: cantidad,
             Precio: precio,

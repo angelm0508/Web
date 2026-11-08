@@ -25,5 +25,6 @@ namespace Web.ApiClient.Dtos.EntregaCompraDetalle
         public decimal? TotalLinea { get; set; }
         public string? TipoObjeto { get; set; }
         public string? CodAlmacen { get; set; }
+        public int? UomEntry { get; set; }
     }
 }

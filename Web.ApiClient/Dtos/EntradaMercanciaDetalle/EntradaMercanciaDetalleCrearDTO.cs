@@ -14,5 +14,6 @@ namespace Web.ApiClient.Dtos.EntradaMercanciaDetalle
         public decimal? CostoUnitario { get; set; }
         public decimal? TotalLinea { get; set; }
         public string? CodAlmacen { get; set; }
+        public int? UomEntry { get; set; }
     }
 }
