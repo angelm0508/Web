@@ -1,0 +1,36 @@
+@model List<Web.ApiClient.Dtos.Reporte.ReporteResumenDTO>
+@{
+    ViewData["Title"] = "Reportes";
+    var error = ViewBag.Error as string;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Reportes</h3>
+</div>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (Model.Count == 0)
+{
+    <div class="alert alert-info">No tienes reportes habilitados. Pide al administrador que te asigne los permisos de reportes.</div>
+}
+
+@foreach (var familia in Model.GroupBy(r => r.Familia))
+{
+    <h5 class="mt-4 mb-3">@familia.Key</h5>
+    <div class="row g-3">
+        @foreach (var reporte in familia)
+        {
+            <div class="col-md-6 col-xl-4">
+                <a class="card card-modulo h-100 text-decoration-none" asp-controller="Reportes" asp-action="Ver" asp-route-codigo="@reporte.Codigo">
+                    <div class="card-body">
+                        <h6 class="card-title mb-1"><i class="fa-solid fa-chart-column me-2"></i>@reporte.Nombre</h6>
+                        <p class="card-text small text-muted mb-0">@reporte.Descripcion</p>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+}

@@ -617,3 +617,19 @@ table.dataTable {
 html[data-theme="dark"] .btn-close {
   filter: invert(1) grayscale(100%) brightness(200%);
 }
+
+/* ---------- Reportes ---------- */
+.rep-columna { padding: 2px 0; }
+.rep-columna .btn-link { color: var(--bs-secondary-color, #6c757d); }
+.rep-grupo td { background: var(--bs-tertiary-bg, #f1f3f5); font-weight: 600; }
+.rep-subtotal td { font-weight: 600; background: var(--bs-tertiary-bg, #f8f9fa); }
+.rep-total td { font-weight: 700; border-top: 2px solid var(--bs-border-color, #dee2e6); }
+.rep-grafico { position: relative; height: 320px; }
+.print-only { display: none; }
+
+@media print {
+  aside, .topbar, .no-print, .dataTables_filter, .dataTables_length, .dataTables_paginate, .dataTables_info { display: none !important; }
+  .print-only { display: block !important; }
+  .app-content, .content-area { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  .card-modulo { border: 0 !important; box-shadow: none !important; }
+}

@@ -17,6 +17,7 @@
     bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra", "PagosEfectuados", "AntiguedadPagar" }.Any(Puede);
     bool MuestraTaller = new[] { "Mecanicos", "Motocicletas", "OrdenesServicio" }.Any(Puede);
     bool MuestraAdministracion = Puede("Usuarios");
+    bool MuestraReportes = new[] { "ReportesVentas", "ReportesCompras", "ReportesInventario", "ReportesCobrosPagos" }.Any(Puede);
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
 <!DOCTYPE html>
@@ -322,6 +323,13 @@
                                 </a>
                             }
                         </div>
+                    }
+
+                    @if (MuestraReportes)
+                    {
+                        <a class="nav-link @(EsActivo("Reportes") ? "active" : "")" asp-controller="Reportes" asp-action="Index">
+                            <i class="fa-solid fa-chart-column"></i><span>Reportes</span>
+                        </a>
                     }
 
                     @if (MuestraAdministracion)
