@@ -41,7 +41,9 @@ $(function () {
     function pintarFiltros() {
         const html = definicion.filtros.map(f => {
             const id = `f_${f.campo}`;
-            const etiqueta = `<label class="form-label" for="${id}">${escapar(f.titulo)}${f.obligatorio ? ' <span class="text-danger">*</span>' : ''}</label>`;
+            // El label apunta al control visible: en los buscadores es el campo de texto y en el rango, la fecha inicial.
+            const paraEtiqueta = BUSCADORES[f.tipo] ? `${id}_texto` : f.tipo === 'RangoFechas' ? `${id}_desde` : id;
+            const etiqueta = `<label class="form-label" for="${paraEtiqueta}">${escapar(f.titulo)}${f.obligatorio ? ' <span class="text-danger">*</span>' : ''}</label>`;
             switch (f.tipo) {
                 case 'RangoFechas':
                     return `<div class="col-md-6 col-lg-4">${etiqueta}
@@ -275,11 +277,23 @@ $(function () {
         const solicitud = construirSolicitud();
         if (!validarSolicitud(solicitud)) return;
 
-        const respuesta = await fetch(`${url.exportar}?codigo=${encodeURIComponent(codigo)}&formato=${encodeURIComponent(formato)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': App.csrfToken() },
-            body: JSON.stringify({ solicitud, graficoPng: null })
-        });
+        let respuesta;
+        try {
+            respuesta = await fetch(`${url.exportar}?codigo=${encodeURIComponent(codigo)}&formato=${encodeURIComponent(formato)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': App.csrfToken() },
+                body: JSON.stringify({ solicitud, graficoPng: null })
+            });
+        } catch {
+            App.mostrarError('No se pudo conectar con el servidor para generar el archivo.');
+            return;
+        }
+
+        // Con la sesión vencida el fetch sigue la redirección y recibe la página de inicio de sesión (HTML con estado 200).
+        if (respuesta.redirected || (respuesta.headers.get('Content-Type') ?? '').includes('text/html')) {
+            App.mostrarError('Tu sesión expiró. Por favor inicia sesión nuevamente.');
+            return;
+        }
 
         if (!respuesta.ok) {
             let mensaje = 'No se pudo generar el archivo.';
@@ -310,11 +324,26 @@ $(function () {
 
     // ---------- arranque ----------
 
+    function falloDeCarga(mensaje) {
+        $('#repResultado').html(`<div class="alert alert-danger mb-0">${escapar(mensaje)}</div>`);
+        $('#btnEjecutar, .btn-exportar, #btnImprimir').prop('disabled', true);
+    }
+
     async function iniciar() {
-        const respuesta = await $.get(url.definicion, { codigo });
-        if (!respuesta.resultado) {
-            $('#repResultado').html(`<div class="alert alert-danger mb-0">${escapar(respuesta.mensaje)}</div>`);
-            $('#btnEjecutar, .btn-exportar, #btnImprimir').prop('disabled', true);
+        let respuesta;
+        try {
+            respuesta = await $.get(url.definicion, { codigo });
+        } catch {
+            falloDeCarga('No se pudo cargar el reporte. Revisa tu conexión e inténtalo de nuevo.');
+            return;
+        }
+        // Con la sesión vencida la redirección al inicio de sesión llega como texto HTML, no como JSON.
+        if (typeof respuesta !== 'object' || respuesta === null) {
+            falloDeCarga('Tu sesión expiró. Por favor inicia sesión nuevamente.');
+            return;
+        }
+        if (!respuesta.resultado || !respuesta.dato) {
+            falloDeCarga(respuesta.mensaje || 'No se pudo cargar el reporte.');
             return;
         }
         definicion = respuesta.dato;
