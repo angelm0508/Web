@@ -22,6 +22,7 @@ $(function () {
     let grafico = null;           // instancia de Chart.js
     let vistas = [];              // vistas guardadas del usuario para este reporte
     let graficoPendiente = null;  // elección de gráfico de una vista aplicada; se usa al pintar el resultado que sigue
+    let ultimaSolicitud = null;   // JSON de la solicitud con la que se pintó el resultado (y el gráfico) actual
     const PALETA = ['#0f766e', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#059669', '#db2777', '#0891b2', '#65a30d', '#9333ea'];
     const MAX_CATEGORIAS = 30;
     const MAX_PNG_CHARS = 2700000;   // ≈ 2 MB en base64: por encima la API lo rechaza
@@ -241,6 +242,15 @@ $(function () {
             App.mostrarError('Selecciona al menos una columna.');
             return false;
         }
+        // Un buscador con texto pero sin opción elegida no se envía (leerFiltros solo toma el código): se avisa en vez de ignorarlo.
+        const sinElegir = definicion.filtros.find(f => BUSCADORES[f.tipo]
+            && String($(`#f_${f.campo}_texto`).val() ?? '').trim() !== '' && String($(`#f_${f.campo}`).val() ?? '').trim() === '');
+        if (sinElegir) {
+            $(`#f_${sinElegir.campo}_texto`).addClass('is-invalid');
+            $(`#f_${sinElegir.campo}_error`).removeClass('d-none');
+            App.mostrarError(`Selecciona una opción de la lista para el filtro '${sinElegir.titulo}' o borra el texto.`);
+            return false;
+        }
         const faltante = definicion.filtros.find(f => f.obligatorio && !solicitud.filtros[f.campo]);
         if (faltante) {
             App.mostrarError(`El filtro '${faltante.titulo}' es obligatorio.`);
@@ -335,6 +345,7 @@ $(function () {
             return false;
         }
         pintarResultado(respuesta.dato);
+        ultimaSolicitud = JSON.stringify(solicitud);
         return true;
     }
 
@@ -421,6 +432,10 @@ $(function () {
         if (!campoValor) return;
         const { etiquetas, valores } = datosGrafico(ultimoResultado, $('#repGrafCategoria').val(), campoValor);
         if (etiquetas.length === 0) return;
+        if (tipo === 'pie' && valores.some(v => v < 0)) {
+            App.mostrarError('El gráfico de pastel no admite valores negativos; usa barras o líneas.');
+            return;
+        }
 
         const colValor = ultimoResultado.columnas.find(c => c.campo === campoValor);
         const colores = etiquetas.map((_, i) => PALETA[i % PALETA.length]);
@@ -481,12 +496,25 @@ $(function () {
         const solicitud = construirSolicitud();
         if (!validarSolicitud(solicitud)) return;
 
+        // El gráfico sale del último resultado pintado: si los filtros cambiaron desde entonces, el PDF va sin gráfico.
+        let png = null;
+        if (formato === 'pdf' && grafico) {
+            if (JSON.stringify(solicitud) === ultimaSolicitud) {
+                png = graficoPng();
+            } else {
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'info', showConfirmButton: false, timer: 6000, timerProgressBar: true,
+                    title: 'El gráfico no corresponde a los filtros actuales; pulsa Ver reporte para actualizarlo. El PDF se genera sin gráfico.'
+                });
+            }
+        }
+
         let respuesta;
         try {
             respuesta = await fetch(`${url.exportar}?codigo=${encodeURIComponent(codigo)}&formato=${encodeURIComponent(formato)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': App.csrfToken() },
-                body: JSON.stringify({ solicitud, graficoPng: formato === 'pdf' ? graficoPng() : null })
+                body: JSON.stringify({ solicitud, graficoPng: png })
             });
         } catch {
             App.mostrarError('No se pudo conectar con el servidor para generar el archivo.');
