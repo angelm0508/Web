@@ -21,5 +21,10 @@ namespace Web.ApiClient.Clientes
         Task<Respuesta<JsonElement>> ObtenerDefinicionAsync(string codigo);
         Task<Respuesta<JsonElement>> EjecutarAsync(string codigo, JsonElement solicitud);
         Task<ArchivoDescargado> ExportarAsync(string codigo, string formato, JsonElement cuerpo);
+
+        /// <summary>Vistas guardadas del usuario para el reporte (lista de { entry, nombre, configuracion }); pasan tal cual al navegador.</summary>
+        Task<Respuesta<JsonElement>> ObtenerVistasAsync(string codigo);
+        Task<Respuesta<JsonElement>> GuardarVistaAsync(string codigo, JsonElement vista);
+        Task<Respuesta<bool>> EliminarVistaAsync(string codigo, int entry);
     }
 }

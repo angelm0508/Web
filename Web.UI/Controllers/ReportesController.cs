@@ -69,6 +69,20 @@ namespace Web.UI.Controllers
             return File(archivo.Contenido, archivo.ContentType, archivo.NombreArchivo);
         }
 
+        // Vistas guardadas del usuario: la API las limita a las propias; "configuracion" viaja como objeto JSON sin tocar.
+        [HttpGet]
+        public async Task<IActionResult> Vistas(string codigo) => RespuestaJson(await _reportes.ObtenerVistasAsync(codigo));
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GuardarVista(string codigo, [FromBody] JsonElement vista) =>
+            RespuestaJson(await _reportes.GuardarVistaAsync(codigo, vista));
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EliminarVista(string codigo, int entry) =>
+            Json(await _reportes.EliminarVistaAsync(codigo, entry));
+
         // Buscadores de los filtros de socio, artículo y almacén (los usa App.autocompletar).
         [HttpGet]
         public async Task<IActionResult> BuscarSocios(string? texto, string? tipo)

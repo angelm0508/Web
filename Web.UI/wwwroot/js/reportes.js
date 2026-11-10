@@ -18,6 +18,13 @@ $(function () {
     let definicion = null;
     let columnasUI = [];          // [{ campo, titulo, tipo, visible }] en el orden que ve el usuario
     let tabla = null;             // DataTable del resultado plano
+    let ultimoResultado = null;   // último resultado pintado (de él se arma el gráfico)
+    let grafico = null;           // instancia de Chart.js
+    let vistas = [];              // vistas guardadas del usuario para este reporte
+    let graficoPendiente = null;  // elección de gráfico de una vista aplicada; se usa al pintar el resultado que sigue
+    const PALETA = ['#0f766e', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#059669', '#db2777', '#0891b2', '#65a30d', '#9333ea'];
+    const MAX_CATEGORIAS = 30;
+    const MAX_PNG_CHARS = 2700000;   // ≈ 2 MB en base64: por encima la API lo rechaza
 
     // ---------- formato ----------
 
@@ -257,10 +264,12 @@ $(function () {
     }
 
     function pintarResultado(res) {
+        ultimoResultado = res;
         pintarAvisos(res);
         if (tabla) { tabla.destroy(); tabla = null; }
         if ((res.grupos ?? []).length > 0) pintarGrupos(res);
         else pintarPlano(res);
+        prepararGrafico(res);
     }
 
     function pintarPlano(res) {
@@ -315,7 +324,7 @@ $(function () {
 
     async function ejecutar() {
         const solicitud = construirSolicitud();
-        if (!validarSolicitud(solicitud)) return;
+        if (!validarSolicitud(solicitud)) return false;
 
         $('#btnEjecutar').prop('disabled', true);
         const respuesta = await App.enviarJson(`${url.ejecutar}?codigo=${encodeURIComponent(codigo)}`, 'POST', solicitud);
@@ -323,9 +332,128 @@ $(function () {
 
         if (!respuesta.resultado) {
             App.mostrarError(respuesta.mensaje);
-            return;
+            return false;
         }
         pintarResultado(respuesta.dato);
+        return true;
+    }
+
+    // ---------- gráfico ----------
+
+    const FONDO_BLANCO = {
+        id: 'fondoBlanco',
+        beforeDraw: chart => {
+            const ctx = chart.ctx;
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+        }
+    };
+
+    function destruirGrafico() {
+        if (grafico) { grafico.destroy(); grafico = null; }
+        $('#repGraficoContenedor').addClass('d-none');
+        $('#repGraficoCard').addClass('no-print');
+    }
+
+    // Deja el valor que había en el select si sigue existiendo entre las opciones; si no, queda la primera.
+    function conservarSeleccion($select, anterior) {
+        if (anterior && $select.find('option').toArray().some(o => o.value === anterior)) $select.val(anterior);
+    }
+
+    // Con agrupación las categorías son los grupos del primer nivel; sin ella, una columna de texto o fecha del resultado.
+    function prepararGrafico(res) {
+        destruirGrafico();
+        const agrupado = (res.grupos ?? []).length > 0;
+        const columnasValor = res.columnas.filter(c => esNumerica(c));
+        const columnasCategoria = agrupado ? [] : res.columnas.filter(c => !esNumerica(c));
+        const valorAnterior = $('#repGrafValor').val();
+        const categoriaAnterior = $('#repGrafCategoria').val();
+
+        $('#repGrafValor').html(columnasValor.map(c => `<option value="${escapar(c.campo)}">${escapar(c.titulo)}</option>`).join(''));
+        $('#repGrafCategoria').html(agrupado
+            ? `<option value="">${escapar(res.grupos[0].titulo)} (primer nivel de agrupación)</option>`
+            : columnasCategoria.map(c => `<option value="${escapar(c.campo)}">${escapar(c.titulo)}</option>`).join(''))
+            .prop('disabled', agrupado);
+
+        // Una vista recién aplicada manda sobre lo que había elegido el usuario.
+        if (graficoPendiente) {
+            $('#repGrafTipo').val(graficoPendiente.tipo ?? '');
+            conservarSeleccion($('#repGrafValor'), graficoPendiente.valor);
+            if (!agrupado) conservarSeleccion($('#repGrafCategoria'), graficoPendiente.categoria);
+            graficoPendiente = null;
+        } else {
+            conservarSeleccion($('#repGrafValor'), valorAnterior);
+            if (!agrupado) conservarSeleccion($('#repGrafCategoria'), categoriaAnterior);
+        }
+
+        if ($('#repGrafTipo').val()) dibujarGrafico();
+    }
+
+    function datosGrafico(res, campoCategoria, campoValor) {
+        const agregados = new Map();
+        if ((res.grupos ?? []).length > 0) {
+            res.grupos.forEach(g => agregados.set(g.etiqueta, Number(g.subtotales?.[campoValor] ?? 0)));
+        } else {
+            const colCat = res.columnas.find(c => c.campo === campoCategoria);
+            if (!colCat) return { etiquetas: [], valores: [] };
+            res.filas.forEach(f => {
+                const etiqueta = formatoValor(colCat, f[campoCategoria]) || '(Sin valor)';
+                agregados.set(etiqueta, (agregados.get(etiqueta) ?? 0) + Number(f[campoValor] ?? 0));
+            });
+        }
+        let pares = [...agregados.entries()];
+        if (pares.length > MAX_CATEGORIAS) {
+            const resto = pares.slice(MAX_CATEGORIAS - 1).reduce((s, [, v]) => s + v, 0);
+            pares = pares.slice(0, MAX_CATEGORIAS - 1).concat([['Otros', resto]]);
+        }
+        return { etiquetas: pares.map(p => p[0]), valores: pares.map(p => p[1]) };
+    }
+
+    function dibujarGrafico() {
+        destruirGrafico();
+        const tipo = $('#repGrafTipo').val();
+        if (!tipo || !ultimoResultado) return;
+
+        const campoValor = $('#repGrafValor').val();
+        if (!campoValor) return;
+        const { etiquetas, valores } = datosGrafico(ultimoResultado, $('#repGrafCategoria').val(), campoValor);
+        if (etiquetas.length === 0) return;
+
+        const colValor = ultimoResultado.columnas.find(c => c.campo === campoValor);
+        const colores = etiquetas.map((_, i) => PALETA[i % PALETA.length]);
+        $('#repGraficoContenedor').removeClass('d-none');
+        $('#repGraficoCard').removeClass('no-print');
+        grafico = new Chart(document.getElementById('repGrafico'), {
+            type: tipo,
+            data: {
+                labels: etiquetas,
+                datasets: [{
+                    label: colValor.titulo,
+                    data: valores,
+                    backgroundColor: tipo === 'line' ? PALETA[0] : colores,
+                    borderColor: tipo === 'line' ? PALETA[0] : colores,
+                    fill: false
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: tipo === 'pie' } } },
+            plugins: [FONDO_BLANCO]
+        });
+    }
+
+    $('#repGrafTipo, #repGrafCategoria, #repGrafValor').on('change', dibujarGrafico);
+
+    // PNG del gráfico para el PDF; null si no hay gráfico o pesa demasiado.
+    function graficoPng() {
+        if (!grafico) return null;
+        const png = grafico.toBase64Image('image/png', 1);
+        if (png.length > MAX_PNG_CHARS) {
+            App.mostrarError('El gráfico es demasiado grande para incluirlo en el PDF; el archivo se genera sin él.');
+            return null;
+        }
+        return png;
     }
 
     // ---------- exportar e imprimir ----------
@@ -358,7 +486,7 @@ $(function () {
             respuesta = await fetch(`${url.exportar}?codigo=${encodeURIComponent(codigo)}&formato=${encodeURIComponent(formato)}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': App.csrfToken() },
-                body: JSON.stringify({ solicitud, graficoPng: null })
+                body: JSON.stringify({ solicitud, graficoPng: formato === 'pdf' ? graficoPng() : null })
             });
         } catch {
             App.mostrarError('No se pudo conectar con el servidor para generar el archivo.');
@@ -398,11 +526,132 @@ $(function () {
 
     $('#btnEjecutar').on('click', ejecutar);
 
+    // ---------- vistas guardadas ----------
+
+    function configuracionActual() {
+        return {
+            filtros: leerFiltros(),
+            columnas: columnasUI.map(c => ({ campo: c.campo, visible: c.visible })),
+            orden: leerOrden(),
+            agrupar: leerAgrupacion(),
+            soloResumen: $('#repSoloResumen').is(':checked'),
+            grafico: { tipo: $('#repGrafTipo').val() || '', categoria: $('#repGrafCategoria').val() || '', valor: $('#repGrafValor').val() || '' }
+        };
+    }
+
+    // Aplica una configuración guardada ignorando lo que ya no existe en la definición.
+    function aplicarConfiguracion(config) {
+        // filtros
+        definicion.filtros.forEach(f => {
+            const id = `#f_${f.campo}`;
+            const v = config.filtros?.[f.campo];
+            if (f.tipo === 'RangoFechas') {
+                $(`${id}_desde`).val(v?.desde ?? '');
+                $(`${id}_hasta`).val(v?.hasta ?? '');
+                return;
+            }
+            $(id).val(v?.valor ?? (f.valorPorDefecto ?? ''));
+            if (BUSCADORES[f.tipo]) {
+                $(`${id}_texto`).val(v?.texto ?? '').removeClass('is-invalid');
+                $(`${id}_error`).addClass('d-none');
+            }
+        });
+
+        // columnas: las guardadas primero (en su orden), luego las que la definición tiene y la vista no conocía
+        const guardadas = (config.columnas ?? []).filter(g => definicion.columnas.some(c => c.campo === g.campo));
+        const nuevas = definicion.columnas.filter(c => !guardadas.some(g => g.campo === c.campo));
+        columnasUI = guardadas.map(g => {
+            const c = definicion.columnas.find(x => x.campo === g.campo);
+            return { campo: c.campo, titulo: c.titulo, tipo: c.tipo, visible: !!g.visible };
+        }).concat(nuevas.map(c => ({ campo: c.campo, titulo: c.titulo, tipo: c.tipo, visible: c.visiblePorDefecto })));
+        pintarColumnas();
+
+        // orden y agrupación
+        $('.rep-orden-campo').each(function () {
+            const o = (config.orden ?? [])[Number(this.dataset.i)];
+            const existe = o && definicion.columnas.some(c => c.campo === o.campo);
+            $(this).val(existe ? o.campo : '');
+            $(`.rep-orden-dir[data-i="${this.dataset.i}"]`).val(existe && o.descendente ? 'desc' : 'asc');
+        });
+        $('.rep-agrupar-campo').each(function () {
+            const a = (config.agrupar ?? [])[Number(this.dataset.i)];
+            const existe = a && definicion.columnas.some(c => c.campo === a.campo && c.agrupable);
+            $(this).val(existe ? a.campo : '').trigger('change');
+            if (existe && a.parte) $(`.rep-agrupar-parte[data-i="${this.dataset.i}"]`).val(a.parte);
+        });
+        $('#repSoloResumen').prop('checked', !!config.soloResumen);
+
+        // gráfico: la categoría y el valor solo se pueden elegir cuando hay resultado; se aplican al pintarlo
+        graficoPendiente = config.grafico ?? { tipo: '' };
+    }
+
+    function pintarSelectorVistas(seleccionada) {
+        $('#repVistas').html(['<option value="">(Vistas guardadas)</option>']
+            .concat(vistas.map(v => `<option value="${escapar(v.entry)}">${escapar(v.nombre)}</option>`)).join(''));
+        $('#repVistas').val(seleccionada ? String(seleccionada) : '');
+        $('#btnBorrarVista').prop('disabled', !$('#repVistas').val());
+    }
+
+    async function cargarVistas(seleccionada) {
+        try {
+            const respuesta = await $.get('/Reportes/Vistas', { codigo });
+            vistas = typeof respuesta === 'object' && respuesta !== null && respuesta.resultado && Array.isArray(respuesta.dato) ? respuesta.dato : [];
+        } catch {
+            vistas = [];
+        }
+        pintarSelectorVistas(seleccionada);
+    }
+
+    $('#repVistas').on('change', async function () {
+        $('#btnBorrarVista').prop('disabled', !this.value);
+        const vista = vistas.find(v => String(v.entry) === this.value);
+        if (!vista) return;
+        aplicarConfiguracion(vista.configuracion ?? {});
+        if (!await ejecutar()) graficoPendiente = null;
+    });
+
+    $('#btnGuardarVista').on('click', async function () {
+        const pedido = await Swal.fire({
+            title: 'Guardar vista',
+            input: 'text',
+            inputLabel: 'Nombre de la vista',
+            inputAttributes: { maxlength: 100 },
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            inputValidator: v => (!v || !v.trim()) ? 'Escribe un nombre.' : null
+        });
+        if (!pedido.isConfirmed) return;
+
+        const respuesta = await App.enviarJson(`/Reportes/GuardarVista?codigo=${encodeURIComponent(codigo)}`, 'POST',
+            { nombre: pedido.value.trim(), configuracion: configuracionActual() });
+        if (!respuesta.resultado) {
+            App.mostrarError(respuesta.mensaje);
+            return;
+        }
+        await cargarVistas(respuesta.dato.entry);
+        App.mostrarExito('Vista guardada correctamente.');
+    });
+
+    $('#btnBorrarVista').on('click', async function () {
+        const entry = $('#repVistas').val();
+        if (!entry) return;
+        if (!await App.confirmarEliminar('La vista se borrará y no se puede deshacer.')) return;
+
+        const respuesta = await App.enviarJson(`/Reportes/EliminarVista?codigo=${encodeURIComponent(codigo)}&entry=${encodeURIComponent(entry)}`, 'POST', {});
+        if (!respuesta.resultado) {
+            App.mostrarError(respuesta.mensaje);
+            return;
+        }
+        await cargarVistas(null);
+        App.mostrarExito('Vista eliminada correctamente.');
+    });
+
     // ---------- arranque ----------
 
     function falloDeCarga(mensaje) {
         $('#repResultado').html(`<div class="alert alert-danger mb-0">${escapar(mensaje)}</div>`);
-        $('#btnEjecutar, .btn-exportar, #btnImprimir').prop('disabled', true);
+        $('#btnEjecutar, .btn-exportar, #btnImprimir, #btnGuardarVista, #btnBorrarVista, #repVistas, #repGrafTipo').prop('disabled', true);
     }
 
     async function iniciar() {
@@ -432,6 +681,7 @@ $(function () {
         pintarColumnas();
         pintarOrden();
         pintarAgrupacion();
+        await cargarVistas(null);
     }
 
     iniciar();

@@ -52,12 +52,42 @@
                     <button type="button" class="btn btn-outline-secondary btn-exportar" data-formato="csv"><i class="fa-solid fa-file-csv me-1"></i>CSV</button>
                 </div>
                 <button type="button" class="btn btn-outline-secondary" id="btnImprimir"><i class="fa-solid fa-print me-1"></i>Imprimir</button>
+                <div class="ms-lg-auto d-flex flex-wrap align-items-center gap-2">
+                    <select class="form-select form-select-sm" id="repVistas" style="width: auto; min-width: 12rem;" aria-label="Vistas guardadas"></select>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnGuardarVista" title="Guardar la configuración actual como vista"><i class="fa-solid fa-floppy-disk me-1"></i>Guardar vista</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="btnBorrarVista" title="Borrar la vista elegida" disabled><i class="fa-solid fa-trash"></i></button>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="print-only mb-3" id="repEncabezadoImpresion"></div>
     <div id="repAvisos"></div>
+
+    <div class="card card-modulo mb-3" id="repGraficoCard">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-end gap-2 mb-2 no-print">
+                <div>
+                    <label class="form-label small mb-1" for="repGrafTipo">Gráfico</label>
+                    <select class="form-select form-select-sm" id="repGrafTipo">
+                        <option value="">(sin gráfico)</option>
+                        <option value="bar">Barras</option>
+                        <option value="line">Líneas</option>
+                        <option value="pie">Pastel</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label small mb-1" for="repGrafCategoria">Categorías</label>
+                    <select class="form-select form-select-sm" id="repGrafCategoria"></select>
+                </div>
+                <div>
+                    <label class="form-label small mb-1" for="repGrafValor">Valores</label>
+                    <select class="form-select form-select-sm" id="repGrafValor"></select>
+                </div>
+            </div>
+            <div class="rep-grafico d-none" id="repGraficoContenedor"><canvas id="repGrafico"></canvas></div>
+        </div>
+    </div>
 
     <div class="card card-modulo">
         <div class="card-body">
@@ -69,5 +99,6 @@
 </div>
 
 @section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
     <script src="~/js/reportes.js" asp-append-version="true"></script>
 }

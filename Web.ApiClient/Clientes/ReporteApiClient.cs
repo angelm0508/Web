@@ -22,6 +22,15 @@ namespace Web.ApiClient.Clientes
         public Task<Respuesta<JsonElement>> EjecutarAsync(string codigo, JsonElement solicitud) =>
             PostAsync<JsonElement>($"{Recurso}/{Uri.EscapeDataString(codigo)}/ejecutar", solicitud);
 
+        public Task<Respuesta<JsonElement>> ObtenerVistasAsync(string codigo) =>
+            GetAsync<JsonElement>($"{Recurso}/{Uri.EscapeDataString(codigo)}/vistas");
+
+        public Task<Respuesta<JsonElement>> GuardarVistaAsync(string codigo, JsonElement vista) =>
+            PostAsync<JsonElement>($"{Recurso}/{Uri.EscapeDataString(codigo)}/vistas", vista);
+
+        public Task<Respuesta<bool>> EliminarVistaAsync(string codigo, int entry) =>
+            DeleteAsync<bool>($"{Recurso}/{Uri.EscapeDataString(codigo)}/vistas/{entry}");
+
         public async Task<ArchivoDescargado> ExportarAsync(string codigo, string formato, JsonElement cuerpo)
         {
             try
