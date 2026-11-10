@@ -179,10 +179,54 @@ $(function () {
         return orden;
     }
 
+    // ---------- agrupación ----------
+
+    const MAX_NIVELES = 2;
+
+    function pintarAgrupacion() {
+        const agrupables = definicion.columnas.filter(c => c.agrupable);
+        const opciones = ['<option value="">(sin agrupar)</option>']
+            .concat(agrupables.map(c => `<option value="${escapar(c.campo)}" data-tipo="${escapar(c.tipo)}">${escapar(c.titulo)}</option>`)).join('');
+        let html = '';
+        for (let i = 0; i < MAX_NIVELES; i++) {
+            html += `<div class="input-group input-group-sm mb-2">
+                <span class="input-group-text">${i + 1}</span>
+                <select class="form-select rep-agrupar-campo" data-i="${i}" aria-label="Agrupar nivel ${i + 1}">${opciones}</select>
+                <select class="form-select rep-agrupar-parte" data-i="${i}" aria-label="Parte de fecha nivel ${i + 1}" disabled>
+                    <option value="Dia">Día</option><option value="Mes">Mes</option><option value="Anio">Año</option>
+                </select></div>`;
+        }
+        $('#repAgrupar').html(html);
+    }
+
+    // La parte de fecha (día, mes, año) solo se habilita cuando la columna elegida es de tipo Fecha.
+    $(document).on('change', '.rep-agrupar-campo', function () {
+        const esFecha = $(this).find('option:selected').data('tipo') === 'Fecha';
+        $(`.rep-agrupar-parte[data-i="${this.dataset.i}"]`).prop('disabled', !esFecha);
+    });
+
+    function leerAgrupacion() {
+        const agrupar = [];
+        $('.rep-agrupar-campo').each(function () {
+            if (!this.value) return;
+            const $parte = $(`.rep-agrupar-parte[data-i="${this.dataset.i}"]`);
+            const nivel = { campo: this.value };
+            if (!$parte.prop('disabled')) nivel.parte = $parte.val();
+            agrupar.push(nivel);
+        });
+        return agrupar;
+    }
+
     // ---------- solicitud ----------
 
     function construirSolicitud() {
-        return { filtros: leerFiltros(), columnas: leerColumnas(), orden: leerOrden(), agrupar: [], soloResumen: false };
+        return {
+            filtros: leerFiltros(),
+            columnas: leerColumnas(),
+            orden: leerOrden(),
+            agrupar: leerAgrupacion(),
+            soloResumen: $('#repSoloResumen').is(':checked')
+        };
     }
 
     function validarSolicitud(solicitud) {
@@ -215,7 +259,11 @@ $(function () {
     function pintarResultado(res) {
         pintarAvisos(res);
         if (tabla) { tabla.destroy(); tabla = null; }
+        if ((res.grupos ?? []).length > 0) pintarGrupos(res);
+        else pintarPlano(res);
+    }
 
+    function pintarPlano(res) {
         const cols = res.columnas;
         const thead = `<tr>${cols.map(c => `<th class="${esNumerica(c) ? 'text-end' : ''}">${escapar(c.titulo)}</th>`).join('')}</tr>`;
         const hayTotales = Object.keys(res.totales ?? {}).length > 0;
@@ -235,6 +283,34 @@ $(function () {
             pageLength: 25,
             language: App.datatableEsEs
         });
+    }
+
+    // Resultado agrupado: tabla simple con una fila de encabezado por grupo, sus filas, y una fila de subtotal; al final el total general.
+    function pintarGrupos(res) {
+        const cols = res.columnas;
+        const filaValores = (valores, clase) =>
+            `<tr class="${clase}">${cols.map(c => {
+                const v = valores[c.campo];
+                const texto = v === undefined || v === null ? '' : formatoValor(c, v);
+                return `<td class="${esNumerica(c) ? 'text-end' : ''}">${escapar(texto)}</td>`;
+            }).join('')}</tr>`;
+
+        const filasHtml = [];
+        const recorrer = (grupos, nivel) => {
+            grupos.forEach(g => {
+                const sangria = `style="padding-left: ${0.5 + nivel * 1.25}rem"`;
+                filasHtml.push(`<tr class="rep-grupo"><td colspan="${cols.length}" ${sangria}>${escapar(g.titulo)}: ${escapar(g.etiqueta)} (${escapar(g.conteo)})</td></tr>`);
+                if ((g.hijos ?? []).length > 0) recorrer(g.hijos, nivel + 1);
+                else (g.filas ?? []).forEach(f => filasHtml.push(
+                    `<tr>${cols.map(c => `<td class="${esNumerica(c) ? 'text-end' : ''}">${escapar(formatoValor(c, f[c.campo]))}</td>`).join('')}</tr>`));
+                filasHtml.push(filaValores(g.subtotales ?? {}, 'rep-subtotal'));
+            });
+        };
+        recorrer(res.grupos, 0);
+        if (Object.keys(res.totales ?? {}).length > 0) filasHtml.push(filaValores(res.totales, 'rep-total'));
+
+        const thead = `<tr>${cols.map(c => `<th class="${esNumerica(c) ? 'text-end' : ''}">${escapar(c.titulo)}</th>`).join('')}</tr>`;
+        $('#repResultado').html(`<table id="tblReporte" class="table table-sm align-middle w-100"><thead>${thead}</thead><tbody>${filasHtml.join('')}</tbody></table>`);
     }
 
     async function ejecutar() {
@@ -355,6 +431,7 @@ $(function () {
         pintarFiltros();
         pintarColumnas();
         pintarOrden();
+        pintarAgrupacion();
     }
 
     iniciar();
