@@ -147,7 +147,7 @@ namespace Web.UI.Controllers
 
             ViewBag.EsEdicion = false;
             ViewBag.CreditoDatos = CreditoDocumento.Datos(User);   // permisos de crédito (consultar posición / autorizar exceso)
-            var dto = new FacturaCrearDTO { EstadoDoc = "A", TipoObjeto = "6" };
+            var dto = new FacturaCrearDTO { EstadoDoc = "A", TipoObjeto = "6", FechaDoc = DateTime.Today, FechaEmision = DateTime.Today };
             if (borrador is not null)
             {
                 dto.CodigoSn = borrador.Cabecera.CodigoSn;

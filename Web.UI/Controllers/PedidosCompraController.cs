@@ -74,7 +74,7 @@ namespace Web.UI.Controllers
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
 
             ViewBag.EsEdicion = false;
-            return PartialView("_Form", new PedidoCompraCrearDTO { EstadoDoc = "A", TipoObjeto = "11" });
+            return PartialView("_Form", new PedidoCompraCrearDTO { EstadoDoc = "A", TipoObjeto = "11", FechaDoc = DateTime.Today, FechaEmision = DateTime.Today });
         }
 
         [HttpGet]

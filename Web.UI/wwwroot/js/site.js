@@ -625,3 +625,17 @@ $(document).on('click', '.btn-copiar-a', function (e) {
     e.preventDefault();
     window.location.href = `${$(this).data('url')}?baseTipo=${$(this).data('tipo')}&baseEntry=${$(this).data('entry')}`;
 });
+
+// Moneda por defecto: en un documento nuevo, si el selector de moneda esta vacio y solo hay una moneda
+// disponible, se selecciona sola. Con varias monedas no adivina. Los selects deshabilitados (documentos
+// ya creados) y los que ya traen valor (p. ej. "Copiar a") no se tocan.
+App.seleccionarMonedaUnica = function (contexto) {
+    $(contexto).find('select#MonedaDoc:not([disabled])').each(function () {
+        const $sel = $(this);
+        if ($sel.val()) return;
+        const opciones = $sel.find('option').filter(function () { return this.value !== ''; });
+        if (opciones.length === 1) $sel.val(opciones.first().val());
+    });
+};
+$(document).on('show.bs.modal shown.bs.modal', '.modal', function () { App.seleccionarMonedaUnica(this); });
+$(function () { App.seleccionarMonedaUnica(document); });

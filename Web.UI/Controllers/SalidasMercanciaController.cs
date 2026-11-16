@@ -62,7 +62,7 @@ namespace Web.UI.Controllers
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
 
             ViewBag.EsEdicion = false;
-            return PartialView("_Form", new SalidaMercanciaCrearDTO());
+            return PartialView("_Form", new SalidaMercanciaCrearDTO { FechaDoc = DateTime.Today });
         }
 
         [HttpGet]

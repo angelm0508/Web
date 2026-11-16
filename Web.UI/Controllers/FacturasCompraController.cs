@@ -99,7 +99,7 @@ namespace Web.UI.Controllers
 
             ViewBag.EsEdicion = false;
             ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, null);
-            return PartialView("_Form", new FacturaCompraCrearDTO { EstadoDoc = "A", TipoObjeto = "13" });
+            return PartialView("_Form", new FacturaCompraCrearDTO { EstadoDoc = "A", TipoObjeto = "13", FechaDoc = DateTime.Today, FechaEmision = DateTime.Today });
         }
 
         [HttpGet]
