@@ -1,9 +1,12 @@
 // Condición de pago y vencimiento de facturas y notas de débito (de cliente y de proveedor).
 // Lo comparten facturas.js, notasdebito.js, facturascompra.js y notasdebitocompra.js.
 //
-// En el formulario: la lista #CondicionPago (cada <option> trae sus días en data-dias) y el campo de solo
-// lectura #FechaVencimiento. El vencimiento que se muestra al crear es solo informativo: el servidor lo
-// vuelve a calcular (fecha del documento + días de la condición) y el cliente nunca lo envía.
+// En el formulario: la lista #CondicionPago (cada <option> trae sus días en data-dias) y el campo #FechaVencimiento.
+// Al CREAR el vencimiento es una sugerencia (fecha del documento + días de la condición) que el usuario puede
+// editar; viaja con el formulario (name="FechaVencimiento") y la API la valida (no anterior a la fecha del
+// documento). La sugerencia se recalcula al cambiar la fecha del documento, la condición o el socio, y en ese
+// momento reemplaza lo que el usuario haya escrito. Al EDITAR el campo es de solo lectura, sin name, y muestra
+// el valor guardado (la condición y el vencimiento no se cambian después de crear).
 // En el listado: la columna "Vence" con la insignia "Vencida".
 const CondicionPagoDoc = (function () {
     const CONDICION_POR_DEFECTO = 'CON';
@@ -33,11 +36,11 @@ const CondicionPagoDoc = (function () {
         return `${h.getFullYear()}-${String(h.getMonth() + 1).padStart(2, '0')}-${String(h.getDate()).padStart(2, '0')}`;
     }
 
-    /** Recalcula el campo Vencimiento (solo para mostrarlo). En edición la lista está deshabilitada y se deja el valor del servidor. */
+    /** Sugiere el vencimiento (fecha del documento + días de la condición), pisando lo que haya en el campo. En edición la lista está deshabilitada y el campo es de solo lectura: se deja el valor del servidor. */
     function recalcular() {
         const $sel = $('#CondicionPago');
         const $venc = $('#FechaVencimiento');
-        if ($sel.length === 0 || $venc.length === 0 || $sel.prop('disabled')) return;
+        if ($sel.length === 0 || $venc.length === 0 || $sel.prop('disabled') || $venc.prop('readonly')) return;
         const dias = parseInt($sel.find('option:selected').attr('data-dias'), 10);
         $venc.val(sumarDias($('#FechaDoc').val(), dias) || '');
     }
@@ -59,6 +62,20 @@ const CondicionPagoDoc = (function () {
         recalcular();
     }
 
+    /**
+     * Valida el vencimiento antes de guardar un documento nuevo (misma regla que la API: no puede ser anterior, por día,
+     * a la fecha del documento; sin fecha de documento se compara contra hoy). Devuelve el mensaje de error o null si
+     * está bien. En edición (campo de solo lectura) o con el campo vacío (la API lo calcula) no valida nada.
+     */
+    function validar() {
+        const $venc = $('#FechaVencimiento');
+        if ($venc.length === 0 || $venc.prop('readonly')) return null;
+        const venc = fechaIso($venc.val());
+        if (!venc) return null;
+        const doc = fechaIso($('#FechaDoc').val()) || hoyIso();
+        return venc < doc ? 'La fecha de vencimiento no puede ser anterior a la fecha del documento.' : null;
+    }
+
     /** Render de la columna "Vence" del listado: fecha y, con saldo pendiente y fecha ya pasada, la insignia "Vencida". */
     function renderVence(d, t, row) {
         if (!row || row.cancelado === 'S' || row.estadoDoc === 'C') return '';
@@ -72,5 +89,5 @@ const CondicionPagoDoc = (function () {
 
     $(document).on('input change', '#FechaDoc, #CondicionPago', recalcular);
 
-    return { inicializar, preseleccionar, renderVence };
+    return { inicializar, preseleccionar, validar, renderVence };
 })();

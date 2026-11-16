@@ -36,6 +36,9 @@ namespace Web.ApiClient.Dtos.FacturaCompra
         public string? Comentario { get; set; }
         /// <summary>Condición de pago; si se omite, la API usa la del socio de negocio o Contado.</summary>
         public string? CondicionPago { get; set; }
+
+        /// <summary>Fecha de vencimiento (solo el día) editable al crear; si se omite, la API la calcula (fecha del documento + días de la condición). No puede ser anterior a la fecha del documento. No se envía al editar.</summary>
+        public DateTime? FechaVencimiento { get; set; }
         public List<FacturaCompraDetalleCrearDTO> Lineas { get; set; } = new();
     }
 }

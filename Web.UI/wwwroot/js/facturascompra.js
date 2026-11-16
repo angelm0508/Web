@@ -219,6 +219,13 @@ $(function () {
                 return;
             }
 
+            // El vencimiento es editable al crear: misma regla que la API (no anterior a la fecha del documento), antes de enviar.
+            const errorVencimiento = CondicionPagoDoc.validar();
+            if (errorVencimiento) {
+                App.mostrarError(errorVencimiento);
+                return;
+            }
+
             datos.Lineas = lineasLocales.map(App.sinCamposInternos);
 
             const respuesta = await App.enviarJson('/FacturasCompra/Crear', 'POST', datos);

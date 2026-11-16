@@ -37,6 +37,9 @@ namespace Web.ApiClient.Dtos.NotaDebitoCompra
         /// <summary>Condición de pago; si se omite, la API usa la del socio de negocio o Contado.</summary>
         public string? CondicionPago { get; set; }
 
+        /// <summary>Fecha de vencimiento (solo el día) editable al crear; si se omite, la API la calcula (fecha del documento + días de la condición). No puede ser anterior a la fecha del documento. No se envía al editar.</summary>
+        public DateTime? FechaVencimiento { get; set; }
+
         /// <summary>Lineas del documento (artículos o conceptos según DocType): se registran junto con el encabezado y no se pueden modificar despues.</summary>
         public List<NotaDebitoCompraDetalleCrearDTO> Lineas { get; set; } = new();
     }

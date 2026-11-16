@@ -100,8 +100,9 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Vencimiento</label>
-                <input type="date" id="FechaVencimiento" class="form-control" value="@((ViewBag.FechaVencimientoActual as DateTime?)?.ToString("yyyy-MM-dd"))" readonly />
-                <span class="form-text">Fecha del documento más los días de la condición; el servidor la calcula al guardar.</span>
+                @* Al crear: sugerencia (fecha del documento + días de la condición) editable que viaja como FechaVencimiento. Al editar: solo lectura y sin name. *@
+                <input type="date" id="FechaVencimiento" name="@(esEdicion ? null : "FechaVencimiento")" class="form-control" value="@((ViewBag.FechaVencimientoActual as DateTime?)?.ToString("yyyy-MM-dd"))" readonly="@esEdicion" />
+                <span class="form-text">@(esEdicion ? "Fecha de vencimiento del documento; no se puede cambiar al editar." : "Fecha sugerida: la del documento más los días de la condición. Puedes cambiarla; no puede ser anterior a la fecha del documento.")</span>
             </div>
             <div class="w-100 m-0"></div>
 

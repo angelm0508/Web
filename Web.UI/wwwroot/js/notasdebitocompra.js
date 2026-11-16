@@ -301,6 +301,13 @@ $(function () {
             return;
         }
 
+        // El vencimiento es editable al crear: misma regla que la API (no anterior a la fecha del documento), antes de enviar.
+        const errorVencimiento = CondicionPagoDoc.validar();
+        if (errorVencimiento) {
+            App.mostrarError(errorVencimiento);
+            return;
+        }
+
         // El número de documento no se pide para series no manuales: el servidor lo calcula al registrar.
         const datos = App.recolectarFormulario('#formNotaDebitoCompra');
         datos.Serie = $('#selectSerieNotaDebitoCompra').val();

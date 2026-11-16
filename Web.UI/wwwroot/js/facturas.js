@@ -222,6 +222,13 @@ $(function () {
                 return;
             }
 
+            // El vencimiento es editable al crear: misma regla que la API (no anterior a la fecha del documento), antes de enviar.
+            const errorVencimiento = CondicionPagoDoc.validar();
+            if (errorVencimiento) {
+                App.mostrarError(errorVencimiento);
+                return;
+            }
+
             // Pago al facturar (opcional): se valida antes de crear la factura.
             const errorPago = FacturasPago.validar();
             if (errorPago) {
