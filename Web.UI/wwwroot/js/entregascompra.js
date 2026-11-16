@@ -51,6 +51,8 @@ $(function () {
             onSeleccion: async s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
                 App.direccionFacturacion.aplicar(s ? (s.codigo ?? s.Codigo) : '', $('#Direccion'));
+                // NIT del socio: sugerido al elegirlo; el usuario puede cambiarlo al crear (queda fijo al editar: el campo es de solo lectura).
+                if (!$('#Nit').prop('readonly')) $('#Nit').val(s ? (s.nit ?? s.Nit ?? '') : '');
                 const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 if (nueva === listaPrecioSocio) return;
                 listaPrecioSocio = nueva;

@@ -9,6 +9,7 @@ namespace Web.ApiClient.Dtos.NotaCreditoCompra
         public string? NombreSn { get; set; }
         public string? MonedaDoc { get; set; }
         public string? Direccion { get; set; }
+        public string? Nit { get; set; }
         public decimal? TotalDoc { get; set; }
         public decimal TotalAcreditado { get; set; }
         public decimal Disponible { get; set; }

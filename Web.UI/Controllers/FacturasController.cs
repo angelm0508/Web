@@ -153,6 +153,7 @@ namespace Web.UI.Controllers
                 dto.CodigoSn = borrador.Cabecera.CodigoSn;
                 dto.NombreSn = borrador.Cabecera.NombreSn;
                 dto.Direccion = borrador.Cabecera.Direccion;
+                dto.Nit = borrador.Cabecera.Nit;
                 dto.MonedaDoc = borrador.Cabecera.MonedaDoc;
                 dto.PrctjeDesc = borrador.Cabecera.PrctjeDesc;
                 dto.PrctjeImpuesto = borrador.Cabecera.PrctjeImpuesto;
@@ -166,6 +167,8 @@ namespace Web.UI.Controllers
                 {
                     var socio = await _socios.ObtenerAsync(dto.CodigoSn);
                     if (socio.Resultado) dto.CondicionPago = socio.Dato?.CondicionPago;
+                    // Un origen sin NIT propio (p. ej. una orden de servicio) toma el del socio, igual que al elegirlo en un alta normal.
+                    if (socio.Resultado && string.IsNullOrWhiteSpace(dto.Nit)) dto.Nit = socio.Dato?.Nit;
                 }
             }
             ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, dto.CondicionPago);
@@ -199,6 +202,7 @@ namespace Web.UI.Controllers
                 CodigoSn = respuesta.Dato.CodigoSn,
                 NombreSn = respuesta.Dato.NombreSn,
                 Direccion = respuesta.Dato.Direccion,
+                Nit = respuesta.Dato.Nit,
                 MonedaDoc = respuesta.Dato.MonedaDoc,
                 PrctjeImpuesto = respuesta.Dato.PrctjeImpuesto,
                 TotalImp = respuesta.Dato.TotalImp,

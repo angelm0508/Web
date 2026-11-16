@@ -137,6 +137,8 @@ $(function () {
             onSeleccion: s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
                 App.direccionFacturacion.aplicar(s ? (s.codigo ?? s.Codigo) : '', $('#Direccion'));
+                // NIT del socio: sugerido al elegirlo; el usuario puede cambiarlo al crear (queda fijo al editar: el campo es de solo lectura).
+                if (!$('#Nit').prop('readonly')) $('#Nit').val(s ? (s.nit ?? s.Nit ?? '') : '');
                 CondicionPagoDoc.preseleccionar(s ? (s.condicionPago ?? s.CondicionPago ?? null) : null);
                 // La lista de precio del socio se usa al elegir artículos (modo por artículos).
                 listaPrecioSocio = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
@@ -421,6 +423,7 @@ $(function () {
         const monedaExiste = $('#MonedaDoc option').filter((_, o) => o.value === factura.monedaDoc).length > 0;
         if (factura.monedaDoc && monedaExiste) $('#MonedaDoc').val(factura.monedaDoc);
         if (factura.direccion) $('#Direccion').val(factura.direccion);
+        if (factura.nit && !$('#Nit').prop('readonly')) $('#Nit').val(factura.nit);   // la nota lleva el NIT de la factura que acredita o debita
 
         // Por artículos: las líneas conservan artículo y almacén de la factura. Por concepto: solo el texto y los importes.
         const art = porArticulos();

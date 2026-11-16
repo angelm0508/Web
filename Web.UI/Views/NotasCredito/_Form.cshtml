@@ -102,6 +102,10 @@
                 <input asp-for="Direccion" class="form-control" readonly="@esEdicion" />
             </div>
             <div class="col-md-4">
+                <label asp-for="Nit" class="form-label">NIT</label>
+                <input asp-for="Nit" class="form-control" maxlength="15" autocomplete="off" readonly="@esEdicion" />
+            </div>
+            <div class="col-md-4">
                 <label class="form-label">Fecha documento</label>
                 <input type="date" name="FechaDoc" id="FechaDoc" class="form-control" value="@Model.FechaDoc?.ToString("yyyy-MM-dd")" readonly="@esEdicion" />
             </div>

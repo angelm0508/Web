@@ -16,6 +16,7 @@ namespace Web.ApiClient.Dtos.NotaCredito
         public string? CodigoSn { get; set; }
         public string? NombreSn { get; set; }
         public string? Direccion { get; set; }
+        public string? Nit { get; set; }
         public string? MonedaDoc { get; set; }
         public int? BaseTipo { get; set; }
         public int? BaseEntry { get; set; }

@@ -99,6 +99,7 @@ namespace Web.UI.Controllers
                 dto.CodigoSn = borrador.Cabecera.CodigoSn;
                 dto.NombreSn = borrador.Cabecera.NombreSn;
                 dto.Direccion = borrador.Cabecera.Direccion;
+                dto.Nit = borrador.Cabecera.Nit;
                 dto.MonedaDoc = borrador.Cabecera.MonedaDoc;
                 dto.PrctjeDesc = borrador.Cabecera.PrctjeDesc;
                 dto.PrctjeImpuesto = borrador.Cabecera.PrctjeImpuesto;
@@ -136,6 +137,7 @@ namespace Web.UI.Controllers
                 CodigoSn = respuesta.Dato.CodigoSn,
                 NombreSn = respuesta.Dato.NombreSn,
                 Direccion = respuesta.Dato.Direccion,
+                Nit = respuesta.Dato.Nit,
                 MonedaDoc = respuesta.Dato.MonedaDoc,
                 PrctjeImpuesto = respuesta.Dato.PrctjeImpuesto,
                 TotalImp = respuesta.Dato.TotalImp,

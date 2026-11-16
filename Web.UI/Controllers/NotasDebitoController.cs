@@ -140,6 +140,7 @@ namespace Web.UI.Controllers
                 CodigoSn = respuesta.Dato.CodigoSn,
                 NombreSn = respuesta.Dato.NombreSn,
                 Direccion = respuesta.Dato.Direccion,
+                Nit = respuesta.Dato.Nit,
                 MonedaDoc = respuesta.Dato.MonedaDoc,
                 BaseTipo = respuesta.Dato.BaseTipo,
                 BaseEntry = respuesta.Dato.BaseEntry,

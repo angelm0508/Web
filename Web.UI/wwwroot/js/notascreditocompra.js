@@ -63,6 +63,8 @@ $(function () {
             onSeleccion: s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
                 App.direccionFacturacion.aplicar(s ? (s.codigo ?? s.Codigo) : '', $('#Direccion'));
+                // NIT del socio: sugerido al elegirlo; el usuario puede cambiarlo al crear (queda fijo al editar: el campo es de solo lectura).
+                if (!$('#Nit').prop('readonly')) $('#Nit').val(s ? (s.nit ?? s.Nit ?? '') : '');
                 // La factura base pertenece al socio anterior: se descarta y se recarga la lista del nuevo.
                 if (hayFacturaBase()) quitarFacturaBase();
                 cargarFacturasBase();
@@ -349,6 +351,7 @@ $(function () {
         const monedaExiste = $('#MonedaDoc option').filter((_, o) => o.value === factura.monedaDoc).length > 0;
         if (factura.monedaDoc && monedaExiste) $('#MonedaDoc').val(factura.monedaDoc);
         if (factura.direccion) $('#Direccion').val(factura.direccion);
+        if (factura.nit && !$('#Nit').prop('readonly')) $('#Nit').val(factura.nit);   // la nota lleva el NIT de la factura que acredita o debita
 
         lineasLocales = (factura.lineas || []).map(l => ({
             Descripcion: l.descripcion,
