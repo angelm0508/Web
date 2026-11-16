@@ -67,6 +67,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: async s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                App.direccionFacturacion.aplicar(s ? (s.codigo ?? s.Codigo) : '', $('#Direccion'));
                 CondicionPagoDoc.preseleccionar(s ? (s.condicionPago ?? s.CondicionPago ?? null) : null);
                 CreditoDoc.alElegirSocio(s ? (s.codigo ?? s.Codigo) : null);
                 const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;

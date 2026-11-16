@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
+using Web.ApiClient.Dtos;
 using Web.ApiClient.Dtos.DireccionSocioNegocio;
 using Web.UI.Authorization;
+using Web.UI.Models;
 
 namespace Web.UI.Controllers
 {
@@ -12,13 +14,19 @@ namespace Web.UI.Controllers
     {
         private readonly IDireccionSocioNegocioApiClient _direcciones;
         private readonly ISocioNegocioApiClient _socios;
+        private readonly IMunicipioApiClient _municipios;
+        private readonly IDepartamentoApiClient _departamentos;
 
         public DireccionesController(
             IDireccionSocioNegocioApiClient direcciones,
-            ISocioNegocioApiClient socios)
+            ISocioNegocioApiClient socios,
+            IMunicipioApiClient municipios,
+            IDepartamentoApiClient departamentos)
         {
             _direcciones = direcciones;
             _socios = socios;
+            _municipios = municipios;
+            _departamentos = departamentos;
         }
 
         [RequierePermiso("SociosNegocio", Accion.Ver)]
@@ -42,6 +50,31 @@ namespace Web.UI.Controllers
                 respuesta.Dato = respuesta.Dato.Where(d => d.CodigoSn == codigoSn);
             }
             return Json(respuesta);
+        }
+
+        /// <summary>
+        /// Dirección de facturación del socio ya armada («calle, bloque, municipio, departamento») para
+        /// rellenar el campo Dirección de los documentos de compra y venta. Sin dirección FAC, el dato es vacío.
+        /// </summary>
+        [HttpGet]
+        [RequierePermiso("SociosNegocio", Accion.Ver)]
+        public async Task<IActionResult> FacturacionDeSocio(string codigoSn)
+        {
+            if (string.IsNullOrWhiteSpace(codigoSn))
+                return Json(new Respuesta<string> { Resultado = true, Dato = string.Empty });
+
+            var direcciones = await _direcciones.ObtenerTodoAsync();
+            if (!direcciones.Resultado)
+                return Json(new Respuesta<string> { Resultado = false, Mensaje = direcciones.Mensaje });
+
+            var fac = DireccionFacturacion.Elegir((direcciones.Dato ?? []).Where(d => d.CodigoSn == codigoSn));
+            if (fac is null)
+                return Json(new Respuesta<string> { Resultado = true, Dato = string.Empty });
+
+            var municipios = await _municipios.ObtenerTodoAsync();
+            var departamentos = await _departamentos.ObtenerTodoAsync();
+            var texto = DireccionFacturacion.Armar(fac, municipios.Dato ?? [], departamentos.Dato ?? []);
+            return Json(new Respuesta<string> { Resultado = true, Dato = texto });
         }
 
         [HttpGet]

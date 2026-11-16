@@ -43,6 +43,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: async s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                App.direccionFacturacion.aplicar(s ? (s.codigo ?? s.Codigo) : '', $('#Direccion'));
                 const nueva = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;
                 if (nueva === listaPrecioSocio) return;
                 listaPrecioSocio = nueva;

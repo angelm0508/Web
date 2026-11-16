@@ -136,6 +136,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                App.direccionFacturacion.aplicar(s ? (s.codigo ?? s.Codigo) : '', $('#Direccion'));
                 CondicionPagoDoc.preseleccionar(s ? (s.condicionPago ?? s.CondicionPago ?? null) : null);
                 // La lista de precio del socio se usa al elegir artículos (modo por artículos).
                 listaPrecioSocio = s ? (s.numLstPrecio ?? s.NumLstPrecio ?? null) : null;

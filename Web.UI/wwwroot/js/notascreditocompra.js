@@ -62,6 +62,7 @@ $(function () {
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
             onSeleccion: s => {
                 $('#NombreSn').val(s ? (s.nombre ?? s.Nombre) : '');
+                App.direccionFacturacion.aplicar(s ? (s.codigo ?? s.Codigo) : '', $('#Direccion'));
                 // La factura base pertenece al socio anterior: se descarta y se recarga la lista del nuevo.
                 if (hayFacturaBase()) quitarFacturaBase();
                 cargarFacturasBase();
