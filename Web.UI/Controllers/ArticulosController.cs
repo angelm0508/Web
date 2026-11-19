@@ -17,6 +17,7 @@ namespace Web.UI.Controllers
         private readonly IGrupoArticuloApiClient _grupos;
         private readonly IGrupoUnidadMedidaArticuloApiClient _gruposMedida;
         private readonly INumeracionDocumentoDetApiClient _series;
+        private readonly INumeracionDocumentoApiClient _numeraciones;
         private readonly IAlmacenApiClient _almacenes;
 
         // CodigoObj de NumeracionDocumento que identifica a "Artículos" como tipo de objeto.
@@ -29,6 +30,7 @@ namespace Web.UI.Controllers
             IGrupoArticuloApiClient grupos,
             IGrupoUnidadMedidaArticuloApiClient gruposMedida,
             INumeracionDocumentoDetApiClient series,
+            INumeracionDocumentoApiClient numeraciones,
             IAlmacenApiClient almacenes)
         {
             _articulos = articulos;
@@ -36,6 +38,7 @@ namespace Web.UI.Controllers
             _grupos = grupos;
             _gruposMedida = gruposMedida;
             _series = series;
+            _numeraciones = numeraciones;
             _almacenes = almacenes;
         }
 
@@ -57,6 +60,9 @@ namespace Web.UI.Controllers
             await CargarDropdownsAsync();
             var series = await _series.ObtenerPorDocumentoAsync(CodigoObjArticulo);
             ViewBag.SeriesArticulo = (series.Dato ?? []).Where(s => s.SubTipoDoc == SubTipoDocArticulo);
+            // Serie por defecto configurada en el encabezado de la numeración de Artículos (si no hay, el formulario usa "Manual").
+            var encabezado = await _numeraciones.ObtenerAsync(CodigoObjArticulo);
+            ViewBag.SerieDefectoArticulo = encabezado.Resultado ? encabezado.Dato?.SerieDfct : null;
             return View(new ArticuloCrearDTO { Activo = "S", ArticuloCompra = "S", ArticuloVenta = "S", ArticuloInventario = "S", NoApliDesc = "N", GestNoSerie = "N", GestLote = "N", GestPorAlmacen = "N" });
         }
 

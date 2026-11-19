@@ -110,8 +110,14 @@ $(function () {
             $sel.append(`<option value="${serie}" data-manual="${manual}">${nombre}</option>`);
         });
 
-        // Se preselecciona "Manual" por defecto para no obligar a elegir en cada alta.
-        if (serieManual !== null) $sel.val(serieManual);
+        // Se preselecciona la serie por defecto configurada en la numeración de Artículos; si no hay (o ya no
+        // existe en la lista), "Manual" para no obligar a elegir en cada alta.
+        const serieDefecto = String($sel.attr('data-serie-defecto') ?? '');
+        if (serieDefecto !== '' && $sel.find('option').toArray().some(o => o.value === serieDefecto)) {
+            $sel.val(serieDefecto);
+        } else if (serieManual !== null) {
+            $sel.val(serieManual);
+        }
 
         actualizarCodigoSegunSerieArticulo();
     }
