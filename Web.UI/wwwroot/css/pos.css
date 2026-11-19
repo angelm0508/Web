@@ -1,0 +1,289 @@
+/* Punto de venta: pantalla de mostrador (ocupa el alto disponible) y ticket de 80 mm. */
+
+.pos-pantalla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  gap: 1rem;
+  /* Alto de la ventana menos la barra superior y el relleno del área de contenido. */
+  height: calc(100vh - 7rem);
+  min-height: 32rem;
+}
+
+:fullscreen .pos-pantalla,
+.pos-pantalla:fullscreen {
+  height: calc(100vh - 2rem);
+}
+
+.pos-columna-venta,
+.pos-columna-cobro {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  min-height: 0;
+}
+
+.pos-barra {
+  display: flex;
+  gap: .5rem;
+  align-items: stretch;
+}
+
+.pos-sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.pos-sugerencias .list-group-item {
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.pos-mensaje {
+  padding: .35rem .75rem;
+  border-radius: .375rem;
+  background: var(--color-warning-soft-bg);
+  color: var(--color-warning-soft-fg);
+}
+
+.pos-lineas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-lineas-scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pos-lineas thead th {
+  background: var(--color-surface);
+}
+
+.pos-vacio {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.pos-cantidad {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.pos-cantidad input {
+  width: 4.5rem;
+  text-align: center;
+}
+
+/* Botones táctiles: al menos 44 px; los rápidos y +/- de la lista, 64 px en pantallas táctiles. */
+.pos-btn-tactil {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.pos-btn-cantidad {
+  min-width: 48px;
+  min-height: 48px;
+  font-weight: 700;
+}
+
+@media (pointer: coarse) {
+  .pos-btn-cantidad {
+    min-width: 64px;
+    min-height: 64px;
+  }
+}
+
+.pos-btn-cobrar {
+  min-height: 64px;
+  font-size: 1.35rem;
+}
+
+.pos-atajo {
+  display: inline-block;
+  margin-left: .35rem;
+  padding: 0 .3rem;
+  border: 1px solid currentColor;
+  border-radius: .25rem;
+  font-size: .7em;
+  opacity: .75;
+  font-family: var(--font-mono);
+}
+
+.pos-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.pos-total {
+  font-size: 1.6rem;
+  font-weight: 700;
+  border-top: 1px solid var(--color-border);
+  margin-top: .25rem;
+  padding-top: .25rem;
+}
+
+.pos-aviso-existencias {
+  color: var(--color-warning-soft-fg);
+  background: var(--color-warning-soft-bg);
+  border-radius: .25rem;
+  padding: 0 .35rem;
+  font-size: .8rem;
+  display: inline-block;
+}
+
+.pos-rapidos-contenedor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-rapidos {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: .5rem;
+  align-content: start;
+}
+
+.pos-rapido {
+  min-height: 64px;
+  padding: .35rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.pos-rapido .pos-rapido-precio {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  opacity: .8;
+}
+
+.pos-lista-clientes {
+  z-index: 1060;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.pos-cobro-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .75rem;
+  text-align: center;
+}
+
+.pos-cobro-cifra {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.pos-modal-ticket {
+  max-width: calc(80mm + 3rem);
+}
+
+/* Ticket: siempre negro sobre blanco y monoespaciado (también en modo oscuro). */
+#ticketImprimible {
+  background: #fff;
+  color: #000;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  width: 100%;
+  max-width: 80mm;
+  margin: 0 auto;
+  padding: 2mm 3mm;
+}
+
+.pos-ticket-centro { text-align: center; }
+.pos-ticket-empresa { font-weight: 700; font-size: 14px; }
+.pos-ticket-separador { border-top: 1px dashed #000; margin: 4px 0; }
+.pos-ticket-fila { display: flex; justify-content: space-between; gap: 8px; }
+.pos-ticket-total { font-weight: 700; }
+.pos-ticket-linea { margin-bottom: 2px; }
+
+@media (max-width: 991.98px) {
+  .pos-pantalla {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .pos-lineas-scroll {
+    max-height: 50vh;
+  }
+}
+
+/* Impresión: solo el ticket (80 mm), sin menú, barra, pantalla del POS ni botones. */
+@media print {
+  @page { margin: 0; }
+
+  aside,
+  .topbar,
+  #posPantalla,
+  .modal-backdrop,
+  .swal2-container,
+  .modal:not(#posModalTicket),
+  #posModalTicket .modal-header,
+  #posModalTicket .modal-footer {
+    display: none !important;
+  }
+
+  html, body, .app-shell, .app-content, .content-area {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  #posModalTicket:not(.show) { display: none !important; }
+
+  #posModalTicket.show {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  #posModalTicket .modal-dialog {
+    margin: 0 !important;
+    max-width: none !important;
+    width: 80mm !important;
+    transform: none !important;
+  }
+
+  #posModalTicket .modal-content,
+  #posModalTicket .modal-body {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  #ticketImprimible {
+    width: 80mm;
+    max-width: 80mm;
+    margin: 0;
+    padding: 2mm 3mm;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 11px;
+    color: #000;
+  }
+}

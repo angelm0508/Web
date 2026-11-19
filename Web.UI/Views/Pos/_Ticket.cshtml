@@ -1,0 +1,48 @@
+@model Web.ApiClient.Dtos.Pos.TicketPos
+@using System.Globalization
+@{
+    // Al vender, Pagos/Pagado son lo entregado y Cambio el vuelto; al reimprimir son los medios registrados y Cambio 0.
+    var reimpresion = ViewData["Reimpresion"] as bool? ?? false;
+    string Dinero(decimal monto) => monto.ToString("N2", CultureInfo.InvariantCulture);
+    string Cantidad(decimal cantidad) => cantidad.ToString("0.##", CultureInfo.InvariantCulture);
+}
+<div class="pos-ticket" data-factura="@Model.FacturaEntry">
+    <div class="pos-ticket-centro pos-ticket-empresa">@Model.Empresa</div>
+    <div class="pos-ticket-centro">Factura @Model.NombreSerie No. @Model.NumDoc</div>
+    @if (reimpresion)
+    {
+        <div class="pos-ticket-centro">*** REIMPRESION ***</div>
+    }
+    <div class="pos-ticket-separador"></div>
+    <div>Fecha: @Model.Fecha.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture)</div>
+    <div>Cajero: @Model.Cajero</div>
+    <div>Cliente: @Model.NombreCliente</div>
+    <div>NIT: @Model.Nit</div>
+    <div class="pos-ticket-separador"></div>
+    @foreach (var linea in Model.Lineas)
+    {
+        <div class="pos-ticket-linea">
+            <div>@linea.Descripcion</div>
+            <div class="pos-ticket-fila">
+                <span>@Cantidad(linea.Cantidad) x @Dinero(linea.PrecioNeto)</span>
+                <span>@Dinero(linea.Total)</span>
+            </div>
+        </div>
+    }
+    <div class="pos-ticket-separador"></div>
+    <div class="pos-ticket-fila"><span>Subtotal</span><span>@Dinero(Model.Subtotal)</span></div>
+    <div class="pos-ticket-fila"><span>IVA</span><span>@Dinero(Model.Impuesto)</span></div>
+    <div class="pos-ticket-fila pos-ticket-total"><span>TOTAL @Model.Moneda</span><span>@Dinero(Model.Total)</span></div>
+    <div class="pos-ticket-separador"></div>
+    @foreach (var pago in Model.Pagos)
+    {
+        <div class="pos-ticket-fila"><span>@pago.Forma</span><span>@Dinero(pago.Monto)</span></div>
+    }
+    <div class="pos-ticket-fila"><span>Pagado</span><span>@Dinero(Model.Pagado)</span></div>
+    @if (Model.Cambio != 0m)
+    {
+        <div class="pos-ticket-fila pos-ticket-total"><span>Cambio</span><span>@Dinero(Model.Cambio)</span></div>
+    }
+    <div class="pos-ticket-separador"></div>
+    <div class="pos-ticket-centro">Gracias por su compra</div>
+</div>
