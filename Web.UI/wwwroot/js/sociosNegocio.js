@@ -147,10 +147,23 @@ $(function () {
                 $sel.append(`<option value="${serie}" data-manual="${manual}">${nombre}</option>`);
             });
 
-        // Se preselecciona "Manual" por defecto para no obligar a elegir en cada alta.
-        if (serieManual !== null) $sel.val(serieManual);
+        // Se preselecciona la serie por defecto de ese tipo (configurada en la numeración de Socios de negocio);
+        // si no hay (o ya no existe en la lista), "Manual" para no obligar a elegir en cada alta.
+        const serieDefecto = obtenerSerieDefectoSocioNegocio(tipoSn);
+        if (serieDefecto !== null && $sel.find('option').toArray().some(o => o.value === String(serieDefecto))) {
+            $sel.val(String(serieDefecto));
+        } else if (serieManual !== null) {
+            $sel.val(serieManual);
+        }
 
         actualizarCodigoSegunSerie();
+    }
+
+    function obtenerSerieDefectoSocioNegocio(tipoSn) {
+        const datosEl = document.getElementById('datosSeriesDefectoSocioNegocio');
+        const defectos = datosEl ? (JSON.parse(datosEl.textContent) || []) : [];
+        const fila = defectos.find(d => (d.subTipoDoc ?? d.SubTipoDoc) === tipoSn);
+        return fila ? (fila.serie ?? fila.Serie ?? null) : null;
     }
 
     function esSerieManualSocioNegocio() {
@@ -159,15 +172,39 @@ $(function () {
         return $sel.find('option:selected').data('manual') === 'S';
     }
 
+    let peticionCodigoSerie = 0;
+
+    /**
+     * Serie manual: el usuario escribe el código. Otra serie: se muestra (solo lectura) el código que le tocaría
+     * según la configuración de la serie, como en SAP B1. Es una vista previa: el consecutivo avanza al guardar
+     * y el código definitivo lo asigna la API en ese momento (el campo deshabilitado no se envía).
+     */
     function actualizarCodigoSegunSerie() {
         const $codigo = $('#Codigo');
         if ($codigo.length === 0) return;
+        const idPeticion = ++peticionCodigoSerie;
 
         if (esSerieManualSocioNegocio()) {
+            if ($codigo.prop('disabled')) $codigo.val('');   // venía de una vista previa: no dejar ese código; un código escrito a mano se respeta
             $codigo.prop('disabled', false).attr('placeholder', '');
-        } else {
-            $codigo.val('').prop('disabled', true).attr('placeholder', 'Se generará al guardar');
+            return;
         }
+
+        $codigo.val('').prop('disabled', true).attr('placeholder', 'Calculando...');
+        $.get('/SociosNegocio/CodigoSiguiente', { serie: $('#selectSerieSocioNegocio').val() })
+            .done(function (respuesta) {
+                if (idPeticion !== peticionCodigoSerie) return;   // ya eligió otra serie
+                if (respuesta && respuesta.resultado && respuesta.dato) {
+                    $codigo.val(respuesta.dato);
+                } else {
+                    // Serie bloqueada, agotada o sin número siguiente: se explica y se deja que el guardado lo valide.
+                    $codigo.attr('placeholder', respuesta && respuesta.mensaje ? respuesta.mensaje : 'Se generará al guardar');
+                }
+            })
+            .fail(function () {
+                if (idPeticion !== peticionCodigoSerie) return;
+                $codigo.attr('placeholder', 'Se generará al guardar');
+            });
     }
 
     $(document).on('change', '#TipoSn', function () {

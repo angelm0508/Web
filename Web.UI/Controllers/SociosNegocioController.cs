@@ -21,6 +21,7 @@ namespace Web.UI.Controllers
         private readonly IDepartamentoApiClient _departamentos;
         private readonly IMunicipioApiClient _municipios;
         private readonly INumeracionDocumentoDetApiClient _series;
+        private readonly INumeracionDocumentoApiClient _numeraciones;
         private readonly ICondicionPagoApiClient _condicionesPago;
         private readonly IEstadoCuentaApiClient _estadoCuenta;
         private readonly ICreditoClienteApiClient _credito;
@@ -40,6 +41,7 @@ namespace Web.UI.Controllers
             IDepartamentoApiClient departamentos,
             IMunicipioApiClient municipios,
             INumeracionDocumentoDetApiClient series,
+            INumeracionDocumentoApiClient numeraciones,
             ICondicionPagoApiClient condicionesPago,
             IEstadoCuentaApiClient estadoCuenta,
             ICreditoClienteApiClient credito)
@@ -52,6 +54,7 @@ namespace Web.UI.Controllers
             _departamentos = departamentos;
             _municipios = municipios;
             _series = series;
+            _numeraciones = numeraciones;
             _condicionesPago = condicionesPago;
             _estadoCuenta = estadoCuenta;
             _credito = credito;
@@ -347,6 +350,26 @@ namespace Web.UI.Controllers
             // se filtran en el navegador según el TipoSn elegido, igual que País/Departamento/Municipio.
             var respuesta = await _series.ObtenerPorDocumentoAsync(CodigoObjSocioNegocio);
             ViewBag.SeriesSocioNegocio = respuesta.Dato ?? [];
+
+            // Serie por defecto de cada subtipo (C = Cliente, P = Proveedor) según el encabezado de la numeración de
+            // Socios de negocio; el formulario la preselecciona al elegir el tipo (si no hay, usa "Manual").
+            var encabezados = await _numeraciones.ObtenerTodoAsync();
+            ViewBag.SeriesDefectoSocioNegocio = (encabezados.Resultado ? encabezados.Dato : null)?
+                .Where(n => n.CodigoObj == CodigoObjSocioNegocio && n.SerieDfct.HasValue)
+                .Select(n => new { n.SubTipoDoc, Serie = n.SerieDfct!.Value })
+                .ToList() ?? [];
+        }
+
+        /// <summary>
+        /// Vista previa del código que recibiría el próximo socio de una serie (prefijo + número siguiente con ceros + sufijo).
+        /// Solo consulta: el consecutivo avanza al guardar, y el código definitivo lo asigna la API en ese momento.
+        /// </summary>
+        [HttpGet]
+        [RequierePermiso("SociosNegocio", Accion.Agregar)]
+        public async Task<IActionResult> CodigoSiguiente(int serie)
+        {
+            var respuesta = await _series.GenerarCodigoAsync(serie);
+            return Json(respuesta);
         }
     }
 }

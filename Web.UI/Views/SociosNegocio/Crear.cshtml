@@ -56,7 +56,7 @@
                                     <select id="selectSerieSocioNegocio" class="form-select">
                                         <option value="">-- Seleccione el tipo primero --</option>
                                     </select>
-                                    <span class="form-text">Si eliges una serie distinta de "Manual", el código se genera solo al guardar.</span>
+                                    <span class="form-text">Si eliges una serie distinta de "Manual", se muestra el código que le toca según la serie; se asigna definitivamente al guardar.</span>
                                 </div>
                                 <div class="col-md-4">
                                     <label asp-for="Codigo" class="form-label"></label>
@@ -301,6 +301,10 @@
 
 <script id="datosSeriesSocioNegocio" type="application/json">
     @Html.Raw(JsonSerializer.Serialize(ViewBag.SeriesSocioNegocio, opcionesJson))
+</script>
+
+<script id="datosSeriesDefectoSocioNegocio" type="application/json">
+    @Html.Raw(JsonSerializer.Serialize(ViewBag.SeriesDefectoSocioNegocio, opcionesJson))
 </script>
 
 @section Scripts {

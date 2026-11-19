@@ -141,7 +141,8 @@ $(function () {
         const idPeticion = ++peticionCodigoSerie;
 
         if (esSerieManualArticulo()) {
-            $codigo.val('').prop('disabled', false).attr('placeholder', '');
+            if ($codigo.prop('disabled')) $codigo.val('');   // venía de una vista previa: no dejar ese código; un código escrito a mano se respeta
+            $codigo.prop('disabled', false).attr('placeholder', '');
             return;
         }
 
