@@ -4,8 +4,9 @@ namespace Web.ApiClient.Dtos.Articulo
 {
     public class ArticuloCrearDTO
     {
+        // Solo es obligatorio con una serie "Manual" (lo valida la API: «El código es requerido para series manuales.»);
+        // con las demás series el código lo asigna la API al guardar y este campo viaja vacío.
         [Display(Name = "Código")]
-        [Required(ErrorMessage = "El campo {0} es requerido.")]
         public string? Codigo { get; set; }
 
         [Display(Name = "Nombre")]
