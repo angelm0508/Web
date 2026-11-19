@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Web.ApiClient.Clientes;
 using Web.ApiClient.Dtos;
+using Web.ApiClient.Dtos.NumeracionDocumentoDet;
 using Web.ApiClient.Dtos.Pos;
 using Web.UI.Authorization;
 
@@ -47,9 +48,14 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Index()
         {
             var respuesta = await _pos.ObtenerConfiguracionAsync();
-            var vista = respuesta.Resultado && respuesta.Dato is not null ? respuesta.Dato : new PosConfiguracionVista();
-            ViewBag.ErrorCarga = respuesta.Resultado ? null : respuesta.Mensaje;
-            ViewBag.PuedeActualizar = User.TienePermiso("PosConfiguracion", Accion.Actualizar);
+            var cargada = respuesta.Resultado && respuesta.Dato is not null;
+            var vista = cargada ? respuesta.Dato! : new PosConfiguracionVista();
+            // Sin la configuración actual la pantalla es de solo lectura y no tiene «Guardar»: un PUT con los campos
+            // vacíos sobrescribiría la configuración real.
+            ViewBag.ErrorCarga = cargada
+                ? null
+                : (string.IsNullOrWhiteSpace(respuesta.Mensaje) ? "La API no devolvió la configuración del POS." : respuesta.Mensaje);
+            ViewBag.PuedeActualizar = cargada && User.TienePermiso("PosConfiguracion", Accion.Actualizar);
 
             var config = vista.Configuracion;
 
@@ -60,7 +66,9 @@ namespace Web.UI.Controllers
                     .Where(s => s.SubTipoDoc == SubTipoDocFactura && s.Manual != "S" && s.Bloqueado != "S")
                     .OrderBy(s => s.Serie)
                     .Select(s => (s.Serie.ToString(), s.NombreSerie)),
-                config.SerieFactura?.ToString(), config.SerieFactura?.ToString());
+                config.SerieFactura?.ToString(),
+                TextoSerie(seriesFactura.Dato, config.SerieFactura),
+                seriesFactura.Resultado);
 
             // Series de pagos recibidos: automáticas y no bloqueadas.
             var seriesPago = await _series.ObtenerPorDocumentoAsync(CodigoObjPagoRecibido);
@@ -69,31 +77,37 @@ namespace Web.UI.Controllers
                     .Where(s => s.Manual != "S" && s.Bloqueado != "S")
                     .OrderBy(s => s.Serie)
                     .Select(s => (s.Serie.ToString(), s.NombreSerie)),
-                config.SeriePago?.ToString(), config.SeriePago?.ToString());
+                config.SeriePago?.ToString(),
+                TextoSerie(seriesPago.Dato, config.SeriePago),
+                seriesPago.Resultado);
 
             var almacenes = await _almacenes.ObtenerTodoAsync();
             ViewBag.Almacenes = ConValorActual(
                 (almacenes.Dato ?? []).Where(a => a.Activo == "S" && a.Bloqueado != "S").OrderBy(a => a.Codigo, StringComparer.Ordinal)
                     .Select(a => (a.Codigo, $"{a.Codigo} - {a.Nombre}")),
-                config.CodAlmacen, config.CodAlmacen);
+                config.CodAlmacen,
+                (almacenes.Dato ?? []).Where(a => a.Codigo == config.CodAlmacen).Select(a => $"{a.Codigo} - {a.Nombre}").FirstOrDefault() ?? config.CodAlmacen,
+                almacenes.Resultado);
 
             var impuestos = await _impuestos.ObtenerTodoAsync();
             ViewBag.Impuestos = ConValorActual(
                 (impuestos.Dato ?? []).OrderBy(i => i.Codigo, StringComparer.Ordinal)
                     .Select(i => (i.Codigo, $"{i.Codigo} - {i.Nombre}")),
-                config.CodigoImpuesto, config.CodigoImpuesto);
+                config.CodigoImpuesto, config.CodigoImpuesto, impuestos.Resultado);
 
             var monedas = await _monedas.ObtenerTodoAsync();
             ViewBag.Monedas = ConValorActual(
                 (monedas.Dato ?? []).OrderBy(m => m.Codigo, StringComparer.Ordinal)
                     .Select(m => (m.Codigo, $"{m.Codigo} - {m.Nombre}")),
-                config.MonedaDoc, config.MonedaDoc);
+                config.MonedaDoc, config.MonedaDoc, monedas.Resultado);
 
             var formas = await _formasPago.ObtenerTodoAsync();
             ViewBag.FormasPago = ConValorActual(
                 (formas.Dato ?? []).Where(f => f.Activo == "S").OrderBy(f => f.Codigo, StringComparer.Ordinal)
                     .Select(f => (f.Codigo, $"{f.Codigo} - {f.Nombre}")),
-                config.FormaPagoEfectivo, config.FormaPagoEfectivo);
+                config.FormaPagoEfectivo,
+                (formas.Dato ?? []).Where(f => f.Codigo == config.FormaPagoEfectivo).Select(f => $"{f.Codigo} - {f.Nombre}").FirstOrDefault() ?? config.FormaPagoEfectivo,
+                formas.Resultado);
 
             // Texto del cliente por defecto («código - nombre»); si no se puede leer, se muestra el código.
             string? textoCliente = null;
@@ -134,14 +148,28 @@ namespace Web.UI.Controllers
 
         /// <summary>
         /// Opciones de un select. Si el valor guardado ya no está entre las opciones vigentes (serie bloqueada, forma de pago
-        /// desactivada...) se agrega igualmente para que la pantalla no lo borre en silencio al guardar.
+        /// desactivada...) se agrega igualmente para que la pantalla no lo borre en silencio al guardar, con la nota
+        /// «(ya no disponible)». Si el catálogo no se pudo cargar no se sabe si sigue disponible: se agrega sin la nota.
         /// </summary>
-        private static List<SelectListItem> ConValorActual(IEnumerable<(string Valor, string Texto)> opciones, string? valorActual, string? textoActual)
+        private static List<SelectListItem> ConValorActual(
+            IEnumerable<(string Valor, string Texto)> opciones, string? valorActual, string? textoActual, bool catalogoCargado)
         {
             var lista = opciones.Select(o => new SelectListItem(o.Texto, o.Valor)).ToList();
             if (!string.IsNullOrEmpty(valorActual) && lista.All(o => o.Value != valorActual))
-                lista.Insert(0, new SelectListItem($"{textoActual} (ya no disponible)", valorActual));
+            {
+                var texto = string.IsNullOrWhiteSpace(textoActual) ? valorActual : textoActual;
+                lista.Insert(0, new SelectListItem(catalogoCargado ? $"{texto} (ya no disponible)" : texto, valorActual));
+            }
             return lista;
+        }
+
+        /// <summary>Texto de una serie guardada: su nombre en el catálogo completo (aunque esté bloqueada) o, si no está, el número.</summary>
+        private static string? TextoSerie(IEnumerable<NumeracionDocumentoDetDTO>? catalogo, int? serie)
+        {
+            if (serie is null)
+                return null;
+            var nombre = (catalogo ?? []).Where(s => s.Serie == serie).Select(s => s.NombreSerie).FirstOrDefault();
+            return string.IsNullOrWhiteSpace(nombre) ? serie.ToString() : $"{nombre} ({serie})";
         }
     }
 }

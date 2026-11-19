@@ -15,9 +15,14 @@ $(function () {
             endpoint: '/PosConfiguracion/BuscarClientes',
             obtenerCodigo: s => s.codigo ?? s.Codigo,
             obtenerEtiqueta: s => `${s.codigo ?? s.Codigo} - ${s.nombre ?? s.Nombre}`,
-            minCaracteres: 0 // al enfocar el campo vacío se sugieren clientes sin tener que escribir
+            minCaracteres: 0, // al enfocar el campo vacío se sugieren clientes sin tener que escribir
+            // En una página (no un modal) el blur no debe devolver el foco al campo: «Guardar» ya valida el texto sin elegir.
+            requerido: false
         });
     }
+
+    // Si la configuración no se pudo cargar no hay «Guardar»: solo se puede reintentar.
+    $('#btnReintentarPosConfiguracion').on('click', () => window.location.reload());
 
     // Aviso de faltantes: se vuelve a pintar con lo que devuelve la API al guardar.
     function mostrarFaltantes(faltantes) {

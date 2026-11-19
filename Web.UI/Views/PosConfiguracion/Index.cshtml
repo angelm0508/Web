@@ -5,12 +5,14 @@
     var config = Model.Configuracion;
     bool puedeActualizar = ViewBag.PuedeActualizar ?? false;
     string? errorCarga = ViewBag.ErrorCarga;
-    var deshabilitado = !puedeActualizar;
+    var hayErrorCarga = !string.IsNullOrEmpty(errorCarga);
+    // Sin la configuración actual no se edita ni se guarda: un PUT con los campos vacíos borraría la configuración real.
+    var deshabilitado = !puedeActualizar || hayErrorCarga;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0">Configuración POS</h3>
-    @if (puedeActualizar)
+    @if (puedeActualizar && !hayErrorCarga)
     {
         <button type="button" class="btn btn-primary" id="btnGuardarPosConfiguracion">
             <i class="fa-solid fa-floppy-disk me-1"></i>Guardar configuración
@@ -18,34 +20,44 @@
     }
 </div>
 
-@if (!string.IsNullOrEmpty(errorCarga))
+@if (hayErrorCarga)
 {
-    <div class="alert alert-danger" role="alert">No se pudo cargar la configuración actual: @errorCarga</div>
+    <div class="alert alert-danger d-flex flex-wrap justify-content-between align-items-center gap-2" role="alert">
+        <div>
+            <div>No se pudo cargar la configuración actual: @errorCarga</div>
+            <div class="small">Los campos no se pueden modificar hasta que se cargue.</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger" id="btnReintentarPosConfiguracion">
+            <i class="fa-solid fa-rotate-right me-1"></i>Reintentar
+        </button>
+    </div>
 }
-
-<div id="posFaltantes" class="alert @(Model.Faltantes.Count > 0 ? "alert-warning" : "alert-success")" role="status">
-    @if (Model.Faltantes.Count > 0)
-    {
-        <div class="fw-semibold mb-1">El POS todavía no puede vender. Falta completar:</div>
-        <ul class="mb-0">
-            @foreach (var faltante in Model.Faltantes)
-            {
-                <li>@faltante</li>
-            }
-        </ul>
-    }
-    else
-    {
-        <span>La configuración del POS está completa.</span>
-    }
-</div>
+else
+{
+    <div id="posFaltantes" class="alert @(Model.Faltantes.Count > 0 ? "alert-warning" : "alert-success")" role="status">
+        @if (Model.Faltantes.Count > 0)
+        {
+            <div class="fw-semibold mb-1">El POS todavía no puede vender. Falta completar:</div>
+            <ul class="mb-0">
+                @foreach (var faltante in Model.Faltantes)
+                {
+                    <li>@faltante</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <span>La configuración del POS está completa.</span>
+        }
+    </div>
+}
 
 <div class="alert alert-info d-flex align-items-start gap-2" role="note">
     <i class="fa-solid fa-circle-info mt-1"></i>
     <span>No compartas estas series con facturas o pagos normales: el POS las usa en exclusiva.</span>
 </div>
 
-@if (!puedeActualizar)
+@if (!puedeActualizar && !hayErrorCarga)
 {
     <div class="text-muted small mb-2">Solo tienes permiso de consulta: los campos no se pueden modificar.</div>
 }
