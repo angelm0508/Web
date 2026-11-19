@@ -19,7 +19,7 @@ namespace Web.UI.Controllers
     public class PosController : Controller
     {
         private const int LongitudMinimaBusqueda = 2;
-        private const int MaximoClientes = 20;
+        private const int MaximoClientes = 10;
         private const string VistaTicket = "_Ticket";
 
         private readonly IPosApiClient _pos;
@@ -131,19 +131,25 @@ namespace Web.UI.Controllers
         [RequierePermiso("Pos", Accion.Ver)]
         public async Task<IActionResult> Rapidos() => Json(await _pos.ObtenerRapidosAsync());
 
-        /// <summary>Clientes para «Cambiar cliente»: solo socios de tipo cliente y no inactivos.</summary>
+        /// <summary>
+        /// Clientes para «Cambiar cliente»: solo socios de tipo cliente y no inactivos, cuyo código O nombre contenga el
+        /// texto (sin distinguir mayúsculas). El endpoint «ContengaNombre» de la API solo busca por nombre, así que se
+        /// consultan todos los clientes y se filtra aquí.
+        /// </summary>
         [HttpGet]
         [RequierePermiso("Pos", Accion.Ver)]
         public async Task<IActionResult> Clientes(string? texto)
         {
-            var respuesta = string.IsNullOrWhiteSpace(texto)
-                ? await _socios.ObtenerTodoAsync("C")
-                : await _socios.ObtenerContenganNombreAsync(texto.Trim(), "C");
+            var respuesta = await _socios.ObtenerTodoAsync("C");
             if (!respuesta.Resultado)
                 return Json(respuesta);
 
+            var filtro = texto?.Trim() ?? string.Empty;
             var clientes = (respuesta.Dato ?? [])
                 .Where(s => s.TipoSn == "C" && s.Activo != "N")
+                .Where(s => filtro.Length == 0
+                    || (s.Codigo?.Contains(filtro, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (s.Nombre?.Contains(filtro, StringComparison.OrdinalIgnoreCase) ?? false))
                 .Take(MaximoClientes)
                 .Select(s => new { codigo = s.Codigo, nombre = s.Nombre ?? s.Codigo, nit = s.Nit?.Trim() ?? string.Empty })
                 .ToList();
@@ -161,11 +167,11 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Vender([FromBody] VentaPosSolicitud? solicitud)
         {
             if (solicitud is null)
-                return Json(new Respuesta<TicketPos> { Resultado = false, Mensaje = "La venta es obligatoria." });
+                return Json(new { resultado = false, mensaje = "La venta es obligatoria.", dato = (TicketPos?)null, incierto = false });
 
             var respuesta = await _pos.VenderAsync(solicitud);
             if (!respuesta.Resultado || respuesta.Dato is null)
-                return Json(respuesta);
+                return Json(new { resultado = false, mensaje = respuesta.Mensaje, dato = (TicketPos?)null, incierto = EsResultadoIncierto(respuesta) });
 
             string? html = null;
             try
@@ -196,6 +202,22 @@ namespace Web.UI.Controllers
         [HttpGet]
         [RequierePermiso("Pos", Accion.Ver)]
         public async Task<IActionResult> VentasDelDia() => Json(await _pos.ObtenerVentasDelDiaAsync());
+
+        /// <summary>
+        /// Venta fallida cuyo resultado real no se conoce: <c>ApiClientBase</c> no llegó a leer una respuesta de negocio de
+        /// la API (excepción de red o tiempo de espera, cuerpo vacío o ilegible, 401/403). En esos casos la venta pudo
+        /// registrarse y la pantalla pide revisar «Ventas del día». Un rechazo de negocio (400 con mensaje) sí es seguro.
+        /// </summary>
+        private static bool EsResultadoIncierto(Respuesta<TicketPos> respuesta)
+        {
+            if (respuesta.Resultado && respuesta.Dato is null)
+                return true;   // la API dijo que sí pero no devolvió el ticket
+            var mensaje = respuesta.Mensaje ?? string.Empty;
+            return string.IsNullOrWhiteSpace(mensaje)
+                || mensaje.StartsWith("No se pudo conectar con la API", StringComparison.Ordinal)
+                || mensaje.StartsWith("La API devolvió una respuesta vacía", StringComparison.Ordinal)
+                || mensaje.StartsWith("Tu sesión expiró", StringComparison.Ordinal);
+        }
 
         private async Task<string> RenderizarParcialAsync(string nombreVista, object modelo, bool reimpresion)
         {

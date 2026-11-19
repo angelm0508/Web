@@ -259,6 +259,12 @@
     padding: 0 !important;
   }
 
+  /* .modal y .modal-dialog-scrollable fijan height:100%: en papel recortaría el ticket o agregaría páginas. */
+  #posModalTicket,
+  #posModalTicket .modal-dialog {
+    height: auto !important;
+  }
+
   #posModalTicket .modal-dialog {
     margin: 0 !important;
     max-width: none !important;

@@ -13,7 +13,14 @@
     // Puro: sin DOM ni jQuery.
     // =====================================================================================================
     const Puro = (function () {
-        const MAXIMA_CANTIDAD = 99999;
+        const MAXIMA_CANTIDAD = 9999;
+        const CANTIDAD_A_CONFIRMAR = 999;      // una cantidad tecleada mayor pide confirmación
+        const MAXIMOS_DIGITOS_CANTIDAD = 5;    // más dígitos = casi seguro un código escaneado en la cantidad
+        const TOPE_IMPORTE = 10000000;         // un importe de 8 o más dígitos enteros no es dinero real (escaneo)
+        const FACTOR_MAXIMO_EFECTIVO = 10;     // efectivo de más de 10 veces el total: fuera de rango
+        const MENSAJE_IMPORTE_FUERA_DE_RANGO = 'Importe fuera de rango: revisa el efectivo recibido.';
+        const MENSAJE_SESION_EXPIRADA = 'Tu sesión expiró: vuelve a iniciar sesión.';
+        const MENSAJE_VENTA_INCIERTA = 'No se pudo confirmar la venta. Revisa «Ventas del día» antes de volver a cobrar.';
 
         /** Redondeo a 2 decimales, medio alejándose de cero (MidpointRounding.AwayFromZero), sin el ruido binario de JS. */
         function redondear2(valor) {
@@ -42,6 +49,25 @@
             const n = Math.floor(Number(valor));
             if (!Number.isFinite(n) || n < 1) return 1;
             return Math.min(n, MAXIMA_CANTIDAD);
+        }
+
+        /**
+         * Cantidad tecleada en una línea: 'rechazar' si tiene más de 5 dígitos (un código escaneado con el foco en la
+         * cantidad), 'confirmar' si supera 999 y cambia la actual, 'aplicar' en otro caso. cantidad = la que quedaría.
+         */
+        function evaluarCantidadTecleada(valor, anterior) {
+            const texto = String(valor ?? '').trim();
+            const entero = /^[+-]?(\d*)/.exec(texto)[1].replace(/^0+(?=\d)/, '');
+            const n = Number(texto.replace(',', '.'));
+            if (entero.length > MAXIMOS_DIGITOS_CANTIDAD || (Number.isFinite(n) && Math.abs(n) >= Math.pow(10, MAXIMOS_DIGITOS_CANTIDAD))
+                || /e/i.test(texto)) {
+                return { accion: 'rechazar', cantidad: normalizarCantidad(anterior) };
+            }
+            const cantidad = normalizarCantidad(texto);
+            if (cantidad > CANTIDAD_A_CONFIRMAR && cantidad !== normalizarCantidad(anterior)) {
+                return { accion: 'confirmar', cantidad };
+            }
+            return { accion: 'aplicar', cantidad };
         }
 
         function calcularLinea(cantidad, precio, tasa) {
@@ -120,9 +146,11 @@
             let efectivo = 0;
             let problema = null;
             const conImporte = [];
+            let fueraDeRango = false;
             (pagos || []).forEach(p => {
                 const monto = normalizarImporte(p.monto);
                 if (monto <= 0) return;
+                if (monto >= TOPE_IMPORTE) fueraDeRango = true;
                 conImporte.push(p);
                 pagado += monto;
                 if (mismoCodigo(p.codigo, formaEfectivo)) efectivo += monto;
@@ -131,11 +159,16 @@
             efectivo = redondear2(efectivo);
             const falta = Math.max(0, redondear2(totalR - pagado));
             const cambio = Math.max(0, redondear2(pagado - totalR));
+            // Tope de cordura: un código escaneado con el foco en el efectivo deja un importe absurdo que, por lo demás,
+            // pasaría la validación (el cambio sale del propio efectivo).
+            if (totalR >= 1 && efectivo > redondear2(totalR * FACTOR_MAXIMO_EFECTIVO)) fueraDeRango = true;
 
             if (totalR <= 0) {
                 problema = 'La venta no tiene importe.';
             } else if (conImporte.length === 0) {
                 problema = 'Indica al menos una forma de pago.';
+            } else if (fueraDeRango) {
+                problema = MENSAJE_IMPORTE_FUERA_DE_RANGO;
             } else if (falta > 0) {
                 problema = `Falta cobrar ${formatoDinero(falta)}.`;
             } else if (cambio > efectivo) {
@@ -190,6 +223,24 @@
         /** Efectivo exacto: lo que falta después de las otras formas (>= 0). */
         function efectivoExacto(total, otrosPagos) {
             return Math.max(0, redondear2(Number(total) - normalizarImporte(otrosPagos)));
+        }
+
+        /**
+         * Respuesta JSON de la Web ({ resultado, ... }). Con la sesión vencida $.get recibe la página de inicio de sesión
+         * (HTML, un string): eso no es «sin resultados».
+         */
+        function esRespuestaApi(r) {
+            return r !== null && typeof r === 'object' && typeof r.resultado === 'boolean';
+        }
+
+        /**
+         * Resultado de POST /Pos/Vender: la venta NO se hizo con certeza solo cuando el controlador lo indica
+         * (incierto: false, p. ej. la API la rechazó con un mensaje de negocio). Sin conexión, con la sesión vencida
+         * (HTML en vez de JSON) o si la API no respondió, la venta pudo registrarse.
+         */
+        function ventaIncierta(r) {
+            if (r && r.resultado === true) return false;
+            return !(r && typeof r === 'object' && r.incierto === false);
         }
 
         function escaparHtml(texto) {
@@ -275,8 +326,9 @@
         }
 
         return {
-            MAXIMA_CANTIDAD,
-            redondear2, normalizarImporte, normalizarCantidad, calcularLinea, calcularTotales,
+            MAXIMA_CANTIDAD, CANTIDAD_A_CONFIRMAR, MENSAJE_IMPORTE_FUERA_DE_RANGO, MENSAJE_SESION_EXPIRADA, MENSAJE_VENTA_INCIERTA,
+            redondear2, normalizarImporte, normalizarCantidad, evaluarCantidadTecleada, calcularLinea, calcularTotales,
+            esRespuestaApi, ventaIncierta,
             agregarArticulo, cambiarCantidad, quitarLinea, avisoExistencias,
             evaluarCobro, componerPagos, componerSolicitud, sumarBillete, efectivoExacto,
             escaparHtml, formatoDinero, formatoCantidad, horaDe, mismoCodigo,
@@ -338,8 +390,40 @@
                 despues();
                 return;
             }
-            $(el).one('hidden.bs.modal', () => despues());
+            let hecho = false;
+            const terminar = () => {
+                if (hecho) return;
+                hecho = true;
+                $(el).off('hidden.bs.modal', terminar);
+                despues();
+            };
+            $(el).one('hidden.bs.modal', terminar);
             modal(id).hide();
+            // Respaldo: si hide() llegó en plena transición de apertura, Bootstrap lo ignora y «hidden» no se dispara.
+            let reintentado = false;
+            (function respaldo() {
+                setTimeout(() => {
+                    if (hecho) return;
+                    if (el.classList.contains('show') && !reintentado) {
+                        reintentado = true;
+                        modal(id).hide();
+                        respaldo();
+                    } else {
+                        terminar();
+                    }
+                }, 600);
+            })();
+        }
+
+        /**
+         * Antes de F2/F4/F9 o de abrir cobro, cliente o ventas del día: quita el foco del campo activo para que una
+         * cantidad editada sin salir del campo se confirme (su «change») antes de actuar. Devuelve false si esa cantidad
+         * quedó pendiente de confirmación (entonces no se debe seguir).
+         */
+        function confirmarEdicionPendiente() {
+            const activo = document.activeElement;
+            if (activo && activo !== document.body && typeof activo.blur === 'function') activo.blur();
+            return !Lista.cantidadPorConfirmar();
         }
 
         /** SweetAlert de error (diferido: que la tecla que lo provocó no lo cierre) y foco de vuelta al buscador. */
@@ -365,7 +449,7 @@
 
         // Un clic fuera de un campo devuelve el foco al buscador (los botones hacen su acción y luego vuelve).
         $('#posPantalla').on('click', function (e) {
-            if ($(e.target).closest('input, select, textarea, a').length) return;
+            if ($(e.target).closest('input, select, textarea, a, label').length) return;
             enfocarBuscador();
         });
 
@@ -394,11 +478,26 @@
             }
 
             function abrir() {
+                if (!confirmarEdicionPendiente()) return;
                 buscador.establecer(null);
+                $('#posClienteSesion').addClass('d-none');
                 modal('posModalCliente').show();
             }
 
             function iniciar() {
+                // Esc con la lista de sugerencias abierta cierra solo la lista (no el modal). Va ANTES de autocompletar,
+                // que en su propio keydown oculta la lista: aquí todavía se ve abierta.
+                $('#posClienteBuscar').on('keydown', function (e) {
+                    if (e.key === 'Escape' && !$('#posClienteSugerencias').hasClass('d-none')
+                        && $('#posClienteSugerencias').children().length > 0) {
+                        e.stopPropagation();   // Bootstrap escucha Esc en el elemento del modal
+                    }
+                });
+                // Con la sesión vencida la búsqueda recibe la página de inicio de sesión (no es «sin resultados»).
+                $(document).ajaxSuccess(function (ev, xhr, ajustes, datos) {
+                    if (!String(ajustes.url || '').startsWith('/Pos/Clientes')) return;
+                    $('#posClienteSesion').toggleClass('d-none', Puro.esRespuestaApi(datos));
+                });
                 buscador = App.autocompletar({
                     texto: $('#posClienteBuscar'),
                     oculto: $('#posClienteBuscarCodigo'),
@@ -414,7 +513,7 @@
                     },
                     minCaracteres: 2,
                     debounceMs: 250,
-                    maxResultados: 20,
+                    maxResultados: 10,
                     requerido: false
                 });
                 $('#posModalCliente').on('shown.bs.modal', () => $('#posClienteBuscar').trigger('focus'));
@@ -482,6 +581,10 @@
                 const resultados = await Promise.all(codigos.map(codigo =>
                     Promise.resolve($.get('/Pos/PorCodigo', { codigo, cliente })).catch(() => null)));
                 if (version !== versionPrecios) return;
+                if (resultados.some(r => r !== null && !Puro.esRespuestaApi(r))) {
+                    mostrarMensaje(Puro.MENSAJE_SESION_EXPIRADA);   // no se marca nada como «no disponible»
+                    return;
+                }
                 codigos.forEach((codigo, i) => {
                     const r = resultados[i];
                     const linea = lineas.find(l => l.codigo === codigo);
@@ -495,6 +598,52 @@
                     }
                 });
                 pintar();
+            }
+
+            let porConfirmar = false;   // cantidad > 999 esperando la confirmación del usuario
+
+            /**
+             * Cantidad tecleada (change del campo, síncrono también al quitarle el foco con blur()): se aplica, se rechaza
+             * (más de 5 dígitos: un código escaneado en la cantidad) o pide confirmación (más de 999).
+             */
+            function aplicarCantidadTecleada(codigo, valor) {
+                if (porConfirmar || !lineas.some(l => l.codigo === codigo)) return;
+                const anterior = cantidadDe(codigo);
+                const d = Puro.evaluarCantidadTecleada(valor, anterior);
+                if (d.accion === 'rechazar') {
+                    pintar();   // restablece la cantidad anterior en el campo
+                    mostrarMensaje('Cantidad no válida: ¿se escaneó un código en la cantidad? Vuelve a escanearlo en el buscador.');
+                    enfocarBuscador();
+                    return;
+                }
+                if (d.accion === 'confirmar') {
+                    porConfirmar = true;
+                    pintar();   // mientras se confirma, la lista (y el total) siguen con la cantidad anterior
+                    setTimeout(async () => {
+                        let r = null;
+                        try {
+                            r = await Swal.fire({
+                                icon: 'question',
+                                title: `¿Confirmas una cantidad de ${Puro.formatoCantidad(d.cantidad)}?`,
+                                showCancelButton: true,
+                                confirmButtonText: 'Sí, confirmar',
+                                cancelButtonText: 'No',
+                                focusCancel: true
+                            });
+                        } finally {
+                            porConfirmar = false;
+                        }
+                        if (r && r.isConfirmed && lineas.some(l => l.codigo === codigo)) {
+                            lineas = Puro.cambiarCantidad(lineas, codigo, d.cantidad);
+                            pintar();
+                        }
+                        enfocarBuscador();
+                    }, 0);
+                    return;
+                }
+                lineas = Puro.cambiarCantidad(lineas, codigo, d.cantidad);
+                pintar();
+                enfocarBuscador();
             }
 
             function iniciar() {
@@ -514,9 +663,7 @@
                         pintar();
                     })
                     .on('change', '.pos-input-cantidad', function () {
-                        lineas = Puro.cambiarCantidad(lineas, codigoDeFila(this), this.value);
-                        pintar();
-                        enfocarBuscador();
+                        aplicarCantidadTecleada(codigoDeFila(this), this.value);
                     })
                     .on('keydown', '.pos-input-cantidad', function (e) {
                         if (e.key === 'Enter') {
@@ -529,6 +676,7 @@
 
             return {
                 iniciar, agregar, refrescarPrecios,
+                cantidadPorConfirmar: () => porConfirmar,
                 vaciar: () => { versionPrecios++; lineas = []; pintar(); },
                 lineas: () => lineas.map(l => Object.assign({}, l)),
                 hayLineas: () => lineas.length > 0,
@@ -583,6 +731,14 @@
                     r = null;
                 }
                 if (id !== ultimaBusqueda) return null;   // ya hay una búsqueda más reciente
+                if (r !== null && !Puro.esRespuestaApi(r)) {
+                    // Página de inicio de sesión (sesión vencida): no es «sin resultados».
+                    resultados = [];
+                    indiceActivo = -1;
+                    pintar();
+                    mostrarMensaje(Puro.MENSAJE_SESION_EXPIRADA);
+                    return null;
+                }
                 resultados = r && r.resultado && Array.isArray(r.dato) ? r.dato.slice(0, 20) : [];
                 indiceActivo = -1;
                 pintar();
@@ -625,6 +781,10 @@
                 // Sin coincidencia exacta: se devuelve el texto (si el usuario no escribió otro) y se muestran sugerencias.
                 if (String($input.val() || '') !== '') return;
                 $input.val(texto);
+                if (r !== null && !Puro.esRespuestaApi(r)) {
+                    mostrarMensaje(Puro.MENSAJE_SESION_EXPIRADA);
+                    return;
+                }
                 if (texto.length < 2) {
                     mostrarMensaje((r && r.mensaje) || `No se encontró el artículo ${texto}.`);
                     return;
@@ -699,6 +859,10 @@
                     r = null;
                 }
                 const $c = $('#posRapidos');
+                if (r !== null && !Puro.esRespuestaApi(r)) {
+                    $c.html('').append($('<div class="text-muted small"></div>').text(Puro.MENSAJE_SESION_EXPIRADA));
+                    return;
+                }
                 if (!r || !r.resultado) {
                     $c.html('').append($('<div class="text-muted small"></div>').text((r && r.mensaje) || 'No se pudieron cargar los artículos rápidos.'));
                     return;
@@ -725,6 +889,8 @@
                 }
                 if (r && r.resultado && r.dato && r.dato.codigo === articulo.codigo) {
                     Lista.agregar(r.dato);
+                } else if (r !== null && !Puro.esRespuestaApi(r)) {
+                    mostrarMensaje(Puro.MENSAJE_SESION_EXPIRADA);
                 } else {
                     mostrarMensaje((r && r.mensaje) || `No se pudo agregar ${articulo.nombre}.`);
                 }
@@ -781,7 +947,7 @@
                     $('#posCobroDiferenciaEtiqueta').text('Cambio');
                     $('#posCobroDiferencia').text(Puro.formatoDinero(ev.cambio)).removeClass('text-danger').addClass('text-success');
                 }
-                $('#posCobroMensaje').text(ev.problema && ev.falta === 0 ? ev.problema : '');
+                $('#posCobroMensaje').text(ev.problema && (ev.falta === 0 || ev.problema === Puro.MENSAJE_IMPORTE_FUERA_DE_RANGO) ? ev.problema : '');
                 $('#posBtnConfirmar').prop('disabled', enviando || !ev.puedeConfirmar);
                 return ev;
             }
@@ -800,6 +966,8 @@
                     mostrarMensaje('No tienes permiso para cobrar.');
                     return;
                 }
+                // Una cantidad editada sin salir del campo se confirma antes de leer el total.
+                if (!confirmarEdicionPendiente()) return;
                 if (!Lista.hayLineas()) {
                     mostrarMensaje('Agrega al menos un artículo antes de cobrar.');
                     return;
@@ -855,9 +1023,16 @@
                     return;
                 }
 
-                // Error: se conserva la venta (y los importes) para reintentar; el mensaje de la API se muestra tal cual.
+                // Error: se conserva la venta para reintentar. Los precios pudieron cambiar (la API rechaza un total que
+                // no cuadra): se vuelven a pedir y el cobro se prepara de nuevo al reabrirlo (importes y total al día).
+                totalPreparado = null;
+                efectivoPrecargado = false;
+                Lista.refrescarPrecios();
                 recalcular();
-                cerrarModalY('posModalCobro', () => avisarError(r && r.mensaje));
+                // Si la API rechazó la venta con un mensaje de negocio se muestra tal cual; si no se sabe (sin conexión,
+                // sesión vencida, la API no respondió), la venta pudo registrarse.
+                const mensaje = Puro.ventaIncierta(r) ? Puro.MENSAJE_VENTA_INCIERTA : (r && r.mensaje);
+                cerrarModalY('posModalCobro', () => avisarError(mensaje));
             }
 
             function iniciar() {
@@ -944,6 +1119,10 @@
                 // HTML del parcial _Ticket; cualquier otro HTML (p. ej. la página de inicio de sesión) no es un ticket.
                 if (typeof r === 'string' && r.indexOf('pos-ticket') >= 0) {
                     mostrar(r, nuevoModo);
+                } else if (typeof r === 'string') {
+                    avisarError(nuevoModo === 'venta'
+                        ? `La venta se registró, pero no se pudo cargar el ticket. ${Puro.MENSAJE_SESION_EXPIRADA} Luego reimprímelo desde «Ventas del día».`
+                        : Puro.MENSAJE_SESION_EXPIRADA);
                 } else if (nuevoModo === 'venta') {
                     avisarError(`La venta se registró, pero no se pudo cargar el ticket${r && r.mensaje ? ': ' + r.mensaje : ''}. Reimprímelo desde «Ventas del día».`);
                 } else {
@@ -954,11 +1133,19 @@
             function iniciar() {
                 $('#posBtnImprimir').on('click', () => global.print());
                 $('#posBtnTicketCerrar').on('click', () => modal('posModalTicket').hide());
-                $('#posModalTicket').on('shown.bs.modal', () => $('#posBtnTicketCerrar').trigger('focus'));
+                $('#posModalTicket').on('show.bs.modal', () => { mostradoEn = Date.now(); });
+                $('#posModalTicket').on('shown.bs.modal', () => {
+                    mostradoEn = Date.now();
+                    $('#posBtnTicketCerrar').trigger('focus');
+                });
                 $('#posModalTicket').on('hidden.bs.modal', () => $('#ticketImprimible').empty());
             }
 
-            return { iniciar, mostrar, cargar, cerrar: () => modal('posModalTicket').hide(), modo: () => modo };
+            let mostradoEn = 0;
+            /** Un Enter rezagado del cobro no debe cerrar el ticket recién abierto (≈ 400 ms tras mostrarse). */
+            const recienMostrado = () => Date.now() - mostradoEn < 400;
+
+            return { iniciar, mostrar, cargar, recienMostrado, cerrar: () => modal('posModalTicket').hide(), modo: () => modo };
         })();
 
         // =================================================================================================
@@ -976,6 +1163,10 @@
                 } catch (e) {
                     r = null;
                 }
+                if (r !== null && !Puro.esRespuestaApi(r)) {
+                    $estado.text(Puro.MENSAJE_SESION_EXPIRADA);
+                    return;
+                }
                 if (!r || !r.resultado) {
                     $estado.text((r && r.mensaje) || 'No se pudieron cargar las ventas del día.');
                     return;
@@ -987,6 +1178,7 @@
 
             function iniciar() {
                 $('#posBtnVentasDia').on('click', () => {
+                    if (!confirmarEdicionPendiente()) return;
                     modal('posModalVentasDia').show();
                     cargar();
                 });
@@ -1045,7 +1237,10 @@
 
             function alPresionar(e) {
                 const tecla = e.key;
-                if (tecla === 'F2' || tecla === 'F4' || tecla === 'F9') e.preventDefault();
+                const esAtajo = tecla === 'F2' || tecla === 'F4' || tecla === 'F9';
+                // Alt+F4, Ctrl+F4, Ctrl+F2... son del navegador o del sistema: no abren nada aquí.
+                if (esAtajo && (e.altKey || e.ctrlKey || e.metaKey)) return;
+                if (esAtajo) e.preventDefault();
                 if (global.Swal && Swal.isVisible()) return;
 
                 const abierto = document.querySelector('#posApp .modal.show');
@@ -1054,14 +1249,19 @@
                     if (id === 'posModalCobro' && (tecla === 'F9' || (tecla === 'Enter' && !esBoton(e.target)))) {
                         e.preventDefault();
                         Cobro.confirmar();
-                    } else if (id === 'posModalTicket' && tecla === 'Enter' && !esBoton(e.target)) {
-                        e.preventDefault();
-                        Ticket.cerrar();
+                    } else if (id === 'posModalTicket' && tecla === 'Enter') {
+                        if (Ticket.recienMostrado()) {
+                            e.preventDefault();   // Enter rezagado del cobro: ni siquiera activa el botón enfocado
+                        } else if (!esBoton(e.target)) {
+                            e.preventDefault();
+                            Ticket.cerrar();
+                        }
                     }
                     return;   // Esc lo maneja Bootstrap (cierra el modal)
                 }
 
                 if (tecla === 'F2') {
+                    confirmarEdicionPendiente();
                     enfocarBuscador(true);
                 } else if (tecla === 'F4') {
                     Cliente.abrir();
