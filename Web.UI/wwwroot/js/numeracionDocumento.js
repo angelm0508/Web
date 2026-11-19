@@ -266,7 +266,8 @@ $(function () {
         }
 
         if (esEdicionDetalle()) {
-            const codigoObj = $('#tblDetalleNumeracion').data('codigo-obj');
+            // .data() convierte "2" en el número 2 y la API espera texto: sin String() la petición no se puede leer.
+            const codigoObj = String($('#tblDetalleNumeracion').data('codigo-obj'));
             const esEdicionLinea = serieOriginalEnEdicion !== null;
             const url = esEdicionLinea
                 ? `/NumeracionDocumento/EditarLinea?serie=${serieOriginalEnEdicion}`
