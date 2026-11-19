@@ -109,6 +109,21 @@
                 </select>
             </div>
 
+            <div class="col-md-6">
+                <label asp-for="CodigoBarras" class="form-label"></label>
+                <input asp-for="CodigoBarras" class="form-control" maxlength="50" autocomplete="off" />
+                <span class="form-text">Lo lee el lector de barras del POS. No puede repetirse en otro artículo.</span>
+            </div>
+            <div class="col-md-6 d-flex align-items-center">
+                <div class="form-check form-switch mt-md-3">
+                    @* La casilla no lleva "name": el valor viaja en el campo oculto como "S"/"N" (lo sincroniza articulos.js). *@
+                    <input type="checkbox" class="form-check-input" id="MostrarEnPosCheck" checked="@(Model.MostrarEnPos == "S")" />
+                    <input type="hidden" id="MostrarEnPos" name="MostrarEnPos" value="@(Model.MostrarEnPos == "S" ? "S" : "N")" />
+                    <label class="form-check-label" for="MostrarEnPosCheck">Mostrar en el POS</label>
+                    <div class="form-text">Aparece en la cuadrícula de artículos rápidos del punto de venta.</div>
+                </div>
+            </div>
+
             <div class="col-12">
                 <label asp-for="Comentarios" class="form-label"></label>
                 <textarea asp-for="Comentarios" class="form-control" rows="2"></textarea>

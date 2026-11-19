@@ -73,6 +73,13 @@ namespace Web.ApiClient.Dtos.Articulo
         [Display(Name = "Comentarios")]
         public string? Comentarios { get; set; }
 
+        // El PUT reemplaza todas las columnas: hay que enviar siempre los valores actuales de ambos campos.
+        [Display(Name = "Código de barras")]
+        public string? CodigoBarras { get; set; }
+
+        [Display(Name = "Mostrar en el POS")]
+        public string MostrarEnPos { get; set; } = "N";
+
         public int Serie { get; set; }
     }
 }

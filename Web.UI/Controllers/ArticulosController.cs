@@ -63,7 +63,7 @@ namespace Web.UI.Controllers
             // Serie por defecto configurada en el encabezado de la numeración de Artículos (si no hay, el formulario usa "Manual").
             var encabezado = await _numeraciones.ObtenerAsync(CodigoObjArticulo);
             ViewBag.SerieDefectoArticulo = encabezado.Resultado ? encabezado.Dato?.SerieDfct : null;
-            return View(new ArticuloCrearDTO { Activo = "S", ArticuloCompra = "S", ArticuloVenta = "S", ArticuloInventario = "S", NoApliDesc = "N", GestNoSerie = "N", GestLote = "N", GestPorAlmacen = "N" });
+            return View(new ArticuloCrearDTO { Activo = "S", ArticuloCompra = "S", ArticuloVenta = "S", ArticuloInventario = "S", NoApliDesc = "N", GestNoSerie = "N", GestLote = "N", GestPorAlmacen = "N", MostrarEnPos = "N" });
         }
 
         /// <summary>
@@ -121,6 +121,8 @@ namespace Web.UI.Controllers
                 Minimo = respuesta.Dato.Minimo,
                 Maximo = respuesta.Dato.Maximo,
                 Comentarios = respuesta.Dato.Comentarios,
+                CodigoBarras = respuesta.Dato.CodigoBarras,
+                MostrarEnPos = respuesta.Dato.MostrarEnPos,
                 Serie = respuesta.Dato.Serie
             };
 
@@ -152,6 +154,7 @@ namespace Web.UI.Controllers
                 });
             }
 
+            dto.MostrarEnPos ??= "N";
             var respuesta = await _articulos.InsertarAsync(dto);
             // "respuesta.Dato" ya es el código real (para series no manuales, el que calculó la
             // API al momento de registrar -- no el de la vista previa mostrada antes de guardar).
@@ -192,7 +195,11 @@ namespace Web.UI.Controllers
                 GestPorAlmacen = dto.GestPorAlmacen,
                 Minimo = dto.Minimo,
                 Maximo = dto.Maximo,
-                Comentarios = dto.Comentarios
+                Comentarios = dto.Comentarios,
+                // El PUT reemplaza todas las columnas: el código de barras viaja siempre (vacío = lo borra el usuario) y,
+                // si el cuerpo no trae «Mostrar en el POS», se conserva el valor actual en vez de reiniciarlo a "N".
+                CodigoBarras = dto.CodigoBarras,
+                MostrarEnPos = dto.MostrarEnPos ?? actual.Dato.MostrarEnPos
             };
 
             var respuesta = await _articulos.ActualizarAsync(codigo, actualizar);

@@ -23,6 +23,14 @@ $(function () {
 
     function recargarTabla() { tabla.ajax.reload(null, false); }
 
+    // «Mostrar en el POS»: la casilla no lleva "name" (una casilla sin marcar no viaja y una marcada viaja como "on");
+    // el valor sale siempre como "S"/"N", y el código de barras viaja en su campo (vacío = null) con el valor actual.
+    function aplicarCamposPos(datos, selectorForm) {
+        const $casilla = $(selectorForm).find('#MostrarEnPosCheck');
+        if ($casilla.length > 0) datos.MostrarEnPos = $casilla.is(':checked') ? 'S' : 'N';
+        return datos;
+    }
+
     let buscadorAlmacenDefecto = null;
 
     function abrirModal(html, codigo) {
@@ -55,7 +63,7 @@ $(function () {
 
     $(document).on('click', '#btnGuardarArticulo', async function () {
         const codigo = $(this).data('codigo');
-        const datos = App.recolectarFormulario('#formArticulo');
+        const datos = aplicarCamposPos(App.recolectarFormulario('#formArticulo'), '#formArticulo');
 
         // Primero se validan las filas de inventario por almacén: si hay errores no se guarda nada.
         if (!ArticuloAlmacenes.validar()) {
@@ -222,7 +230,7 @@ $(function () {
         // La vista previa del campo Código (deshabilitado cuando la serie no es manual) es solo
         // cosmética -- el código real lo calcula y asigna la API al momento de guardar, así que ya
         // no se envía nada calculado aquí para series no manuales.
-        const datos = App.recolectarFormulario('#formArticuloCrear');
+        const datos = aplicarCamposPos(App.recolectarFormulario('#formArticuloCrear'), '#formArticuloCrear');
         datos.Serie = serieSeleccionada;
 
         // Primero se validan las filas de inventario por almacén (la sección solo existe con permiso de Actualizar).

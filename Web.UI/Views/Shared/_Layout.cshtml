@@ -16,6 +16,8 @@
     bool MuestraVentas = new[] { "Cotizaciones", "Pedidos", "Entregas", "Facturas", "NotasDebito", "NotasCredito", "PagosRecibidos", "FormasPago", "AntiguedadCobrar" }.Any(Puede);
     bool MuestraCompras = new[] { "PedidosCompra", "EntregasCompra", "FacturasCompra", "NotasDebitoCompra", "NotasCreditoCompra", "PagosEfectuados", "AntiguedadPagar" }.Any(Puede);
     bool MuestraTaller = new[] { "Mecanicos", "Motocicletas", "OrdenesServicio" }.Any(Puede);
+    bool EsActivoPos = new[] { "Pos", "PosConfiguracion" }.Any(EsActivo);
+    bool MuestraPos = new[] { "Pos", "PosConfiguracion" }.Any(Puede);
     bool MuestraAdministracion = Puede("Usuarios");
     bool MuestraReportes = new[] { "ReportesVentas", "ReportesCompras", "ReportesInventario", "ReportesCobrosPagos" }.Any(Puede);
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
@@ -292,6 +294,28 @@
                             {
                                 <a class="nav-link nav-sublink @(EsActivoAccion("Antiguedad", "Pagar") ? "active" : "")" href="/Antiguedad/Pagar">
                                     <i class="fa-solid fa-hourglass-half"></i><span>Antigüedad por pagar</span>
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    @if (MuestraPos)
+                    {
+                        <a class="nav-link nav-link-toggle @(EsActivoPos ? "active" : "")" data-bs-toggle="collapse" href="#submenuPos" role="button" aria-expanded="@(EsActivoPos ? "true" : "false")" aria-controls="submenuPos">
+                            <i class="fa-solid fa-cash-register"></i><span>POS</span>
+                            <i class="fa-solid fa-chevron-down ms-auto submenu-caret"></i>
+                        </a>
+                        <div class="collapse @(EsActivoPos ? "show" : "")" id="submenuPos">
+                            @if (Puede("Pos"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("Pos") ? "active" : "")" href="/Pos">
+                                    <i class="fa-solid fa-barcode"></i><span>Punto de venta</span>
+                                </a>
+                            }
+                            @if (Puede("PosConfiguracion"))
+                            {
+                                <a class="nav-link nav-sublink @(EsActivo("PosConfiguracion") ? "active" : "")" href="/PosConfiguracion">
+                                    <i class="fa-solid fa-sliders"></i><span>Configuración POS</span>
                                 </a>
                             }
                         </div>

@@ -136,6 +136,8 @@ builder.Services.AddHttpClient<IAntiguedadApiClient, AntiguedadApiClient>(c => c
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IReporteApiClient, ReporteApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IPosApiClient, PosApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<ICreditoClienteApiClient, CreditoClienteApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IMovimientoInventarioApiClient, MovimientoInventarioApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))

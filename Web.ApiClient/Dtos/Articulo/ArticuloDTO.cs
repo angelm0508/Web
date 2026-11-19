@@ -24,6 +24,8 @@ namespace Web.ApiClient.Dtos.Articulo
         public decimal? Maximo { get; set; }
         public string? Comentarios { get; set; }
         public int Serie { get; set; }
+        public string? CodigoBarras { get; set; }
+        public string MostrarEnPos { get; set; } = "N";
 
         // INV-4: costo vigente del artículo; el buscador de artículos de Entradas de mercancía
         // lo usa para prellenar #detCostoUnitario. Solo lectura.

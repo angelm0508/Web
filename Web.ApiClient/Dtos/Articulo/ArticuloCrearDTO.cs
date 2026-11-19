@@ -74,6 +74,15 @@ namespace Web.ApiClient.Dtos.Articulo
         [Display(Name = "Comentarios")]
         public string? Comentarios { get; set; }
 
+        // Código del lector de barras (máx. 50; la API recorta, guarda vacío como NULL y rechaza duplicados).
+        [Display(Name = "Código de barras")]
+        public string? CodigoBarras { get; set; }
+
+        // "S"/"N": si el artículo aparece en la cuadrícula rápida del POS. Sin valor por defecto a propósito: si el cuerpo
+        // no lo trae, la edición conserva el valor actual (ArticulosController.Editar) y la creación usa "N".
+        [Display(Name = "Mostrar en el POS")]
+        public string? MostrarEnPos { get; set; }
+
         [Required(ErrorMessage = "La serie es requerida.")]
         [Display(Name = "Serie")]
         public int Serie { get; set; }
