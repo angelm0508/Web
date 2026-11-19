@@ -60,6 +60,18 @@ namespace Web.UI.Controllers
             return View(new ArticuloCrearDTO { Activo = "S", ArticuloCompra = "S", ArticuloVenta = "S", ArticuloInventario = "S", NoApliDesc = "N", GestNoSerie = "N", GestLote = "N", GestPorAlmacen = "N" });
         }
 
+        /// <summary>
+        /// Vista previa del código que recibiría el próximo artículo de una serie (prefijo + número siguiente con ceros + sufijo).
+        /// Solo consulta: el consecutivo avanza al guardar, y el código definitivo lo asigna la API en ese momento.
+        /// </summary>
+        [HttpGet]
+        [RequierePermiso("Articulos", Accion.Agregar)]
+        public async Task<IActionResult> CodigoSiguiente(int serie)
+        {
+            var respuesta = await _series.GenerarCodigoAsync(serie);
+            return Json(respuesta);
+        }
+
         [HttpGet]
         [RequierePermiso("Articulos", Accion.Actualizar)]
         public async Task<IActionResult> FormularioEditar(string codigo)

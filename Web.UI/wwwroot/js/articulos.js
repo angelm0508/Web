@@ -122,15 +122,38 @@ $(function () {
         return $sel.find('option:selected').data('manual') === 'S';
     }
 
+    let peticionCodigoSerie = 0;
+
+    /**
+     * Serie manual: el usuario escribe el código. Otra serie: se muestra (solo lectura) el código que le tocaría
+     * según la configuración de la serie, como en SAP B1. Es una vista previa: el consecutivo avanza al guardar
+     * y el código definitivo lo asigna la API en ese momento (el campo deshabilitado no se envía).
+     */
     function actualizarCodigoSegunSerieArticulo() {
         const $codigo = $('#Codigo');
         if ($codigo.length === 0) return;
+        const idPeticion = ++peticionCodigoSerie;
 
         if (esSerieManualArticulo()) {
-            $codigo.prop('disabled', false).attr('placeholder', '');
-        } else {
-            $codigo.val('').prop('disabled', true).attr('placeholder', 'Se generará al guardar');
+            $codigo.val('').prop('disabled', false).attr('placeholder', '');
+            return;
         }
+
+        $codigo.val('').prop('disabled', true).attr('placeholder', 'Calculando...');
+        $.get('/Articulos/CodigoSiguiente', { serie: $('#selectSerieArticulo').val() })
+            .done(function (respuesta) {
+                if (idPeticion !== peticionCodigoSerie) return;   // ya eligió otra serie
+                if (respuesta && respuesta.resultado && respuesta.dato) {
+                    $codigo.val(respuesta.dato);
+                } else {
+                    // Serie bloqueada, agotada o sin número siguiente: se explica y se deja que el guardado lo valide.
+                    $codigo.attr('placeholder', respuesta && respuesta.mensaje ? respuesta.mensaje : 'Se generará al guardar');
+                }
+            })
+            .fail(function () {
+                if (idPeticion !== peticionCodigoSerie) return;
+                $codigo.attr('placeholder', 'Se generará al guardar');
+            });
     }
 
     $(document).on('change', '#selectSerieArticulo', actualizarCodigoSegunSerieArticulo);
