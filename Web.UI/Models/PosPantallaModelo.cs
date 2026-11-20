@@ -1,4 +1,4 @@
-using Web.ApiClient.Dtos.FormaPago;
+using Web.ApiClient.Dtos.Pos;
 
 namespace Web.UI.Models
 {
@@ -28,7 +28,7 @@ namespace Web.UI.Models
         public string? Moneda { get; set; }
 
         /// <summary>Formas de pago activas; la de efectivo de la configuración va primero.</summary>
-        public List<FormaPagoDTO> FormasPago { get; set; } = new();
+        public List<FormaPagoPos> FormasPago { get; set; } = new();
 
         /// <summary>Permiso <c>Pos.Agregar</c>: sin él la pantalla se puede consultar pero no cobrar.</summary>
         public bool PuedeCobrar { get; set; }

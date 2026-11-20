@@ -15,6 +15,12 @@ namespace Web.ApiClient.Clientes
         public Task<Respuesta<PosConfiguracionVista>> GuardarConfiguracionAsync(PosConfiguracionDato dato) =>
             PutAsync<PosConfiguracionVista>($"{Recurso}/Configuracion", dato);
 
+        public Task<Respuesta<PosContexto>> ObtenerContextoAsync() =>
+            GetAsync<PosContexto>($"{Recurso}/Contexto");
+
+        public Task<Respuesta<List<ClientePos>>> BuscarClientesAsync(string texto) =>
+            GetAsync<List<ClientePos>>($"{Recurso}/Clientes?texto={Uri.EscapeDataString(texto ?? string.Empty)}");
+
         public Task<Respuesta<List<ArticuloPos>>> BuscarArticulosAsync(string texto, string? cliente) =>
             GetAsync<List<ArticuloPos>>($"{Recurso}/Articulos?texto={Uri.EscapeDataString(texto ?? string.Empty)}{ParametroCliente(cliente, '&')}");
 

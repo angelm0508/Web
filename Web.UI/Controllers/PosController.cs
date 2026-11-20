@@ -19,29 +19,21 @@ namespace Web.UI.Controllers
     public class PosController : Controller
     {
         private const int LongitudMinimaBusqueda = 2;
-        private const int MaximoClientes = 10;
         private const string VistaTicket = "_Ticket";
 
         private readonly IPosApiClient _pos;
-        private readonly IImpuestoApiClient _impuestos;
-        private readonly IFormaPagoApiClient _formasPago;
-        private readonly ISocioNegocioApiClient _socios;
         private readonly ICompositeViewEngine _motorVistas;
 
-        public PosController(
-            IPosApiClient pos,
-            IImpuestoApiClient impuestos,
-            IFormaPagoApiClient formasPago,
-            ISocioNegocioApiClient socios,
-            ICompositeViewEngine motorVistas)
+        public PosController(IPosApiClient pos, ICompositeViewEngine motorVistas)
         {
             _pos = pos;
-            _impuestos = impuestos;
-            _formasPago = formasPago;
-            _socios = socios;
             _motorVistas = motorVistas;
         }
 
+        /// <summary>
+        /// Pantalla del POS. Todo sale de <c>api/Pos/Contexto</c> (permiso <c>Pos.Ver</c>): el cajero no necesita permisos de
+        /// formas de pago, impuestos ni socios de negocio.
+        /// </summary>
         [RequierePermiso("Pos", Accion.Ver)]
         public async Task<IActionResult> Index()
         {
@@ -51,56 +43,39 @@ namespace Web.UI.Controllers
                 PuedeConfigurar = User.TienePermiso("PosConfiguracion", Accion.Ver)
             };
 
-            var respuesta = await _pos.ObtenerConfiguracionAsync();
+            var respuesta = await _pos.ObtenerContextoAsync();
             if (!respuesta.Resultado || respuesta.Dato is null)
             {
                 modelo.ErrorCarga = string.IsNullOrWhiteSpace(respuesta.Mensaje) ? "No se pudo leer la configuración del POS." : respuesta.Mensaje;
                 return View(modelo);
             }
 
-            modelo.Faltantes = respuesta.Dato.Faltantes ?? new List<string>();
-            var config = respuesta.Dato.Configuracion ?? new PosConfiguracionDato();
+            var contexto = respuesta.Dato;
+            var vista = contexto.Configuracion ?? new PosConfiguracionVista();
+            modelo.Faltantes = vista.Faltantes ?? new List<string>();
+            var config = vista.Configuracion ?? new PosConfiguracionDato();
             modelo.CodigoImpuesto = config.CodigoImpuesto;
             modelo.FormaPagoEfectivo = config.FormaPagoEfectivo;
             modelo.Moneda = config.MonedaDoc;
             if (modelo.Faltantes.Count > 0)
                 return View(modelo);
 
-            // Formas de pago activas, con la de efectivo de la configuración primero.
-            var formas = await _formasPago.ObtenerTodoAsync();
-            modelo.FormasPago = (formas.Dato ?? [])
-                .Where(f => f.Activo == "S")
+            // Formas de pago activas (la API ya las filtra), con la de efectivo de la configuración primero.
+            modelo.FormasPago = (contexto.FormasPago ?? [])
                 .OrderBy(f => string.Equals(f.Codigo, config.FormaPagoEfectivo, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .ThenBy(f => f.Codigo, StringComparer.Ordinal)
                 .ToList();
-            if (!formas.Resultado)
-                modelo.Faltantes.Add($"No se pudieron leer las formas de pago: {formas.Mensaje}");
-            else if (!modelo.FormasPago.Any(f => string.Equals(f.Codigo, config.FormaPagoEfectivo, StringComparison.OrdinalIgnoreCase)))
+            if (!modelo.FormasPago.Any(f => string.Equals(f.Codigo, config.FormaPagoEfectivo, StringComparison.OrdinalIgnoreCase)))
                 modelo.Faltantes.Add("La forma de pago en efectivo de la configuración no está activa.");
 
             // Tasa del impuesto: solo para el total estimado que se muestra antes de cobrar.
-            if (!string.IsNullOrEmpty(config.CodigoImpuesto))
-            {
-                var impuesto = await _impuestos.ObtenerAsync(config.CodigoImpuesto);
-                if (impuesto.Resultado && impuesto.Dato is not null)
-                {
-                    modelo.TasaImpuesto = impuesto.Dato.Tasa ?? 0m;
-                    modelo.TasaDisponible = true;
-                }
-            }
+            modelo.TasaImpuesto = contexto.TasaImpuesto;
+            modelo.TasaDisponible = !string.IsNullOrEmpty(config.CodigoImpuesto);
 
-            // Cliente por defecto: nombre y NIT para mostrarlos (si no se pueden leer, se muestra el código).
+            // Cliente por defecto: nombre y NIT para mostrarlos (si no existe, se muestra el código).
             modelo.ClienteCodigo = config.ClienteDefecto ?? string.Empty;
-            modelo.ClienteNombre = modelo.ClienteCodigo;
-            if (!string.IsNullOrEmpty(config.ClienteDefecto))
-            {
-                var cliente = await _socios.ObtenerAsync(config.ClienteDefecto);
-                if (cliente.Resultado && cliente.Dato is not null)
-                {
-                    modelo.ClienteNombre = string.IsNullOrWhiteSpace(cliente.Dato.Nombre) ? cliente.Dato.Codigo : cliente.Dato.Nombre;
-                    modelo.ClienteNit = cliente.Dato.Nit?.Trim() ?? string.Empty;
-                }
-            }
+            modelo.ClienteNombre = string.IsNullOrWhiteSpace(contexto.NombreCliente) ? modelo.ClienteCodigo : contexto.NombreCliente;
+            modelo.ClienteNit = contexto.NitCliente?.Trim() ?? string.Empty;
 
             return View(modelo);
         }
@@ -132,26 +107,23 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Rapidos() => Json(await _pos.ObtenerRapidosAsync());
 
         /// <summary>
-        /// Clientes para «Cambiar cliente»: solo socios de tipo cliente y no inactivos, cuyo código O nombre contenga el
-        /// texto (sin distinguir mayúsculas). El endpoint «ContengaNombre» de la API solo busca por nombre, así que se
-        /// consultan todos los clientes y se filtra aquí.
+        /// Clientes para «Cambiar cliente»: la API (<c>api/Pos/Clientes</c>, permiso <c>Pos.Ver</c>) devuelve hasta 10 clientes
+        /// activos cuyo código o nombre contengan el texto (mínimo 2 caracteres); el precio por cliente lo resuelve la API.
         /// </summary>
         [HttpGet]
         [RequierePermiso("Pos", Accion.Ver)]
         public async Task<IActionResult> Clientes(string? texto)
         {
-            var respuesta = await _socios.ObtenerTodoAsync("C");
+            var filtro = texto?.Trim() ?? string.Empty;
+            if (filtro.Length < LongitudMinimaBusqueda)
+                return Json(new { resultado = true, mensaje = string.Empty, dato = new List<object>() });
+
+            var respuesta = await _pos.BuscarClientesAsync(filtro);
             if (!respuesta.Resultado)
                 return Json(respuesta);
 
-            var filtro = texto?.Trim() ?? string.Empty;
             var clientes = (respuesta.Dato ?? [])
-                .Where(s => s.TipoSn == "C" && s.Activo != "N")
-                .Where(s => filtro.Length == 0
-                    || (s.Codigo?.Contains(filtro, StringComparison.OrdinalIgnoreCase) ?? false)
-                    || (s.Nombre?.Contains(filtro, StringComparison.OrdinalIgnoreCase) ?? false))
-                .Take(MaximoClientes)
-                .Select(s => new { codigo = s.Codigo, nombre = s.Nombre ?? s.Codigo, nit = s.Nit?.Trim() ?? string.Empty })
+                .Select(s => new { codigo = s.Codigo, nombre = string.IsNullOrWhiteSpace(s.Nombre) ? s.Codigo : s.Nombre, nit = s.Nit?.Trim() ?? string.Empty })
                 .ToList();
             return Json(new { resultado = true, mensaje = respuesta.Mensaje, dato = clientes });
         }
