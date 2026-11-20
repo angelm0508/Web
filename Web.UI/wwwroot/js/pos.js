@@ -243,6 +243,24 @@
             return !(r && typeof r === 'object' && r.incierto === false);
         }
 
+        /**
+         * Decisión de Enter en el buscador. Prioridad: sugerencia ya resaltada; coincidencia exacta de código/código de
+         * barras (lector); si no, según la búsqueda por texto: una sola sugerencia se agrega, varias resaltan la primera
+         * (un segundo Enter la agrega) y ninguna muestra «Sin resultados». `exacta` es el artículo exacto o null/undefined.
+         * @returns {{accion: 'agregarExacta'|'agregarSugerencia'|'resaltarPrimera'|'sinResultados', indice?: number}}
+         */
+        function decidirEnter(textoBuscado, exacta, sugerencias, indiceResaltado) {
+            const lista = Array.isArray(sugerencias) ? sugerencias : [];
+            if (Number.isInteger(indiceResaltado) && indiceResaltado >= 0 && indiceResaltado < lista.length) {
+                return { accion: 'agregarSugerencia', indice: indiceResaltado };
+            }
+            if (String(textoBuscado ?? '').trim() === '') return { accion: 'sinResultados' };
+            if (exacta) return { accion: 'agregarExacta' };
+            if (lista.length === 1) return { accion: 'agregarSugerencia', indice: 0 };
+            if (lista.length > 1) return { accion: 'resaltarPrimera', indice: 0 };
+            return { accion: 'sinResultados' };
+        }
+
         function escaparHtml(texto) {
             return String(texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
@@ -328,7 +346,7 @@
         return {
             MAXIMA_CANTIDAD, CANTIDAD_A_CONFIRMAR, MENSAJE_IMPORTE_FUERA_DE_RANGO, MENSAJE_SESION_EXPIRADA, MENSAJE_VENTA_INCIERTA,
             redondear2, normalizarImporte, normalizarCantidad, evaluarCantidadTecleada, calcularLinea, calcularTotales,
-            esRespuestaApi, ventaIncierta,
+            esRespuestaApi, ventaIncierta, decidirEnter,
             agregarArticulo, cambiarCantidad, quitarLinea, avisoExistencias,
             evaluarCobro, componerPagos, componerSolicitud, sumarBillete, efectivoExacto,
             escaparHtml, formatoDinero, formatoCantidad, horaDe, mismoCodigo,
@@ -753,7 +771,10 @@
                 enfocarBuscador();
             }
 
-            /** Enter: la sugerencia resaltada, o el código exacto (lector); si no hay coincidencia, sugerencias. */
+            /**
+             * Enter: la sugerencia resaltada, o el código exacto (lector); si no hay coincidencia, búsqueda por texto
+             * (una sola sugerencia se agrega; varias resaltan la primera). Ver Puro.decidirEnter.
+             */
             async function alPresionarEnter() {
                 if (visibles() && indiceActivo >= 0) {
                     elegir(resultados[indiceActivo]);
@@ -772,9 +793,10 @@
                 } catch (e) {
                     r = null;
                 }
-                if (r && r.resultado && r.dato) {
+                const exacta = r && r.resultado && r.dato ? r.dato : null;
+                if (Puro.decidirEnter(texto, exacta, [], -1).accion === 'agregarExacta') {
                     ocultarMensaje();
-                    Lista.agregar(r.dato);
+                    Lista.agregar(exacta);
                     return;
                 }
 
@@ -790,10 +812,18 @@
                     return;
                 }
                 const b = await buscar(texto);
-                if (b && resultados.length === 0) {
+                if (!b) {
+                    if (!r) mostrarMensaje('No se pudo consultar el artículo. Revisa la conexión e intenta de nuevo.');
+                    return;   // búsqueda descartada por una más reciente, o sesión vencida (ya avisada)
+                }
+                const d = Puro.decidirEnter(texto, null, resultados, -1);
+                if (d.accion === 'agregarSugerencia') {
+                    elegir(resultados[d.indice]);
+                } else if (d.accion === 'resaltarPrimera') {
+                    indiceActivo = d.indice;
+                    pintar();
+                } else {
                     mostrarMensaje((r && r.mensaje) || `Sin resultados para «${texto}».`);
-                } else if (!b && !r) {
-                    mostrarMensaje('No se pudo consultar el artículo. Revisa la conexión e intenta de nuevo.');
                 }
             }
 
