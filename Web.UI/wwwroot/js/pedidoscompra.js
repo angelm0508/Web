@@ -1,6 +1,10 @@
 $(function () {
     const datosPermisosEl = document.getElementById('datosPermisosPedidosCompra');
-    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true };
+    const permisos = datosPermisosEl ? JSON.parse(datosPermisosEl.textContent) : { actualizar: true, eliminar: true, copiarA: {} };
+    const destinosCopia = [
+        permisos.copiarA && permisos.copiarA.entrega && { nombre: 'Entrega de compra', url: '/EntregasCompra' },
+        permisos.copiarA && permisos.copiarA.factura && { nombre: 'Factura de compra', url: '/FacturasCompra' }
+    ].filter(Boolean);
     const tabla = $('#tblPedidosCompra').DataTable({
         ajax: { url: '/PedidosCompra/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
@@ -11,7 +15,8 @@ $(function () {
             { data: 'totalDoc', render: d => d != null ? Number(d).toFixed(2) : '' },
             {
                 data: 'entry', orderable: false, className: 'text-end',
-                render: entry => `
+                render: (entry, t, row) => `
+                    ${!row || row.estadoDoc === 'C' || row.cancelado === 'S' ? '' : App.botonCopiarA(11, entry, destinosCopia)}
                     <button class="btn btn-sm btn-outline-primary btn-editar" data-entry="${entry}"${permisos.actualizar ? '' : ' title="Ver"'}><i class="fa-solid ${permisos.actualizar ? 'fa-pen' : 'fa-eye'}"></i></button>
                     ${permisos.eliminar ? `<button class="btn btn-sm btn-outline-danger btn-eliminar" data-entry="${entry}"><i class="fa-solid fa-trash"></i></button>` : ''}
                 `

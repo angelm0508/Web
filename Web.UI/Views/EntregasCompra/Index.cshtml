@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Entregas de compra";
+    string PuedeCopiar(string modulo) => User.TienePermiso(modulo, Accion.Ver) && User.TienePermiso(modulo, Accion.Agregar) ? "true" : "false";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -42,7 +43,8 @@
 
 <script id="datosPermisosEntregasCompra" type="application/json">
     { "actualizar": @(User.TienePermiso("EntregasCompra", Accion.Actualizar) ? "true" : "false"),
-      "eliminar": @(User.TienePermiso("EntregasCompra", Accion.Eliminar) ? "true" : "false") }
+      "eliminar": @(User.TienePermiso("EntregasCompra", Accion.Eliminar) ? "true" : "false"),
+      "copiarA": { "factura": @PuedeCopiar("FacturasCompra") } }
 </script>
 
 @section Scripts {
