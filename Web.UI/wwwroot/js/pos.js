@@ -418,6 +418,13 @@
             return bootstrap.Modal.getOrCreateInstance(document.getElementById(id));
         }
 
+        /** Enfoca con el focus() nativo. `.trigger('focus')` de jQuery deja su estado interno atascado en algunos campos
+         *  y, desde la segunda apertura de un modal, ya no enfoca nada (lo escrito se pierde). Acepta selector, elemento o jQuery. */
+        function enfocar(destino) {
+            const el = $(destino)[0];
+            if (el) el.focus();
+        }
+
         /** Cierra un modal (si está abierto) y luego llama a despues: evita abrir otro mientras el primero se oculta. */
         function cerrarModalY(id, despues) {
             const el = document.getElementById(id);
@@ -551,18 +558,18 @@
                 $('#posClienteBusqueda, #posClienteAccionesBusqueda').addClass('d-none');
                 $('#posClienteNuevo').removeClass('d-none');
                 $('#posModalClienteTitulo').text('Cliente nuevo');
-                $(p.nombre ? '#posClienteNuevoNit' : '#posClienteNuevoNombre').trigger('focus');
+                enfocar(p.nombre ? '#posClienteNuevoNit' : '#posClienteNuevoNombre');
             }
 
             function volverABusqueda() {
                 if (enviandoNuevo) return;
                 mostrarBusqueda();
-                $('#posClienteBuscar').trigger('focus');
+                enfocar('#posClienteBuscar');
             }
 
             function errorNuevo(mensaje, campo) {
                 $('#posClienteNuevoError').text(mensaje).removeClass('d-none');
-                if (campo) $(campo).trigger('focus');
+                if (campo) enfocar(campo);
             }
 
             function ocultarErrorNuevo() {
@@ -660,7 +667,7 @@
                     maxResultados: 10,
                     requerido: false
                 });
-                $('#posModalCliente').on('shown.bs.modal', () => $('#posClienteBuscar').trigger('focus'));
+                $('#posModalCliente').on('shown.bs.modal', () => enfocar('#posClienteBuscar'));
                 $('#posBtnCambiarCliente').on('click', abrir);
                 $('#posBtnClienteDefecto').on('click', () => {
                     fijar(config.clienteDefecto, true);
