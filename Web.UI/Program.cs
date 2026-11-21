@@ -110,6 +110,8 @@ builder.Services.AddHttpClient<IExistenciaApiClient, ExistenciaApiClient>(c => c
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IDocumentoBaseApiClient, DocumentoBaseApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
+builder.Services.AddHttpClient<IDocumentoBaseCompraApiClient, DocumentoBaseCompraApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
+    .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IMecanicoApiClient, MecanicoApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))
     .AddHttpMessageHandler<JwtAuthorizationHandler>();
 builder.Services.AddHttpClient<IMotocicletaApiClient, MotocicletaApiClient>(c => c.BaseAddress = new Uri(apiBaseUrl))

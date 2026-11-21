@@ -370,7 +370,7 @@ const App = {
 
     /** Etiqueta del documento origen de un borrador, p. ej. "Cotización 12" (para el mensaje de éxito de "Copiar a"). */
     etiquetaOrigen: function (borrador) {
-        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 70: 'Orden de servicio' };
+        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 11: 'Pedido de compra', 12: 'Entrega de compra', 13: 'Factura de compra', 70: 'Orden de servicio' };
         return `${nombres[borrador.origenTipo] ?? 'Documento'} ${borrador.origenNumDoc}`;
     },
 
@@ -379,7 +379,7 @@ const App = {
      * de línea). Los campos con prefijo "_" son solo de la interfaz y se quitan antes de enviar (sinCamposInternos).
      */
     lineasDesdeBorrador: function (borrador, idInicial) {
-        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 6: 'Factura', 70: 'Orden de servicio' };
+        const nombres = { 3: 'Cotización', 4: 'Pedido', 5: 'Entrega', 6: 'Factura', 11: 'Pedido de compra', 12: 'Entrega de compra', 13: 'Factura de compra', 70: 'Orden de servicio' };
         let id = idInicial;
         const lineas = (borrador.lineas || []).map(l => {
             const cantidad = Number(l.cantidadAbierta);
