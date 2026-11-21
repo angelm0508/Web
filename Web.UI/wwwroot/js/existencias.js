@@ -54,6 +54,37 @@ $(function () {
         tabla.ajax.reload();
     });
 
+    // Recalculo completo (carga inicial / reparacion). El candado evita doble clic mientras corre.
+    let recalculando = false;
+    $('#btnRecalcular').on('click', async function () {
+        if (recalculando) return;
+        recalculando = true;
+        const $btn = $(this).prop('disabled', true);
+        try {
+            const ok = await Swal.fire({
+                icon: 'question',
+                title: 'Recalcular comprometido y pedido',
+                text: 'Se recalcularán el comprometido y el pedido de todos los artículos a partir de los pedidos abiertos. ¿Continuar?',
+                showCancelButton: true,
+                confirmButtonText: 'Continuar',
+                cancelButtonText: 'Cancelar'
+            }).then(r => r.isConfirmed);
+            if (!ok) return;
+
+            const respuesta = await App.enviarJson('/Existencias/RecalcularCompromisos', 'POST', {});
+            if (!respuesta || !respuesta.resultado) {
+                App.mostrarError(respuesta && respuesta.mensaje);
+                return;
+            }
+            const d = respuesta.dato || {};
+            await App.mostrarExito(`${Number(d.filas) || 0} filas revisadas, ${Number(d.corregidas) || 0} corregidas`);
+            tabla.ajax.reload();
+        } finally {
+            recalculando = false;
+            $btn.prop('disabled', false);
+        }
+    });
+
     $('#tblExistencias').on('click', '.btn-kardex', async function () {
         const articulo = $(this).data('articulo');
         $('#kardexArticulo').text(articulo);

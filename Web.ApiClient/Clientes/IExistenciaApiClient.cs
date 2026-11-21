@@ -7,5 +7,6 @@ namespace Web.ApiClient.Clientes
     {
         Task<Respuesta<IEnumerable<ExistenciaArticuloDTO>>> ObtenerTodoAsync(string? articulo = null, string? almacen = null);
         Task<Respuesta<IEnumerable<ExistenciaArticuloDTO>>> ObtenerPorArticuloAsync(string codArticulo);
+        Task<Respuesta<ResultadoRecalculoDTO>> RecalcularCompromisosAsync();
     }
 }

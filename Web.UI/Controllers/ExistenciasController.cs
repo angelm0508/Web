@@ -50,5 +50,15 @@ namespace Web.UI.Controllers
             var respuesta = await _movimientos.ObtenerPorArticuloAsync(codArticulo);
             return Json(respuesta);
         }
+
+        // Carga inicial / reparacion: la API mantiene comprometido y pedido sola despues de cada documento.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequierePermiso("Existencias", Accion.Actualizar)]
+        public async Task<IActionResult> RecalcularCompromisos()
+        {
+            var respuesta = await _existencias.RecalcularCompromisosAsync();
+            return Json(respuesta);
+        }
     }
 }

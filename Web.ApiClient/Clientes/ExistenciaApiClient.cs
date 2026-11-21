@@ -20,5 +20,8 @@ namespace Web.ApiClient.Clientes
 
         public Task<Respuesta<IEnumerable<ExistenciaArticuloDTO>>> ObtenerPorArticuloAsync(string codArticulo) =>
             GetAsync<IEnumerable<ExistenciaArticuloDTO>>($"{Recurso}/PorArticulo/{Uri.EscapeDataString(codArticulo)}");
+
+        public Task<Respuesta<ResultadoRecalculoDTO>> RecalcularCompromisosAsync() =>
+            PostAsync<ResultadoRecalculoDTO>($"{Recurso}/RecalcularCompromisos", new { });
     }
 }
