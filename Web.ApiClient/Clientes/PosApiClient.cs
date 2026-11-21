@@ -21,6 +21,9 @@ namespace Web.ApiClient.Clientes
         public Task<Respuesta<List<ClientePos>>> BuscarClientesAsync(string texto) =>
             GetAsync<List<ClientePos>>($"{Recurso}/Clientes?texto={Uri.EscapeDataString(texto ?? string.Empty)}");
 
+        public Task<Respuesta<ClientePos>> CrearClienteAsync(NuevoClientePos solicitud) =>
+            PostAsync<ClientePos>($"{Recurso}/Clientes", solicitud);
+
         public Task<Respuesta<List<ArticuloPos>>> BuscarArticulosAsync(string texto, string? cliente) =>
             GetAsync<List<ArticuloPos>>($"{Recurso}/Articulos?texto={Uri.EscapeDataString(texto ?? string.Empty)}{ParametroCliente(cliente, '&')}");
 

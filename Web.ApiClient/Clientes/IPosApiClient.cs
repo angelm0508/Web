@@ -9,6 +9,7 @@ namespace Web.ApiClient.Clientes
         Task<Respuesta<PosConfiguracionVista>> GuardarConfiguracionAsync(PosConfiguracionDato dato);
         Task<Respuesta<PosContexto>> ObtenerContextoAsync();
         Task<Respuesta<List<ClientePos>>> BuscarClientesAsync(string texto);
+        Task<Respuesta<ClientePos>> CrearClienteAsync(NuevoClientePos solicitud);
         Task<Respuesta<List<ArticuloPos>>> BuscarArticulosAsync(string texto, string? cliente);
         Task<Respuesta<ArticuloPos>> ObtenerArticuloPorCodigoAsync(string codigo, string? cliente);
         Task<Respuesta<List<ArticuloPos>>> ObtenerRapidosAsync();

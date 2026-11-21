@@ -167,17 +167,51 @@ else
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="position-relative">
-                            <label for="posClienteBuscar" class="form-label">Buscar cliente por código o nombre</label>
-                            <input type="text" id="posClienteBuscar" class="form-control form-control-lg" autocomplete="off" placeholder="Escribe al menos 2 caracteres..." />
-                            <input type="hidden" id="posClienteBuscarCodigo" />
-                            <div class="invalid-feedback d-none" id="posClienteBuscarError">Elige un cliente de la lista.</div>
-                            <ul class="list-group position-absolute w-100 shadow-sm d-none pos-lista-clientes" id="posClienteSugerencias"></ul>
+                        <div id="posClienteBusqueda">
+                            <div class="position-relative">
+                                <label for="posClienteBuscar" class="form-label">Buscar cliente por código, nombre o NIT</label>
+                                <input type="text" id="posClienteBuscar" class="form-control form-control-lg" autocomplete="off" placeholder="Escribe al menos 2 caracteres..." />
+                                <input type="hidden" id="posClienteBuscarCodigo" />
+                                <div class="invalid-feedback d-none" id="posClienteBuscarError">Elige un cliente de la lista.</div>
+                                <ul class="list-group position-absolute w-100 shadow-sm d-none pos-lista-clientes" id="posClienteSugerencias"></ul>
+                            </div>
+                            <div class="small text-danger mt-2 d-none" id="posClienteSesion" role="status">Tu sesión expiró: vuelve a iniciar sesión.</div>
+                            @if (Model.PuedeCobrar)
+                            {
+                                <div class="mt-2 d-none" id="posClienteSinResultados" role="status">
+                                    <span class="text-muted">No se encontró ningún cliente.</span>
+                                    <button type="button" class="btn btn-link p-0 align-baseline" id="posBtnCrearDesdeBusqueda"><i class="fa-solid fa-user-plus me-1"></i><span id="posBtnCrearDesdeBusquedaTexto"></span></button>
+                                </div>
+                            }
                         </div>
-                        <div class="small text-danger mt-2 d-none" id="posClienteSesion" role="status">Tu sesión expiró: vuelve a iniciar sesión.</div>
+                        @if (Model.PuedeCobrar)
+                        {
+                            <div id="posClienteNuevo" class="d-none">
+                                <div class="mb-3">
+                                    <label for="posClienteNuevoNombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                    <input type="text" id="posClienteNuevoNombre" class="form-control form-control-lg" maxlength="200" autocomplete="off" required />
+                                </div>
+                                <div class="mb-2">
+                                    <label for="posClienteNuevoNit" class="form-label">NIT <span class="text-danger">*</span></label>
+                                    <input type="text" id="posClienteNuevoNit" class="form-control form-control-lg font-monospace" maxlength="15" autocomplete="off" required placeholder="CF si es consumidor final" />
+                                </div>
+                                <div class="small text-muted">Se crea de contado (sin crédito).</div>
+                                <div class="alert alert-danger py-2 mt-3 mb-0 d-none" id="posClienteNuevoError" role="alert"></div>
+                                <div class="d-flex justify-content-end gap-2 mt-3">
+                                    <button type="button" class="btn btn-outline-secondary" id="posBtnClienteVolver">Volver</button>
+                                    <button type="button" class="btn btn-primary" id="posBtnClienteGuardar"><i class="fa-solid fa-check me-1"></i>Guardar y usar</button>
+                                </div>
+                            </div>
+                        }
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" id="posBtnClienteDefecto">Usar el cliente por defecto</button>
+                        <div id="posClienteAccionesBusqueda" class="d-flex flex-wrap gap-2 me-auto">
+                            @if (Model.PuedeCobrar)
+                            {
+                                <button type="button" class="btn btn-outline-primary" id="posBtnClienteNuevo"><i class="fa-solid fa-user-plus me-1"></i>Cliente nuevo</button>
+                            }
+                            <button type="button" class="btn btn-outline-secondary" id="posBtnClienteDefecto">Usar el cliente por defecto</button>
+                        </div>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>

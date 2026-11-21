@@ -107,8 +107,24 @@ namespace Web.UI.Controllers
         public async Task<IActionResult> Rapidos() => Json(await _pos.ObtenerRapidosAsync());
 
         /// <summary>
+        /// «Cliente nuevo» rápido del modal «Cambiar cliente»: <c>POST api/Pos/Clientes</c> (permiso <c>Pos.Agregar</c>, el
+        /// cajero no necesita permisos de socios de negocio). Devuelve el <c>Respuesta</c> de la API tal cual (con el cliente
+        /// creado o el mensaje de rechazo); <c>ApiClientBase</c> nunca lanza, así que no hay 500.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequierePermiso("Pos", Accion.Agregar)]
+        public async Task<IActionResult> CrearCliente([FromBody] NuevoClientePos? solicitud)
+        {
+            if (solicitud is null)
+                return Json(new Respuesta<ClientePos> { Resultado = false, Mensaje = "Los datos del cliente son obligatorios." });
+
+            return Json(await _pos.CrearClienteAsync(solicitud));
+        }
+
+        /// <summary>
         /// Clientes para «Cambiar cliente»: la API (<c>api/Pos/Clientes</c>, permiso <c>Pos.Ver</c>) devuelve hasta 10 clientes
-        /// activos cuyo código o nombre contengan el texto (mínimo 2 caracteres); el precio por cliente lo resuelve la API.
+        /// activos cuyo código, nombre o NIT contengan el texto (mínimo 2 caracteres); el precio por cliente lo resuelve la API.
         /// </summary>
         [HttpGet]
         [RequierePermiso("Pos", Accion.Ver)]

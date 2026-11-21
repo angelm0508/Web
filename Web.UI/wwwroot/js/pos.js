@@ -21,6 +21,8 @@
         const MENSAJE_IMPORTE_FUERA_DE_RANGO = 'Importe fuera de rango: revisa el efectivo recibido.';
         const MENSAJE_SESION_EXPIRADA = 'Tu sesión expiró: vuelve a iniciar sesión.';
         const MENSAJE_VENTA_INCIERTA = 'No se pudo confirmar la venta. Revisa «Ventas del día» antes de volver a cobrar.';
+        const LONGITUD_MAXIMA_NIT = 15;                 // columna Nit (NitDocumento en la API)
+        const LONGITUD_MAXIMA_NOMBRE_CLIENTE = 200;     // columna SocioNegocio.Nombre (PosDomain.LongitudMaximaNombreCliente)
 
         /** Redondeo a 2 decimales, medio alejándose de cero (MidpointRounding.AwayFromZero), sin el ruido binario de JS. */
         function redondear2(valor) {
@@ -261,6 +263,20 @@
             return { accion: 'sinResultados' };
         }
 
+        /**
+         * Precarga del formulario «Cliente nuevo» con lo que el cajero ya escribió en el buscador de clientes: si parece un
+         * NIT (solo dígitos y guiones, con al menos un dígito y a lo sumo una K/k final, hasta 15 caracteres) o es «CF», va
+         * al NIT; si no y tiene letras, va al nombre (recortado al ancho de la columna); si no, nada.
+         * @returns {{nombre: string, nit: string}}
+         */
+        function precargarClienteNuevo(texto) {
+            const t = String(texto ?? '').trim();
+            if (t.toUpperCase() === 'CF') return { nombre: '', nit: 'CF' };
+            if (t.length <= LONGITUD_MAXIMA_NIT && /^[0-9-]*[0-9][0-9-]*[Kk]?$/.test(t)) return { nombre: '', nit: t };
+            if (/\p{L}/u.test(t)) return { nombre: t.slice(0, LONGITUD_MAXIMA_NOMBRE_CLIENTE).trim(), nit: '' };
+            return { nombre: '', nit: '' };
+        }
+
         function escaparHtml(texto) {
             return String(texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
@@ -346,7 +362,8 @@
         return {
             MAXIMA_CANTIDAD, CANTIDAD_A_CONFIRMAR, MENSAJE_IMPORTE_FUERA_DE_RANGO, MENSAJE_SESION_EXPIRADA, MENSAJE_VENTA_INCIERTA,
             redondear2, normalizarImporte, normalizarCantidad, evaluarCantidadTecleada, calcularLinea, calcularTotales,
-            esRespuestaApi, ventaIncierta, decidirEnter,
+            LONGITUD_MAXIMA_NIT, LONGITUD_MAXIMA_NOMBRE_CLIENTE,
+            esRespuestaApi, ventaIncierta, decidirEnter, precargarClienteNuevo,
             agregarArticulo, cambiarCantidad, quitarLinea, avisoExistencias,
             evaluarCobro, componerPagos, componerSolicitud, sumarBillete, efectivoExacto,
             escaparHtml, formatoDinero, formatoCantidad, horaDe, mismoCodigo,
@@ -499,7 +516,100 @@
                 if (!confirmarEdicionPendiente()) return;
                 buscador.establecer(null);
                 $('#posClienteSesion').addClass('d-none');
+                mostrarBusqueda();
                 modal('posModalCliente').show();
+            }
+
+            // ---- Cliente nuevo rápido (solo con Pos.Agregar: sin permiso la vista no trae el formulario) ----
+            let enviandoNuevo = false;
+            const puedeCrear = () => config.puedeCobrar && $('#posClienteNuevo').length > 0;
+
+            /** Vuelve el modal a la búsqueda (oculta el formulario de cliente nuevo y el «Crear cliente»). */
+            function mostrarBusqueda() {
+                $('#posClienteNuevo').addClass('d-none');
+                $('#posClienteBusqueda, #posClienteAccionesBusqueda').removeClass('d-none');
+                $('#posModalClienteTitulo').text('Cambiar cliente');
+                mostrarSinResultados(null);
+                ocultarErrorNuevo();
+            }
+
+            /** «Crear cliente "texto"» cuando la búsqueda de ese texto no encontró nada (null lo oculta). */
+            function mostrarSinResultados(texto) {
+                const $s = $('#posClienteSinResultados');
+                if (!$s.length) return;
+                $('#posBtnCrearDesdeBusquedaTexto').text(texto ? `Crear cliente "${texto}"` : '');
+                $s.toggleClass('d-none', !texto);
+            }
+
+            function abrirNuevo() {
+                if (!puedeCrear()) return;
+                const p = Puro.precargarClienteNuevo($('#posClienteBuscar').val());
+                $('#posClienteNuevoNombre').val(p.nombre);
+                $('#posClienteNuevoNit').val(p.nit);
+                ocultarErrorNuevo();
+                $('#posClienteSugerencias').addClass('d-none');
+                $('#posClienteBusqueda, #posClienteAccionesBusqueda').addClass('d-none');
+                $('#posClienteNuevo').removeClass('d-none');
+                $('#posModalClienteTitulo').text('Cliente nuevo');
+                $(p.nombre ? '#posClienteNuevoNit' : '#posClienteNuevoNombre').trigger('focus');
+            }
+
+            function volverABusqueda() {
+                if (enviandoNuevo) return;
+                mostrarBusqueda();
+                $('#posClienteBuscar').trigger('focus');
+            }
+
+            function errorNuevo(mensaje, campo) {
+                $('#posClienteNuevoError').text(mensaje).removeClass('d-none');
+                if (campo) $(campo).trigger('focus');
+            }
+
+            function ocultarErrorNuevo() {
+                $('#posClienteNuevoError').addClass('d-none').text('');
+            }
+
+            function botonGuardando(valor) {
+                const $b = $('#posBtnClienteGuardar');
+                $('#posBtnClienteVolver').prop('disabled', valor);
+                if (valor) {
+                    $b.prop('disabled', true).attr('data-texto', $b.html())
+                        .html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Guardando...');
+                } else {
+                    if ($b.attr('data-texto')) $b.html($b.attr('data-texto')).removeAttr('data-texto');
+                    $b.prop('disabled', false);
+                }
+            }
+
+            /**
+             * Crea el cliente (POST /Pos/CrearCliente) y, si la API lo confirma, lo deja elegido en la venta igual que al
+             * elegirlo en la búsqueda. Un rechazo se muestra en el propio formulario y conserva lo escrito.
+             */
+            async function guardarNuevo() {
+                if (enviandoNuevo || !puedeCrear()) return;
+                const nombre = String($('#posClienteNuevoNombre').val() ?? '').trim();
+                const nit = String($('#posClienteNuevoNit').val() ?? '').trim();
+                if (!nombre) { errorNuevo('El nombre del cliente es obligatorio.', '#posClienteNuevoNombre'); return; }
+                if (!nit) { errorNuevo('El NIT es obligatorio (escribe CF si es consumidor final).', '#posClienteNuevoNit'); return; }
+
+                enviandoNuevo = true;
+                ocultarErrorNuevo();
+                botonGuardando(true);
+                let r = null;
+                try {
+                    r = await App.enviarJson('/Pos/CrearCliente', 'POST', { nombre, nit });
+                } finally {
+                    enviandoNuevo = false;
+                    botonGuardando(false);
+                }
+
+                if (r && r.resultado === true && r.dato && r.dato.codigo) {
+                    fijar({ codigo: r.dato.codigo, nombre: r.dato.nombre, nit: r.dato.nit }, true);
+                    modal('posModalCliente').hide();   // al cerrarse el modal el foco vuelve al buscador
+                    return;
+                }
+                const mensaje = (r && r.mensaje) || 'No se pudo crear el cliente.';
+                errorNuevo(mensaje, /NIT/.test(mensaje) ? '#posClienteNuevoNit' : '#posClienteNuevoNombre');
             }
 
             function iniciar() {
@@ -512,9 +622,25 @@
                     }
                 });
                 // Con la sesión vencida la búsqueda recibe la página de inicio de sesión (no es «sin resultados»).
+                // Si la búsqueda del texto que sigue escrito no encontró nada, se ofrece «Crear cliente "texto"».
                 $(document).ajaxSuccess(function (ev, xhr, ajustes, datos) {
-                    if (!String(ajustes.url || '').startsWith('/Pos/Clientes')) return;
+                    const url = String(ajustes.url || '');
+                    if (!url.startsWith('/Pos/Clientes')) return;
                     $('#posClienteSesion').toggleClass('d-none', Puro.esRespuestaApi(datos));
+                    const buscado = new URLSearchParams(url.split('?')[1] || '').get('texto') ?? '';
+                    if (buscado !== $('#posClienteBuscar').val()) return;   // respuesta de una búsqueda anterior
+                    const vacia = Puro.esRespuestaApi(datos) && datos.resultado === true && Array.isArray(datos.dato) && datos.dato.length === 0;
+                    mostrarSinResultados(vacia && puedeCrear() ? buscado.trim() : null);
+                });
+                $('#posClienteBuscar').on('input', () => mostrarSinResultados(null));
+                $('#posBtnClienteNuevo, #posBtnCrearDesdeBusqueda').on('click', abrirNuevo);
+                $('#posBtnClienteVolver').on('click', volverABusqueda);
+                $('#posBtnClienteGuardar').on('click', guardarNuevo);
+                $('#posClienteNuevoNombre, #posClienteNuevoNit').on('keydown', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        guardarNuevo();
+                    }
                 });
                 buscador = App.autocompletar({
                     texto: $('#posClienteBuscar'),
