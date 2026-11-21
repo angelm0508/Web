@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Linq;
 using Web.ApiClient.Clientes;
+using Web.ApiClient.Dtos.DocumentoBase;
 using Web.ApiClient.Dtos.FacturaCompra;
 using Web.ApiClient.Dtos.FacturaCompraDetalle;
 using Web.UI.Authorization;
@@ -23,6 +24,10 @@ namespace Web.UI.Controllers
         private readonly INumeracionDocumentoApiClient _numeracion;
         private readonly ISaldoFacturaCompraApiClient _saldos;
         private readonly ICondicionPagoApiClient _condiciones;
+        private readonly IDocumentoBaseCompraApiClient _documentoBase;
+
+        // Tipo de objeto de Factura de compra (destino de "Copiar a").
+        private const int TipoDestinoFacturaCompra = 13;
 
         // CodigoObj de NumeracionDocumento que identifica a "Facturas de compra" como tipo de objeto.
         private const string CodigoObjFacturaCompra = "13";
@@ -39,7 +44,8 @@ namespace Web.UI.Controllers
             INumeracionDocumentoDetApiClient series,
             INumeracionDocumentoApiClient numeracion,
             ISaldoFacturaCompraApiClient saldos,
-            ICondicionPagoApiClient condiciones)
+            ICondicionPagoApiClient condiciones,
+            IDocumentoBaseCompraApiClient documentoBase)
         {
             _facturasCompra = facturasCompra;
             _detalles = detalles;
@@ -52,6 +58,7 @@ namespace Web.UI.Controllers
             _numeracion = numeracion;
             _saldos = saldos;
             _condiciones = condiciones;
+            _documentoBase = documentoBase;
         }
 
         [RequierePermiso("FacturasCompra", Accion.Ver)]
@@ -85,8 +92,19 @@ namespace Web.UI.Controllers
 
         [HttpGet]
         [RequierePermiso("FacturasCompra", Accion.Agregar)]
-        public async Task<IActionResult> FormularioCrear()
+        public async Task<IActionResult> FormularioCrear(int? baseTipo = null, int? baseEntry = null)
         {
+            // "Copiar a": el borrador trae la cabecera y las líneas abiertas del documento origen.
+            DocumentoBaseBorradorDTO? borrador = null;
+            if (baseTipo.HasValue && baseEntry.HasValue)
+            {
+                var copia = await _documentoBase.ObtenerBorradorAsync(baseTipo.Value, baseEntry.Value, TipoDestinoFacturaCompra);
+                if (!copia.Resultado || copia.Dato is null)
+                    return BadRequest(copia.Mensaje);   // el JS lo muestra con App.mostrarError
+                borrador = copia.Dato;
+            }
+            ViewBag.Borrador = borrador;
+
             await CargarDropdownsAsync();
             var series = await _series.ObtenerPorDocumentoAsync(CodigoObjFacturaCompra);
             ViewBag.SeriesFacturaCompra = (series.Dato ?? []).Where(s => s.SubTipoDoc == SubTipoDocFacturaCompra);
@@ -98,8 +116,33 @@ namespace Web.UI.Controllers
             ViewBag.SerieDefecto = numeracionActual?.SerieDfct;
 
             ViewBag.EsEdicion = false;
-            ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, null);
-            return PartialView("_Form", new FacturaCompraCrearDTO { EstadoDoc = "A", TipoObjeto = "13", FechaDoc = DateTime.Today, FechaEmision = DateTime.Today });
+            var dto = new FacturaCompraCrearDTO { EstadoDoc = "A", TipoObjeto = "13", FechaDoc = DateTime.Today, FechaEmision = DateTime.Today };
+            if (borrador is not null)
+            {
+                dto.CodigoSn = borrador.Cabecera.CodigoSn;
+                dto.NombreSn = borrador.Cabecera.NombreSn;
+                dto.Direccion = borrador.Cabecera.Direccion;
+                dto.Nit = borrador.Cabecera.Nit;
+                dto.MonedaDoc = borrador.Cabecera.MonedaDoc;
+                dto.PrctjeDesc = borrador.Cabecera.PrctjeDesc;
+                dto.PrctjeImpuesto = borrador.Cabecera.PrctjeImpuesto;
+                dto.Comentario = borrador.Cabecera.Comentario;
+                dto.FechaDoc = DateTime.Today;
+                dto.FechaEmision = DateTime.Today;
+
+                // "Copiar a": la condición de pago se precarga con la del proveedor, igual que al elegirlo en un alta normal
+                // (los documentos de origen no tienen condición). Sin proveedor o sin condición, el formulario usa Contado.
+                // El vencimiento lo sugiere el JS (fecha del documento + días de la condición).
+                if (!string.IsNullOrEmpty(dto.CodigoSn))
+                {
+                    var socio = await _socios.ObtenerAsync(dto.CodigoSn);
+                    if (socio.Resultado) dto.CondicionPago = socio.Dato?.CondicionPago;
+                    // Un origen sin NIT propio toma el del proveedor, igual que al elegirlo en un alta normal.
+                    if (socio.Resultado && string.IsNullOrWhiteSpace(dto.Nit)) dto.Nit = socio.Dato?.Nit;
+                }
+            }
+            ViewBag.CondicionesPago = await CondicionesPagoDocumento.ObtenerParaFormularioAsync(_condiciones, dto.CondicionPago);
+            return PartialView("_Form", dto);
         }
 
         [HttpGet]
