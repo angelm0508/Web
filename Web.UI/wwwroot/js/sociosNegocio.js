@@ -44,6 +44,18 @@ $(function () {
         tabla.columns([8]).visible(datos.some(s => s.exposicion != null), false);
     });
 
+    // Filtro por tipo (Todos / Clientes / Proveedores): se evalúa sobre el TipoSn de cada fila y no sobre el texto pintado.
+    // El filtro vive fuera de la tabla, así que se conserva al recargarla (crear, editar o eliminar un socio).
+    let filtroTipoSocio = '';
+    $.fn.dataTable.ext.search.push(function (settings, datos, indice, fila) {
+        if (settings.nTable.id !== 'tblSociosNegocio' || !filtroTipoSocio) return true;
+        return fila && fila.tipoSn === filtroTipoSocio;
+    });
+    $('input[name="filtroTipoSocio"]').on('change', function () {
+        filtroTipoSocio = this.value;
+        tabla.draw();
+    });
+
     function recargarTabla() { tabla.ajax.reload(null, false); }
 
     function abrirModal(html) {
