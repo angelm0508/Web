@@ -12,12 +12,21 @@ $(function () {
         const excedido = fila.exposicion != null && Number(fila.exposicion) > Number(d);
         return formatoDinero(d) + (excedido ? ' <span class="badge text-bg-danger" title="El saldo más lo comprometido en pedidos y entregas abiertos supera el límite.">Excedido</span>' : '');
     };
+    // Catálogo de series de socios (subtipo C = clientes, P = proveedores) para la columna «Serie» y el filtro.
+    const datosSeriesEl = document.getElementById('datosSeriesFiltro');
+    let seriesFiltro = [];
+    try { seriesFiltro = datosSeriesEl ? JSON.parse(datosSeriesEl.textContent) : []; } catch (e) { seriesFiltro = []; }
+    const nombreSerie = serie => {
+        const s = seriesFiltro.find(x => x.serie === serie);
+        return s ? s.nombreSerie : (serie ?? '');
+    };
     const tabla = $('#tblSociosNegocio').DataTable({
         ajax: { url: '/SociosNegocio/ObtenerTodos', dataSrc: App.dataSrcTabla },
         columns: [
             { data: 'codigo' },
             { data: 'nombre' },
             { data: 'tipoSn', render: d => d === 'C' ? 'Cliente' : (d === 'P' ? 'Proveedor' : (d ?? '')) },
+            { data: 'serie', render: (d, tipo) => tipo === 'display' || tipo === 'filter' ? $('<div>').text(nombreSerie(d)).html() : d },
             { data: 'nit' },
             { data: 'tel1' },
             { data: 'activo', render: d => d === 'S' ? '<span class="badge text-bg-success">Sí</span>' : '<span class="badge text-bg-secondary">No</span>' },
@@ -40,19 +49,42 @@ $(function () {
     tabla.on('xhr.dt', function (e, settings, json) {
         if (!permisos.verSaldos) return;
         const datos = (json && json.resultado && json.dato) || [];
-        tabla.columns([6, 7]).visible(datos.some(s => s.saldo != null), false);
-        tabla.columns([8]).visible(datos.some(s => s.exposicion != null), false);
+        tabla.columns([7, 8]).visible(datos.some(s => s.saldo != null), false);
+        tabla.columns([9]).visible(datos.some(s => s.exposicion != null), false);
     });
 
-    // Filtro por tipo (Todos / Clientes / Proveedores): se evalúa sobre el TipoSn de cada fila y no sobre el texto pintado.
-    // El filtro vive fuera de la tabla, así que se conserva al recargarla (crear, editar o eliminar un socio).
+    // Filtros por tipo (Todos / Clientes / Proveedores) y por serie: se evalúan sobre el TipoSn y la Serie de cada fila y no
+    // sobre el texto pintado. Viven fuera de la tabla, así que se conservan al recargarla (crear, editar o eliminar un socio).
     let filtroTipoSocio = '';
+    let filtroSerieSocio = '';
     $.fn.dataTable.ext.search.push(function (settings, datos, indice, fila) {
-        if (settings.nTable.id !== 'tblSociosNegocio' || !filtroTipoSocio) return true;
-        return fila && fila.tipoSn === filtroTipoSocio;
+        if (settings.nTable.id !== 'tblSociosNegocio' || !fila) return true;
+        if (filtroTipoSocio && fila.tipoSn !== filtroTipoSocio) return false;
+        if (filtroSerieSocio && String(fila.serie) !== filtroSerieSocio) return false;
+        return true;
     });
+
+    /** Rellena la lista de series con las del tipo elegido (todas si es «Todos») y vuelve a «Todas las series». */
+    function poblarFiltroSerie() {
+        const nombresTipo = { C: 'Cliente', P: 'Proveedor' };
+        const $lista = $('#filtroSerieSocio').empty().append('<option value="">Todas las series</option>');
+        seriesFiltro
+            .filter(s => !filtroTipoSocio || s.subTipoDoc === filtroTipoSocio)
+            .forEach(s => {
+                const etiqueta = filtroTipoSocio ? s.nombreSerie : `${s.nombreSerie} (${nombresTipo[s.subTipoDoc] ?? s.subTipoDoc})`;
+                $lista.append($('<option>').val(String(s.serie)).text(etiqueta));
+            });
+        filtroSerieSocio = '';
+    }
+    poblarFiltroSerie();
+
     $('input[name="filtroTipoSocio"]').on('change', function () {
         filtroTipoSocio = this.value;
+        poblarFiltroSerie();
+        tabla.draw();
+    });
+    $('#filtroSerieSocio').on('change', function () {
+        filtroSerieSocio = this.value;
         tabla.draw();
     });
 

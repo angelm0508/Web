@@ -61,7 +61,16 @@ namespace Web.UI.Controllers
         }
 
         [RequierePermiso("SociosNegocio", Accion.Ver)]
-        public IActionResult Index() => View();
+        public async Task<IActionResult> Index()
+        {
+            // Catálogo de series de socios (subtipos C y P) para el filtro y la columna «Serie» del listado; si la API falla
+            // el listado sigue funcionando y muestra el número de serie.
+            var series = await _series.ObtenerPorDocumentoAsync(CodigoObjSocioNegocio);
+            ViewBag.SeriesFiltro = (series.Resultado ? series.Dato : null)?
+                .Select(s => new { serie = s.Serie, nombreSerie = s.NombreSerie, subTipoDoc = s.SubTipoDoc })
+                .ToList();
+            return View();
+        }
 
         [HttpGet]
         [RequierePermiso("SociosNegocio", Accion.Ver)]

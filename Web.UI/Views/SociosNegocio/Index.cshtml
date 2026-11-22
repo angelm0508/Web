@@ -14,13 +14,18 @@
 
 <div class="card card-modulo">
     <div class="card-body">
-        <div class="btn-group mb-3" role="group" aria-label="Filtrar por tipo de socio">
-            <input type="radio" class="btn-check" name="filtroTipoSocio" id="filtroTipoTodos" value="" autocomplete="off" checked>
-            <label class="btn btn-outline-secondary" for="filtroTipoTodos">Todos</label>
-            <input type="radio" class="btn-check" name="filtroTipoSocio" id="filtroTipoClientes" value="C" autocomplete="off">
-            <label class="btn btn-outline-secondary" for="filtroTipoClientes">Clientes</label>
-            <input type="radio" class="btn-check" name="filtroTipoSocio" id="filtroTipoProveedores" value="P" autocomplete="off">
-            <label class="btn btn-outline-secondary" for="filtroTipoProveedores">Proveedores</label>
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            <div class="btn-group" role="group" aria-label="Filtrar por tipo de socio">
+                <input type="radio" class="btn-check" name="filtroTipoSocio" id="filtroTipoTodos" value="" autocomplete="off" checked>
+                <label class="btn btn-outline-secondary" for="filtroTipoTodos">Todos</label>
+                <input type="radio" class="btn-check" name="filtroTipoSocio" id="filtroTipoClientes" value="C" autocomplete="off">
+                <label class="btn btn-outline-secondary" for="filtroTipoClientes">Clientes</label>
+                <input type="radio" class="btn-check" name="filtroTipoSocio" id="filtroTipoProveedores" value="P" autocomplete="off">
+                <label class="btn btn-outline-secondary" for="filtroTipoProveedores">Proveedores</label>
+            </div>
+            <select id="filtroSerieSocio" class="form-select w-auto" aria-label="Filtrar por serie">
+                <option value="">Todas las series</option>
+            </select>
         </div>
         <div class="table-responsive">
             <table id="tblSociosNegocio" class="table table-hover align-middle w-100">
@@ -29,6 +34,7 @@
                         <th>Código</th>
                         <th>Nombre</th>
                         <th>Tipo</th>
+                        <th>Serie</th>
                         <th>NIT</th>
                         <th>Teléfono</th>
                         <th>Activo</th>
@@ -51,6 +57,10 @@
         </div>
     </div>
 </div>
+
+<script id="datosSeriesFiltro" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.SeriesFiltro ?? new List<object>()).Replace("</", "<\\/"))
+</script>
 
 <script id="datosPermisosSociosNegocio" type="application/json">
     { "actualizar": @(User.TienePermiso("SociosNegocio", Accion.Actualizar) ? "true" : "false"),
